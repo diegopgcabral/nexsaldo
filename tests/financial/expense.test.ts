@@ -26,9 +26,10 @@ function expense(
   };
 }
 
-test("calculates open expenses without offsetting them by overpayments", () => {
+test("calculates only pending expenses as open", () => {
   const totals = calculateExpenseTotals([
     expense("1500", "3231.48", "PAID"),
+    expense("500", "400", "PAID"),
     expense("210", "0", "PENDING"),
     expense("138", "0", "PENDING"),
     expense("60.99", "0", "PENDING"),
@@ -37,8 +38,8 @@ test("calculates open expenses without offsetting them by overpayments", () => {
 
   assert.deepEqual(totals, {
     openCents: 40_899n,
-    paidCents: 323_148n,
-    plannedCents: 190_899n,
+    paidCents: 363_148n,
+    plannedCents: 240_899n,
   });
 });
 

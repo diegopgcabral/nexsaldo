@@ -28,7 +28,7 @@ export function calculateExpenseTotals(expenses: ExpenseListItem[]) {
         paidCents: totals.paidCents + paidCents,
         openCents:
           totals.openCents +
-          (plannedCents > paidCents ? plannedCents - paidCents : 0n),
+          (expense.status === "PENDING" ? plannedCents - paidCents : 0n),
       };
     },
     { plannedCents: 0n, paidCents: 0n, openCents: 0n },
