@@ -1,6 +1,7 @@
 type IconName =
   | "calendar"
   | "calculator"
+  | "creditCard"
   | "chevronDown"
   | "chevronUp"
   | "chevronLeft"
@@ -36,6 +37,12 @@ export function Icon({ name, className = "size-5" }: IconProps) {
           d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"
           strokeWidth="2.4"
         />
+      </>
+    ),
+    creditCard: (
+      <>
+        <rect height="15" rx="2" width="20" x="2" y="4.5" />
+        <path d="M2 9.5h20M6 15h4" />
       </>
     ),
     chevronDown: <path d="m6 9 6 6 6-6" />,

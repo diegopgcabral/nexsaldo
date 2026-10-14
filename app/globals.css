@@ -4,6 +4,13 @@
   color-scheme: dark;
 }
 
+select,
+option {
+  color-scheme: dark;
+  background-color: #191c21;
+  color: #e1e2ea;
+}
+
 * {
   box-sizing: border-box;
 }
