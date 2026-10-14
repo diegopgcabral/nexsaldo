@@ -1,6 +1,7 @@
 type IconName =
   | "calendar"
   | "calculator"
+  | "creditCard"
   | "chevronDown"
   | "chevronUp"
   | "chevronLeft"
@@ -17,6 +18,7 @@ type IconName =
   | "category"
   | "more"
   | "pause"
+  | "person"
   | "receipt"
   | "search"
   | "settings";
@@ -36,6 +38,12 @@ export function Icon({ name, className = "size-5" }: IconProps) {
           d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"
           strokeWidth="2.4"
         />
+      </>
+    ),
+    creditCard: (
+      <>
+        <rect height="15" rx="2" width="20" x="2" y="4.5" />
+        <path d="M2 9.5h20M6 15h4" />
       </>
     ),
     chevronDown: <path d="m6 9 6 6 6-6" />,
@@ -74,6 +82,12 @@ export function Icon({ name, className = "size-5" }: IconProps) {
     ),
     more: <path d="M12 5h.01M12 12h.01M12 19h.01" strokeWidth="3" />,
     pause: <path d="M8 5v14M16 5v14" strokeWidth="2.4" />,
+    person: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+      </>
+    ),
     receipt: (
       <>
         <path d="M6 3h12v18l-2.5-1.5L12 21l-3.5-1.5L6 21V3Z" />

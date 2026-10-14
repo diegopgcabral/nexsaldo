@@ -21,7 +21,6 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { href: "/income", label: "Receitas", icon: "income" },
   { href: "/expenses", label: "Despesas", icon: "expense" },
-  { href: "/settings", label: "Configurações", icon: "settings" },
 ] as const;
 
 export function FinancialShell({
@@ -84,6 +83,65 @@ export function FinancialShell({
                   </Link>
                 );
               })}
+              <details
+                className="group"
+                open={
+                  pathname.startsWith("/cards") ||
+                  pathname.startsWith("/participants") ||
+                  pathname.startsWith("/invoices")
+                }
+              >
+                <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-100 [&::-webkit-details-marker]:hidden">
+                  <Icon className="size-5" name="creditCard" />
+                  <span className="flex-1">Cartões de crédito</span>
+                  <Icon
+                    className="size-4 transition group-open:rotate-180"
+                    name="chevronDown"
+                  />
+                </summary>
+                <div className="mt-1 space-y-1 pl-7">
+                  <Link
+                    aria-current={pathname === "/cards" ? "page" : undefined}
+                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${
+                      pathname === "/cards"
+                        ? "bg-emerald-400 text-[#003822]"
+                        : "text-slate-400 hover:bg-white/5 hover:text-white"
+                    }`}
+                    href="/cards"
+                  >
+                    Meus cartões
+                  </Link>
+                  <Link
+                    aria-current={
+                      pathname === "/participants" ? "page" : undefined
+                    }
+                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname === "/participants" ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                    href="/participants"
+                  >
+                    Participantes
+                  </Link>
+                  <Link
+                    aria-current={
+                      pathname.startsWith("/invoices") ? "page" : undefined
+                    }
+                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname.startsWith("/invoices") ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                    href="/invoices"
+                  >
+                    Faturas
+                  </Link>
+                </div>
+              </details>
+              <Link
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                  pathname === "/settings"
+                    ? "bg-emerald-400 text-[#003822] shadow-[0_0_20px_rgba(0,229,153,0.18)]"
+                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
+                }`}
+                href="/settings"
+              >
+                <Icon className="size-5" name="settings" />
+                Configurações
+              </Link>
             </nav>
           </div>
 
@@ -136,14 +194,22 @@ export function FinancialShell({
 
         <nav
           aria-label="Navegação móvel"
-          className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-white/5 bg-[#0b0e13]/95 px-2 backdrop-blur-xl md:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-white/5 bg-[#0b0e13]/95 px-1 backdrop-blur-xl md:hidden"
         >
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
+          {[
+            ...navigation,
+            { href: "/cards", label: "Cartões", icon: "creditCard" as const },
+            { href: "/settings", label: "Ajustes", icon: "settings" as const },
+          ].map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/cards" &&
+                (pathname === "/participants" ||
+                  pathname.startsWith("/invoices")));
 
             return (
               <Link
-                className={`flex min-w-20 flex-col items-center gap-1 rounded-lg px-3 py-1 text-xs font-medium transition ${
+                className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-lg px-1 py-1 text-[10px] font-medium transition ${
                   isActive ? "text-emerald-400" : "text-slate-500"
                 }`}
                 href={`${item.href}${suffix}`}
