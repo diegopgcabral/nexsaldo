@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { Icon } from "@/components/financial/icons";
 
-type DarkSelectOption = { value: string; label: string };
+export type DarkSelectOption = { value: string; label: string };
 
 type DarkSelectProps = {
   name: string;
@@ -13,6 +13,8 @@ type DarkSelectProps = {
   options: readonly DarkSelectOption[];
   placeholder: string;
   ariaLabelledBy: string;
+  showPersonIcon?: boolean;
+  renderOptionPrefix?: (option: DarkSelectOption) => ReactNode;
 };
 
 export function DarkSelect({
@@ -22,6 +24,8 @@ export function DarkSelect({
   options,
   placeholder,
   ariaLabelledBy,
+  showPersonIcon = false,
+  renderOptionPrefix,
 }: DarkSelectProps) {
   const [open, setOpen] = useState(false);
   const listId = useId();
@@ -92,8 +96,15 @@ export function DarkSelect({
         ref={triggerRef}
         type="button"
       >
-        <span className={selected ? "text-white" : "text-slate-400"}>
-          {selected?.label ?? placeholder}
+        <span
+          className={`flex min-w-0 items-center gap-2 ${selected ? "text-white" : "text-slate-400"}`}
+        >
+          {showPersonIcon ? (
+            <Icon className="size-4 shrink-0 text-emerald-300" name="person" />
+          ) : renderOptionPrefix && selected ? (
+            renderOptionPrefix(selected)
+          ) : null}
+          <span className="truncate">{selected?.label ?? placeholder}</span>
         </span>
         <Icon className="size-4 text-slate-400" name="chevronDown" />
       </button>
@@ -109,7 +120,7 @@ export function DarkSelect({
           {options.map((option) => (
             <button
               aria-selected={option.value === value}
-              className={`block w-full rounded-lg px-3 py-2.5 text-left text-sm transition ${
+              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition ${
                 option.value === value
                   ? "bg-emerald-400/15 text-emerald-300"
                   : "text-slate-200 hover:bg-white/5 focus:bg-white/5"
@@ -123,7 +134,12 @@ export function DarkSelect({
               role="option"
               type="button"
             >
-              {option.label}
+              {showPersonIcon ? (
+                <Icon className="size-4 shrink-0" name="person" />
+              ) : renderOptionPrefix ? (
+                renderOptionPrefix(option)
+              ) : null}
+              <span className="truncate">{option.label}</span>
             </button>
           ))}
         </div>

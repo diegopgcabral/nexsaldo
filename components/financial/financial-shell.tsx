@@ -83,7 +83,14 @@ export function FinancialShell({
                   </Link>
                 );
               })}
-              <details className="group" open={pathname.startsWith("/cards")}>
+              <details
+                className="group"
+                open={
+                  pathname.startsWith("/cards") ||
+                  pathname.startsWith("/participants") ||
+                  pathname.startsWith("/invoices")
+                }
+              >
                 <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-100 [&::-webkit-details-marker]:hidden">
                   <Icon className="size-5" name="creditCard" />
                   <span className="flex-1">Cartões de crédito</span>
@@ -104,18 +111,24 @@ export function FinancialShell({
                   >
                     Meus cartões
                   </Link>
-                  <span className="flex items-center justify-between px-4 py-2 text-xs text-slate-500">
-                    Lançamentos{" "}
-                    <span className="rounded bg-white/5 px-1.5 py-0.5">
-                      Em breve
-                    </span>
-                  </span>
-                  <span className="flex items-center justify-between px-4 py-2 text-xs text-slate-500">
-                    Faturas{" "}
-                    <span className="rounded bg-white/5 px-1.5 py-0.5">
-                      Em breve
-                    </span>
-                  </span>
+                  <Link
+                    aria-current={
+                      pathname === "/participants" ? "page" : undefined
+                    }
+                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname === "/participants" ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                    href="/participants"
+                  >
+                    Participantes
+                  </Link>
+                  <Link
+                    aria-current={
+                      pathname.startsWith("/invoices") ? "page" : undefined
+                    }
+                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname.startsWith("/invoices") ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                    href="/invoices"
+                  >
+                    Faturas
+                  </Link>
                 </div>
               </details>
               <Link
@@ -188,7 +201,11 @@ export function FinancialShell({
             { href: "/cards", label: "Cartões", icon: "creditCard" as const },
             { href: "/settings", label: "Ajustes", icon: "settings" as const },
           ].map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/cards" &&
+                (pathname === "/participants" ||
+                  pathname.startsWith("/invoices")));
 
             return (
               <Link

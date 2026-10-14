@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -145,19 +146,36 @@ function CreditCardForm({
       ) : null}
       <label className="block space-y-2">
         <span className="text-sm font-medium text-slate-200">
-          Nome personalizado
+          Nome personalizado (opcional)
         </span>
         <input
           autoComplete="off"
           className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-emerald-400"
-          defaultValue={card?.name}
+          defaultValue={card?.name === card?.bankName ? "" : card?.name}
           maxLength={100}
           name="name"
           placeholder="Ex.: Nubank pessoal"
-          required
         />
         <span className="block text-xs text-slate-500">
-          Use um nome fácil de reconhecer nas despesas futuras.
+          Se deixar em branco, usaremos o nome do banco emissor.
+        </span>
+      </label>
+      <label className="block space-y-2">
+        <span className="text-sm font-medium text-slate-200">
+          Dia do vencimento da fatura
+        </span>
+        <input
+          className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
+          defaultValue={card?.dueDay ?? ""}
+          max={31}
+          min={1}
+          name="dueDay"
+          placeholder="Ex.: 10"
+          required
+          type="number"
+        />
+        <span className="block text-xs text-slate-500">
+          Apenas o dia do mês; o vencimento real poderá variar conforme o banco.
         </span>
       </label>
       {state.error ? (
@@ -251,6 +269,18 @@ export function CreditCardManager({
         </button>
       </header>
 
+      <div className="flex gap-2 text-sm">
+        <span className="rounded-lg bg-emerald-400/10 px-3 py-2 text-emerald-300">
+          Meus cartões
+        </span>
+        <Link
+          className="rounded-lg px-3 py-2 text-slate-400 hover:text-white"
+          href="/participants"
+        >
+          Participantes
+        </Link>
+      </div>
+
       {loadError ? (
         <div className="rounded-2xl border border-red-400/20 bg-[#191c21] px-6 py-10 text-center">
           <h2 className="text-lg font-semibold text-white">
@@ -325,15 +355,19 @@ export function CreditCardManager({
                   <CreditCardChip light={isMercadoPago} />
                 </div>
                 <div className="relative mt-4">
-                  <p
-                    className={`text-lg font-semibold tracking-wide break-words ${isMercadoPago ? "text-[#161b24]" : "text-white"}`}
-                  >
-                    {card.name}
-                  </p>
+                  {card.name !== card.bankName ? (
+                    <p
+                      className={`text-lg font-semibold tracking-wide break-words ${isMercadoPago ? "text-[#161b24]" : "text-white"}`}
+                    >
+                      {card.name}
+                    </p>
+                  ) : null}
                   <p
                     className={`mt-1 text-xs ${isMercadoPago ? "text-[#161b24]/70" : "text-white/65"}`}
                   >
-                    Disponível para vínculos futuros
+                    {card.dueDay
+                      ? `Fatura vence dia ${card.dueDay}`
+                      : "Vencimento não informado"}
                   </p>
                 </div>
                 <div

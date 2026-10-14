@@ -23,21 +23,28 @@ export type CreditCardListItem = {
   id: string;
   bankName: string;
   name: string;
+  dueDay: number | null;
 };
 
-const cardNameSchema = z.string().trim().min(1).max(100);
+const cardNameSchema = z.string().trim().max(100);
 const otherBankSchema = z.string().trim().min(1).max(80);
 
 export function parseCreditCardInput(input: {
   bank: unknown;
   otherBank: unknown;
   name: unknown;
+  dueDay: unknown;
 }) {
-  const name = cardNameSchema.safeParse(input.name);
+  const name = cardNameSchema.safeParse(input.name ?? "");
   if (!name.success) {
     return {
-      error: "Informe um nome de cartão com até 100 caracteres.",
+      error: "O nome personalizado deve ter até 100 caracteres.",
     } as const;
+  }
+
+  const dueDay = z.coerce.number().int().min(1).max(31).safeParse(input.dueDay);
+  if (!dueDay.success || input.dueDay === "" || input.dueDay === null) {
+    return { error: "Informe um dia de vencimento entre 1 e 31." } as const;
   }
 
   if (input.bank === "other") {
@@ -45,13 +52,25 @@ export function parseCreditCardInput(input: {
     if (!otherBank.success) {
       return { error: "Informe o nome do banco emissor." } as const;
     }
-    return { data: { bankName: otherBank.data, name: name.data } } as const;
+    return {
+      data: {
+        bankName: otherBank.data,
+        name: name.data || otherBank.data,
+        dueDay: dueDay.data,
+      },
+    } as const;
   }
 
   const bank = creditCardBanks.find((item) => item.key === input.bank);
   if (!bank) return { error: "Selecione um banco emissor." } as const;
 
-  return { data: { bankName: bank.name, name: name.data } } as const;
+  return {
+    data: {
+      bankName: bank.name,
+      name: name.data || bank.name,
+      dueDay: dueDay.data,
+    },
+  } as const;
 }
 
 export function getBankAppearance(bankName: string) {

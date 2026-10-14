@@ -26,6 +26,7 @@ export async function saveCreditCard(
     bank: formData.get("bank"),
     otherBank: formData.get("otherBank"),
     name: formData.get("name"),
+    dueDay: formData.get("dueDay"),
   });
   if ("error" in parsed) return { error: parsed.error };
 
@@ -37,7 +38,11 @@ export async function saveCreditCard(
   const auth = await getAuthenticatedUser();
   if ("error" in auth) return auth;
 
-  const card = { bank_name: parsed.data.bankName, name: parsed.data.name };
+  const card = {
+    bank_name: parsed.data.bankName,
+    name: parsed.data.name,
+    due_day: parsed.data.dueDay,
+  };
   if (id?.success) {
     const { data, error } = await auth.supabase
       .from("credit_cards")
@@ -79,6 +84,11 @@ export async function deleteCreditCard(
     .eq("user_id", auth.userId)
     .select("id")
     .maybeSingle();
+  if (error?.code === "23503")
+    return {
+      error:
+        "Este cartão possui compras e não pode ser excluído. O histórico da fatura foi preservado.",
+    };
   if (error || !data) return { error: "Não foi possível excluir este cartão." };
 
   revalidatePath("/cards");

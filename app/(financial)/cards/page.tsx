@@ -12,14 +12,16 @@ export default async function CardsPage() {
   if (typeof userId === "string") {
     const { data, error } = await supabase
       .from("credit_cards")
-      .select("id, bank_name, name")
+      .select("id, bank_name, name, due_day")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .order("due_day", { ascending: true, nullsFirst: false })
+      .order("name", { ascending: true });
     loadError = Boolean(error);
     cards = (data ?? []).map((card) => ({
       id: card.id,
       bankName: card.bank_name,
       name: card.name,
+      dueDay: card.due_day,
     }));
   }
 
