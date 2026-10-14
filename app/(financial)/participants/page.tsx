@@ -13,7 +13,7 @@ export default async function ParticipantsPage() {
   if (typeof userId === "string") {
     const { data, error } = await supabase
       .from("credit_card_participants")
-      .select("id, name, is_active")
+      .select("id, name, phone, is_active")
       .eq("user_id", userId)
       .order("name");
     const { data: profile, error: profileError } = await supabase
@@ -27,6 +27,7 @@ export default async function ParticipantsPage() {
     participants = (data ?? []).map((person) => ({
       id: person.id,
       name: person.name,
+      phone: person.phone,
       isActive: person.is_active,
     }));
   }

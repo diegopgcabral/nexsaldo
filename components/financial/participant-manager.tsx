@@ -18,7 +18,10 @@ import {
 } from "@/app/(financial)/participants/actions";
 import { useToast } from "@/components/financial/toast-provider";
 import { Icon } from "@/components/financial/icons";
-import type { ParticipantListItem } from "@/lib/financial/participant";
+import {
+  formatBrazilianPhone,
+  type ParticipantListItem,
+} from "@/lib/financial/participant";
 
 function ParticipantForm({
   person,
@@ -33,6 +36,7 @@ function ParticipantForm({
   >(saveParticipant, {});
   const router = useRouter();
   const { notify } = useToast();
+  const [phone, setPhone] = useState(() => formatBrazilianPhone(person?.phone));
 
   useEffect(() => {
     if (state.success) {
@@ -62,6 +66,28 @@ function ParticipantForm({
           placeholder="Ex.: Ana Paula"
           required
         />
+      </label>
+      <label className="block space-y-2">
+        <span className="text-sm font-medium text-slate-200">
+          Celular <span className="font-normal text-slate-500">(opcional)</span>
+        </span>
+        <input
+          autoComplete="tel"
+          className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-emerald-400"
+          inputMode="tel"
+          maxLength={15}
+          name="phone"
+          onChange={(event) =>
+            setPhone(formatBrazilianPhone(event.target.value))
+          }
+          placeholder="(11) 99999-9999"
+          type="tel"
+          value={phone}
+        />
+        <span className="block text-xs text-slate-500">
+          Usaremos este número futuramente para enviar o resumo dos rateios por
+          WhatsApp.
+        </span>
       </label>
       <p className="text-xs leading-5 text-slate-400">
         Essa pessoa poderá ser selecionada no rateio de compras de qualquer
@@ -323,6 +349,11 @@ export function ParticipantManager({
                   {person.name}
                 </h3>
                 <p className="text-xs text-emerald-300">Ativo</p>
+                {person.phone ? (
+                  <p className="mt-1 text-xs text-slate-500">
+                    {formatBrazilianPhone(person.phone)}
+                  </p>
+                ) : null}
               </div>
               <div className="flex shrink-0 gap-1">
                 <button

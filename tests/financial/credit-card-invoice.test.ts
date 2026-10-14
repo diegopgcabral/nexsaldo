@@ -21,6 +21,7 @@ function purchase(
     amount,
     purchasedOn: "2026-10-14",
     invoiceMonth: "2026-10",
+    installmentNumber: 1,
     installmentCount: 1,
     splits,
   };
@@ -87,6 +88,17 @@ test("requires between one and 120 installments", () => {
         ...purchase([{ participantId: null, amount: "300,00" }]),
         installmentCount: 121,
       }),
+  );
+});
+
+test("rejects a current installment after the total", () => {
+  assert.match(
+    parsePurchaseInput({
+      ...purchase([{ participantId: null, amount: "300,00" }]),
+      installmentNumber: 5,
+      installmentCount: 4,
+    }).error ?? "",
+    /parcela atual/i,
   );
 });
 

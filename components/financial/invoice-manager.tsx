@@ -82,6 +82,9 @@ function PurchaseForm({
   const [installmentCount, setInstallmentCount] = useState(
     purchase?.installmentCount ?? 1,
   );
+  const [installmentNumber, setInstallmentNumber] = useState(
+    purchase?.installmentNumber ?? 1,
+  );
   const [splits, setSplits] = useState<PurchaseSplit[]>(
     purchase?.splits.length
       ? purchase.splits.map((split) => ({
@@ -134,6 +137,7 @@ function PurchaseForm({
     amount,
     purchasedOn,
     invoiceMonth,
+    installmentNumber,
     installmentCount,
     splits,
   });
@@ -157,7 +161,7 @@ function PurchaseForm({
           />
         </label>
         <label className="space-y-2">
-          <span className="block text-sm text-slate-200">Parcelamento</span>
+          <span className="block text-sm text-slate-200">Parcela atual</span>
           {purchase ? (
             <div className="rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-slate-300">
               Parcela {purchase.installmentNumber}/{purchase.installmentCount}
@@ -165,25 +169,56 @@ function PurchaseForm({
           ) : (
             <input
               className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
-              max={120}
+              max={installmentCount}
               min={1}
               onChange={(event) =>
-                setInstallmentCount(
-                  Math.min(120, Math.max(1, Number(event.target.value) || 1)),
+                setInstallmentNumber(
+                  Math.min(
+                    installmentCount,
+                    Math.max(1, Number(event.target.value) || 1),
+                  ),
                 )
               }
+              type="number"
+              value={installmentNumber}
+            />
+          )}
+        </label>
+        <label className="space-y-2">
+          <span className="block text-sm text-slate-200">
+            Total de parcelas
+          </span>
+          {purchase ? (
+            <div className="rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-slate-300">
+              {purchase.installmentCount} parcelas
+            </div>
+          ) : (
+            <input
+              className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
+              max={120}
+              min={1}
+              onChange={(event) => {
+                const nextCount = Math.min(
+                  120,
+                  Math.max(1, Number(event.target.value) || 1),
+                );
+                setInstallmentCount(nextCount);
+                setInstallmentNumber((current) => Math.min(current, nextCount));
+              }}
               type="number"
               value={installmentCount}
             />
           )}
+        </label>
+        <p className="-mt-2 text-xs text-slate-500 sm:col-span-2">
           <span className="block text-xs text-slate-500">
             {purchase
               ? "Esta parcela pode ser ajustada sem modificar as demais."
               : installmentCount === 1
                 ? "Compra à vista."
-                : "A compra e o rateio serão repetidos nas próximas faturas."}
+                : `Serão criadas as parcelas ${installmentNumber}/${installmentCount} até ${installmentCount}/${installmentCount}, com o mesmo rateio.`}
           </span>
-        </label>
+        </p>
         <label className="space-y-2">
           <span className="block text-sm text-slate-200">Valor total (R$)</span>
           <span className="relative block">
