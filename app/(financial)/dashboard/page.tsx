@@ -122,8 +122,13 @@ export default async function DashboardPage({
   const balanceCents = incomeCents - expenseTotals.paidCents;
   const categoryTotals = calculateExpenseCategoryTotals(expenses)
     .filter((item) => item.paidCents > 0n)
-    .sort((left, right) => (left.paidCents > right.paidCents ? -1 : 1))
-    .slice(0, 5);
+    .sort((left, right) =>
+      left.paidCents === right.paidCents
+        ? left.category.localeCompare(right.category, "pt-BR")
+        : left.paidCents > right.paidCents
+          ? -1
+          : 1,
+    );
   const dueExpenses = expenses
     .filter((expense) => expense.status === "PENDING")
     .slice(0, 5);
@@ -236,10 +241,10 @@ export default async function DashboardPage({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-white">
-                Evolução do saldo
+                Evolução do saldo diário
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Entradas menos despesas pagas ao longo do ciclo.
+                Saldo acumulado após cada movimentação do ciclo.
               </p>
             </div>
             <Icon className="size-5 text-emerald-300" name="income" />
@@ -264,20 +269,28 @@ export default async function DashboardPage({
             Distribuição dos pagamentos neste ciclo.
           </p>
           {categoryTotals.length ? (
-            <div className="mt-5 space-y-3">
+            <div
+              aria-label="Lista de despesas por categoria"
+              className="mt-5 max-h-52 space-y-3 overflow-y-auto pr-2"
+              role={categoryTotals.length > 5 ? "region" : undefined}
+              tabIndex={categoryTotals.length > 5 ? 0 : undefined}
+            >
               {categoryTotals.map((item, index) => {
                 const percentage = Number(
                   (item.paidCents * 100n) / expenseTotals.paidCents,
                 );
+                const color = chartColors[index % chartColors.length];
                 return (
                   <div key={item.category}>
                     <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
                       <span className="flex min-w-0 items-center gap-2 text-slate-200">
                         <span
                           className="size-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: chartColors[index] }}
+                          style={{ backgroundColor: color }}
                         />
-                        {item.category}
+                        <span className="truncate" title={item.category}>
+                          {item.category}
+                        </span>
                       </span>
                       <span className="shrink-0 font-medium text-white">
                         {formatCents(item.paidCents)}
@@ -287,7 +300,7 @@ export default async function DashboardPage({
                       <div
                         className="h-full rounded-full"
                         style={{
-                          backgroundColor: chartColors[index],
+                          backgroundColor: color,
                           width: `${percentage}%`,
                         }}
                       />
