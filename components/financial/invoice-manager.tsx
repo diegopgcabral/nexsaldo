@@ -79,6 +79,9 @@ function PurchaseForm({
   const [invoiceMonth, setInvoiceMonth] = useState(
     purchase?.invoiceMonth ?? month,
   );
+  const [installmentCount, setInstallmentCount] = useState(
+    purchase?.installmentCount ?? 1,
+  );
   const [splits, setSplits] = useState<PurchaseSplit[]>(
     purchase?.splits.length
       ? purchase.splits.map((split) => ({
@@ -131,6 +134,7 @@ function PurchaseForm({
     amount,
     purchasedOn,
     invoiceMonth,
+    installmentCount,
     splits,
   });
 
@@ -151,6 +155,34 @@ function PurchaseForm({
             required
             value={description}
           />
+        </label>
+        <label className="space-y-2">
+          <span className="block text-sm text-slate-200">Parcelamento</span>
+          {purchase ? (
+            <div className="rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-slate-300">
+              Parcela {purchase.installmentNumber}/{purchase.installmentCount}
+            </div>
+          ) : (
+            <input
+              className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
+              max={120}
+              min={1}
+              onChange={(event) =>
+                setInstallmentCount(
+                  Math.min(120, Math.max(1, Number(event.target.value) || 1)),
+                )
+              }
+              type="number"
+              value={installmentCount}
+            />
+          )}
+          <span className="block text-xs text-slate-500">
+            {purchase
+              ? "Esta parcela pode ser ajustada sem modificar as demais."
+              : installmentCount === 1
+                ? "Compra à vista."
+                : "A compra e o rateio serão repetidos nas próximas faturas."}
+          </span>
         </label>
         <label className="space-y-2">
           <span className="block text-sm text-slate-200">Valor total (R$)</span>
@@ -607,6 +639,12 @@ export function InvoiceManager({
                       <div>
                         <p className="font-medium text-white">
                           {purchase.description}
+                          {purchase.installmentCount > 1 ? (
+                            <span className="ml-2 rounded-full bg-violet-400/10 px-2 py-0.5 text-xs font-semibold text-violet-200">
+                              {purchase.installmentNumber}/
+                              {purchase.installmentCount}
+                            </span>
+                          ) : null}
                         </p>
                         <p className="mt-1 text-xs text-slate-400">
                           {formatDate(purchase.purchasedOn)} ·{" "}

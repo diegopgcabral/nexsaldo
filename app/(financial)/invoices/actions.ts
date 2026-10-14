@@ -35,6 +35,7 @@ export async function savePurchase(
     p_purchased_on: purchase.purchasedOn,
     p_invoice_month: `${purchase.invoiceMonth}-01`,
     p_splits: purchase.splits,
+    p_installment_count: purchase.installmentCount,
   });
   if (error)
     return {

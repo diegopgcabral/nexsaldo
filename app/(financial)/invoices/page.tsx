@@ -51,7 +51,7 @@ export default async function InvoicesPage({
         supabase
           .from("credit_card_purchases")
           .select(
-            "id, card_id, description, amount, purchased_on, invoice_month",
+            "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count",
           )
           .eq("user_id", userId)
           .eq("invoice_month", `${month}-01`),
@@ -107,6 +107,8 @@ export default async function InvoicesPage({
       amount: String(purchase.amount),
       purchasedOn: purchase.purchased_on,
       invoiceMonth: purchase.invoice_month.slice(0, 7),
+      installmentNumber: purchase.installment_number,
+      installmentCount: purchase.installment_count,
       splits: splitsByPurchase.get(purchase.id) ?? [],
     }));
   }

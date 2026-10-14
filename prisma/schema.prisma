@@ -90,17 +90,21 @@ model CreditCardParticipant {
 }
 
 model CreditCardPurchase {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  cardId       String   @map("card_id") @db.Uuid
-  description  String
-  amount       Decimal  @db.Decimal(14, 2)
-  purchasedOn  DateTime @map("purchased_on") @db.Date
-  invoiceMonth DateTime @map("invoice_month") @db.Date
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  cardId             String   @map("card_id") @db.Uuid
+  description        String
+  amount             Decimal  @db.Decimal(14, 2)
+  purchasedOn        DateTime @map("purchased_on") @db.Date
+  invoiceMonth       DateTime @map("invoice_month") @db.Date
+  installmentGroupId String   @map("installment_group_id") @db.Uuid
+  installmentNumber  Int      @map("installment_number") @db.SmallInt
+  installmentCount   Int      @map("installment_count") @db.SmallInt
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([userId, cardId, invoiceMonth, purchasedOn(sort: Desc)])
+  @@index([userId, installmentGroupId])
   @@map("credit_card_purchases")
 }
 

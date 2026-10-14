@@ -19,6 +19,8 @@ export type PurchaseListItem = {
   amount: string;
   purchasedOn: string;
   invoiceMonth: string;
+  installmentNumber: number;
+  installmentCount: number;
   splits: PurchaseSplit[];
 };
 
@@ -90,6 +92,7 @@ export function parsePurchaseInput(input: unknown) {
       amount: z.string(),
       purchasedOn: z.iso.date(),
       invoiceMonth: z.string().refine(isMonthReference),
+      installmentCount: z.number().int().min(1).max(120),
       splits: z.array(splitSchema).min(1).max(100),
     })
     .safeParse(input);
