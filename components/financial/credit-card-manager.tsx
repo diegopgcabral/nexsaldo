@@ -38,6 +38,42 @@ const cardTones: Record<string, string> = {
     "border-emerald-400/25 bg-gradient-to-br from-[#21443a] via-[#1b312c] to-[#151d1b]",
 };
 
+function CreditCardChip({ light = false }: { light?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`relative block h-8 w-11 overflow-hidden rounded-md border shadow-inner ${
+        light
+          ? "border-slate-600/50 bg-gradient-to-br from-[#f3f4f6] via-[#b8c0c9] to-[#777f8b] text-slate-700"
+          : "border-amber-950/40 bg-gradient-to-br from-[#f9e3aa] via-[#d7ad59] to-[#9c6d30] text-amber-950/60"
+      }`}
+    >
+      <svg className="h-full w-full" fill="none" viewBox="0 0 44 32">
+        <rect
+          height="29"
+          rx="3"
+          stroke="currentColor"
+          width="41"
+          x="1.5"
+          y="1.5"
+        />
+        <path
+          d="M1.5 10h12l5 5v2l-5 5h-12M42.5 10h-12l-5 5v2l5 5h12M18.5 1.5V10M25.5 1.5V10M18.5 22v8.5M25.5 22v8.5"
+          stroke="currentColor"
+        />
+        <rect
+          height="12"
+          rx="2"
+          stroke="currentColor"
+          width="14"
+          x="15"
+          y="10"
+        />
+      </svg>
+    </span>
+  );
+}
+
 function CreditCardForm({
   card,
   onClose,
@@ -285,7 +321,10 @@ export function CreditCardManager({
                     </p>
                   </div>
                 </div>
-                <div className="relative mt-8">
+                <div className="relative mt-5">
+                  <CreditCardChip light={isMercadoPago} />
+                </div>
+                <div className="relative mt-4">
                   <p
                     className={`text-lg font-semibold tracking-wide break-words ${isMercadoPago ? "text-[#161b24]" : "text-white"}`}
                   >
