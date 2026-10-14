@@ -20,13 +20,66 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <header className="relative z-10 border-b border-white/5 bg-[#080b10]/70 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <Link className="group flex items-center gap-3" href="/">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-emerald-300 p-px shadow-lg shadow-emerald-400/20 transition group-hover:scale-105"><span className="flex size-full items-center justify-center rounded-[11px] bg-[#080b10]"><svg aria-hidden="true" className="size-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2Z" /></svg></span></span>
-            <span className="text-2xl font-bold tracking-tight text-white">NexSaldo<span className="text-emerald-400">.</span></span>
+            <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-emerald-300 p-px shadow-lg shadow-emerald-400/20 transition group-hover:scale-105">
+              <span className="flex size-full items-center justify-center rounded-[11px] bg-[#080b10]">
+                <svg
+                  aria-hidden="true"
+                  className="size-5 text-emerald-400"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2Z" />
+                </svg>
+              </span>
+            </span>
+            <span className="text-2xl font-bold tracking-tight text-white">
+              NexSaldo<span className="text-emerald-400">.</span>
+            </span>
           </Link>
         </div>
       </header>
 
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] max-w-7xl items-center px-6 py-14"><div className="max-w-2xl space-y-8"><div className="space-y-5"><h1 className="text-4xl leading-[1.1] font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">Clareza para cuidar do seu <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-white bg-clip-text text-transparent">dinheiro.</span></h1><p className="max-w-xl text-lg leading-relaxed text-slate-300 sm:text-xl">Entre com sua conta Google para acessar o NexSaldo.</p></div><div className="max-w-sm space-y-4">{error ? <p aria-live="polite" className="rounded-lg border border-red-400/20 bg-red-950/50 px-3 py-2 text-sm text-red-200">Não foi possível concluir o login. Tente novamente.</p> : null}<GoogleSignInButton /><p className="flex items-center gap-2 text-xs font-medium text-slate-400"><svg aria-hidden="true" className="size-4 shrink-0 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path clipRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.71-9.29a1 1 0 0 0-1.42-1.42L9 10.59 7.71 9.3A1 1 0 0 0 6.3 10.7l2 2a1 1 0 0 0 1.41 0l4-4Z" fillRule="evenodd" /></svg>Acesso seguro com sua conta Google</p></div></div></section>
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] max-w-7xl items-center px-6 py-14">
+        <div className="max-w-2xl space-y-8">
+          <div className="space-y-5">
+            <h1 className="text-4xl leading-[1.1] font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Clareza para cuidar do seu{" "}
+              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-white bg-clip-text text-transparent">
+                dinheiro.
+              </span>
+            </h1>
+            <p className="max-w-xl text-lg leading-relaxed text-slate-300 sm:text-xl">
+              Entre com sua conta Google para acessar o NexSaldo.
+            </p>
+          </div>
+          <div className="max-w-sm space-y-4">
+            {error ? (
+              <p
+                aria-live="polite"
+                className="rounded-lg border border-red-400/20 bg-red-950/50 px-3 py-2 text-sm text-red-200"
+              >
+                Não foi possível concluir o login. Tente novamente.
+              </p>
+            ) : null}
+            <GoogleSignInButton />
+            <p className="flex items-center gap-2 text-xs font-medium text-slate-400">
+              <svg
+                aria-hidden="true"
+                className="size-4 shrink-0 text-emerald-400"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  clipRule="evenodd"
+                  d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.71-9.29a1 1 0 0 0-1.42-1.42L9 10.59 7.71 9.3A1 1 0 0 0 6.3 10.7l2 2a1 1 0 0 0 1.41 0l4-4Z"
+                  fillRule="evenodd"
+                />
+              </svg>
+              Acesso seguro com sua conta Google
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

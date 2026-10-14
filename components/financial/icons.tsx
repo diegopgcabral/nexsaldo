@@ -1,5 +1,6 @@
 type IconName =
   | "calendar"
+  | "calculator"
   | "chevronDown"
   | "chevronUp"
   | "chevronLeft"
@@ -28,6 +29,15 @@ type IconProps = {
 export function Icon({ name, className = "size-5" }: IconProps) {
   const paths: Record<IconName, React.ReactNode> = {
     calendar: <rect height="14" rx="2" width="16" x="4" y="5" />,
+    calculator: (
+      <>
+        <rect height="18" rx="2" width="14" x="5" y="3" />
+        <path
+          d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"
+          strokeWidth="2.4"
+        />
+      </>
+    ),
     chevronDown: <path d="m6 9 6 6 6-6" />,
     chevronUp: <path d="m18 15-6-6-6 6" />,
     chevronLeft: <path d="m14 18-6-6 6-6" />,

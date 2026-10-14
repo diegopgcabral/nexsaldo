@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { signOut } from "@/app/dashboard/actions";
+import { FloatingCalculator } from "@/components/financial/floating-calculator";
 import { Icon } from "@/components/financial/icons";
 import { MonthSelector } from "@/components/financial/month-selector";
 import { ToastProvider } from "@/components/financial/toast-provider";
@@ -154,6 +155,7 @@ export function FinancialShell({
             );
           })}
         </nav>
+        <FloatingCalculator />
       </div>
     </ToastProvider>
   );
