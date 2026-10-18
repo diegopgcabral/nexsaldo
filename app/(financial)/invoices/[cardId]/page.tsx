@@ -34,6 +34,7 @@ export default async function CardInvoicePage({
   let participants: ParticipantListItem[] = [];
   let purchases: PurchaseListItem[] = [];
   let categories: { name: string; iconKey: string | null }[] = [];
+  let isClosed = false;
   let ownerName = "Você";
   let loadError = false;
 
@@ -91,16 +92,26 @@ export default async function CardInvoicePage({
       }));
     const selectedCard = cards.find((card) => card.id === cardId);
     if (selectedCard) {
-      const purchaseResult = await supabase
-        .from("credit_card_purchases")
-        .select(
-          "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count",
-        )
-        .eq("user_id", userId)
-        .eq("card_id", selectedCard.id)
-        .eq("invoice_month", `${month}-01`)
-        .order("purchased_on", { ascending: false });
-      loadError ||= Boolean(purchaseResult.error);
+      const [purchaseResult, closureResult] = await Promise.all([
+        supabase
+          .from("credit_card_purchases")
+          .select(
+            "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count",
+          )
+          .eq("user_id", userId)
+          .eq("card_id", selectedCard.id)
+          .eq("invoice_month", `${month}-01`)
+          .order("purchased_on", { ascending: false }),
+        supabase
+          .from("credit_card_invoice_closures")
+          .select("card_id")
+          .eq("user_id", userId)
+          .eq("card_id", selectedCard.id)
+          .eq("invoice_month", `${month}-01`)
+          .maybeSingle(),
+      ]);
+      loadError ||= Boolean(purchaseResult.error || closureResult.error);
+      isClosed = Boolean(closureResult.data);
       const purchaseRows = purchaseResult.data ?? [];
       const ids = purchaseRows.map((purchase) => purchase.id);
       const splitsByPurchase = new Map<string, PurchaseSplit[]>();
@@ -147,6 +158,7 @@ export default async function CardInvoicePage({
       purchases={purchases}
       loadError={loadError}
       categories={categories}
+      isClosed={isClosed}
     />
   );
 }

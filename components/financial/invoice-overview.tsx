@@ -31,6 +31,7 @@ export function InvoiceOverview({
   ownerName,
   month,
   loadError,
+  closedCardIds,
 }: {
   cards: CreditCardListItem[];
   participants: ParticipantListItem[];
@@ -38,10 +39,12 @@ export function InvoiceOverview({
   ownerName: string;
   month: string;
   loadError: boolean;
+  closedCardIds: string[];
 }) {
   const summary = summarizeInvoice(purchases);
   const names = new Map(participants.map((person) => [person.id, person.name]));
   const cardsById = new Map(cards.map((card) => [card.id, card]));
+  const closedCards = new Set(closedCardIds);
   const people = Array.from(summary.personCardTotals.entries())
     .map(([id, byCard]) => ({
       id,
@@ -225,9 +228,16 @@ export function InvoiceOverview({
                           return (
                             <div className="space-y-1 text-sm" key={cardId}>
                               <div className="flex justify-between gap-3">
-                                <span className="truncate text-slate-400">
-                                  {cardsById.get(cardId)?.name ??
-                                    "Cartão removido"}
+                                <span className="flex min-w-0 items-center gap-1.5">
+                                  <span className="truncate text-slate-400">
+                                    {cardsById.get(cardId)?.name ??
+                                      "Cartão removido"}
+                                  </span>
+                                  {closedCards.has(cardId) ? (
+                                    <span className="shrink-0 rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+                                      Fechada
+                                    </span>
+                                  ) : null}
                                 </span>
                                 <span className="shrink-0 text-slate-200">
                                   {formatCents(amount)}

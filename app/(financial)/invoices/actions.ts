@@ -8,6 +8,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PurchaseActionState = { error?: string; success?: boolean };
 
+function invoiceError(error: { message?: string } | null, fallback: string) {
+  return error?.message?.includes("Invoice is closed")
+    ? "Esta fatura está fechada e não pode receber alterações."
+    : fallback;
+}
+
 export async function savePurchase(
   _previous: PurchaseActionState,
   formData: FormData,
@@ -40,8 +46,10 @@ export async function savePurchase(
   });
   if (error)
     return {
-      error:
+      error: invoiceError(
+        error,
         "Não foi possível salvar a compra. Confira o cartão, os participantes e o rateio.",
+      ),
     };
   revalidatePath("/invoices");
   return { success: true };
@@ -62,7 +70,72 @@ export async function deletePurchase(id: string): Promise<PurchaseActionState> {
     .eq("user_id", userId)
     .select("id")
     .maybeSingle();
-  if (error || !data) return { error: "Não foi possível excluir a compra." };
+  if (error || !data)
+    return { error: invoiceError(error, "Não foi possível excluir a compra.") };
+  revalidatePath("/invoices");
+  return { success: true };
+}
+
+export async function movePurchaseToNextInvoice(
+  purchaseId: string,
+): Promise<PurchaseActionState> {
+  const id = z.string().uuid().safeParse(purchaseId);
+  if (!id.success) return { error: "Compra inválida." };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (typeof auth?.claims.sub !== "string")
+    return { error: "Sua sessão expirou. Entre novamente." };
+  const { error } = await supabase.rpc(
+    "move_credit_card_purchase_to_next_invoice",
+    { p_purchase_id: id.data },
+  );
+  if (error)
+    return { error: invoiceError(error, "Não foi possível mover a compra.") };
+  revalidatePath("/invoices");
+  return { success: true };
+}
+
+export async function closeInvoice(
+  cardId: string,
+  month: string,
+): Promise<PurchaseActionState> {
+  const id = z.string().uuid().safeParse(cardId);
+  if (!id.success || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))
+    return { error: "Fatura inválida." };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (typeof auth?.claims.sub !== "string")
+    return { error: "Sua sessão expirou. Entre novamente." };
+  const { error } = await supabase.rpc("close_credit_card_invoice", {
+    p_card_id: id.data,
+    p_invoice_month: `${month}-01`,
+  });
+  if (error) return { error: "Não foi possível fechar a fatura." };
+  revalidatePath("/invoices");
+  return { success: true };
+}
+
+export async function reopenInvoice(
+  cardId: string,
+  month: string,
+): Promise<PurchaseActionState> {
+  const id = z.string().uuid().safeParse(cardId);
+  if (!id.success || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))
+    return { error: "Fatura inválida." };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims.sub;
+  if (typeof userId !== "string")
+    return { error: "Sua sessão expirou. Entre novamente." };
+  const { data, error } = await supabase
+    .from("credit_card_invoice_closures")
+    .delete()
+    .eq("card_id", id.data)
+    .eq("user_id", userId)
+    .eq("invoice_month", `${month}-01`)
+    .select("card_id")
+    .maybeSingle();
+  if (error || !data) return { error: "Não foi possível reabrir a fatura." };
   revalidatePath("/invoices");
   return { success: true };
 }

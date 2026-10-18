@@ -1,6 +1,7 @@
 type IconName =
   | "calendar"
   | "calculator"
+  | "check"
   | "creditCard"
   | "chevronDown"
   | "chevronUp"
@@ -40,6 +41,7 @@ export function Icon({ name, className = "size-5" }: IconProps) {
         />
       </>
     ),
+    check: <path d="m5 12 4.5 4.5L19 7" strokeWidth="2.4" />,
     creditCard: (
       <>
         <rect height="15" rx="2" width="20" x="2" y="4.5" />
