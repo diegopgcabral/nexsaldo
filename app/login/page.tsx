@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { GoogleSignInButton } from "@/app/login/google-sign-in-button";
 
@@ -19,21 +20,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
       <header className="relative z-10 border-b border-white/5 bg-[#080b10]/70 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-          <Link className="group flex items-center gap-3" href="/">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-emerald-300 p-px shadow-lg shadow-emerald-400/20 transition group-hover:scale-105">
-              <span className="flex size-full items-center justify-center rounded-[11px] bg-[#080b10]">
-                <svg
-                  aria-hidden="true"
-                  className="size-5 text-emerald-400"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2Z" />
-                </svg>
-              </span>
-            </span>
-            <span className="text-2xl font-bold tracking-tight text-white">
-              NexSaldo<span className="text-emerald-400">.</span>
+          <Link className="group flex" href="/">
+            <span className="relative h-11 w-44 overflow-hidden transition group-hover:scale-[1.02]" aria-label="NexSaldo">
+              <Image
+                alt="NexSaldo"
+                className="object-cover scale-[1.6]"
+                fill
+                priority
+                sizes="176px"
+                src="/brand/nexsaldo-logo.png"
+              />
             </span>
           </Link>
         </div>

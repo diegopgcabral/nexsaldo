@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -47,21 +48,18 @@ export function FinancialShell({
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col justify-between border-r border-white/5 bg-[#0b0e13]/90 p-4 backdrop-blur-xl md:flex">
           <div>
             <Link
-              className="flex items-center gap-3 px-1 py-1"
+              className="flex px-1 py-1"
               href={`/dashboard${suffix}`}
             >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-[#272a30] text-emerald-400 shadow-[0_0_16px_rgba(0,229,153,0.15)]">
-                <svg
-                  aria-hidden="true"
-                  className="size-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2Z" />
-                </svg>
-              </span>
-              <span className="text-xl font-bold tracking-tight text-white">
-                NexSaldo<span className="text-emerald-400">.</span>
+              <span className="relative h-10 w-40 overflow-hidden" aria-label="NexSaldo">
+                <Image
+                  alt="NexSaldo"
+                  className="object-cover scale-[1.6]"
+                  fill
+                  priority
+                  sizes="160px"
+                  src="/brand/nexsaldo-logo.png"
+                />
               </span>
             </Link>
             <nav aria-label="Navegação principal" className="mt-8 space-y-1">
@@ -89,7 +87,8 @@ export function FinancialShell({
                   pathname.startsWith("/cards") ||
                   pathname.startsWith("/participants") ||
                   pathname.startsWith("/invoices") ||
-                  pathname.startsWith("/reconciliation")
+                  pathname.startsWith("/reconciliation") ||
+                  pathname.startsWith("/account-division")
                 }
               >
                 <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-100 [&::-webkit-details-marker]:hidden">
@@ -131,11 +130,22 @@ export function FinancialShell({
                     Faturas
                   </Link>
                   <Link
-                    aria-current={pathname === "/reconciliation" ? "page" : undefined}
+                    aria-current={
+                      pathname === "/reconciliation" ? "page" : undefined
+                    }
                     className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname === "/reconciliation" ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
                     href="/reconciliation"
                   >
                     Conciliação
+                  </Link>
+                  <Link
+                    aria-current={
+                      pathname === "/account-division" ? "page" : undefined
+                    }
+                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname === "/account-division" ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                    href="/account-division"
+                  >
+                    Divisão de contas
                   </Link>
                 </div>
               </details>
@@ -214,7 +224,8 @@ export function FinancialShell({
               (item.href === "/cards" &&
                 (pathname === "/participants" ||
                   pathname.startsWith("/invoices") ||
-                  pathname.startsWith("/reconciliation")));
+                  pathname.startsWith("/reconciliation") ||
+                  pathname.startsWith("/account-division")));
 
             return (
               <Link

@@ -233,7 +233,7 @@ export default async function DashboardPage({
               ? "Receitas menos despesas pagas"
               : "Atenção ao fluxo de caixa"
           }
-          tone="text-emerald-300"
+          tone={balanceCents < 0n ? "text-red-300" : "text-emerald-300"}
           value={formatCents(balanceCents)}
         />
       </div>
@@ -401,7 +401,7 @@ function MetricCard({
 }) {
   return (
     <div
-      className={`rounded-2xl p-5 shadow-xl shadow-black/15 ${featured ? "bg-gradient-to-br from-[#1d2825] to-[#191c21] ring-1 ring-emerald-400/15" : "bg-[#191c21]"}`}
+      className={`rounded-2xl p-5 shadow-xl shadow-black/15 ${featured ? tone === "text-red-300" ? "bg-gradient-to-br from-[#311d22] to-[#191c21] ring-1 ring-red-400/15" : "bg-gradient-to-br from-[#1d2825] to-[#191c21] ring-1 ring-emerald-400/15" : "bg-[#191c21]"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
