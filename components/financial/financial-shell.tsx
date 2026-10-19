@@ -88,7 +88,8 @@ export function FinancialShell({
                 open={
                   pathname.startsWith("/cards") ||
                   pathname.startsWith("/participants") ||
-                  pathname.startsWith("/invoices")
+                  pathname.startsWith("/invoices") ||
+                  pathname.startsWith("/reconciliation")
                 }
               >
                 <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-100 [&::-webkit-details-marker]:hidden">
@@ -128,6 +129,13 @@ export function FinancialShell({
                     href="/invoices"
                   >
                     Faturas
+                  </Link>
+                  <Link
+                    aria-current={pathname === "/reconciliation" ? "page" : undefined}
+                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname === "/reconciliation" ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                    href="/reconciliation"
+                  >
+                    Conciliação
                   </Link>
                 </div>
               </details>
@@ -205,7 +213,8 @@ export function FinancialShell({
               pathname === item.href ||
               (item.href === "/cards" &&
                 (pathname === "/participants" ||
-                  pathname.startsWith("/invoices")));
+                  pathname.startsWith("/invoices") ||
+                  pathname.startsWith("/reconciliation")));
 
             return (
               <Link

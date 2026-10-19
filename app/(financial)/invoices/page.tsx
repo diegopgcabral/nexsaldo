@@ -27,10 +27,17 @@ export default async function InvoicesPage({
   let participants: ParticipantListItem[] = [];
   let purchases: PurchaseListItem[] = [];
   let ownerName = "Você";
+  let closedCardIds: string[] = [];
   let loadError = false;
 
   if (typeof userId === "string") {
-    const [cardResult, participantResult, profileResult, purchaseResult] =
+    const [
+      cardResult,
+      participantResult,
+      profileResult,
+      purchaseResult,
+      closureResult,
+    ] =
       await Promise.all([
         supabase
           .from("credit_cards")
@@ -51,8 +58,13 @@ export default async function InvoicesPage({
         supabase
           .from("credit_card_purchases")
           .select(
-            "id, card_id, description, amount, purchased_on, invoice_month",
+            "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count",
           )
+          .eq("user_id", userId)
+          .eq("invoice_month", `${month}-01`),
+        supabase
+          .from("credit_card_invoice_closures")
+          .select("card_id")
           .eq("user_id", userId)
           .eq("invoice_month", `${month}-01`),
       ]);
@@ -60,7 +72,8 @@ export default async function InvoicesPage({
       cardResult.error ||
       participantResult.error ||
       profileResult.error ||
-      purchaseResult.error,
+      purchaseResult.error ||
+      closureResult.error,
     );
     cards = (cardResult.data ?? []).map((card) => ({
       id: card.id,
@@ -77,6 +90,9 @@ export default async function InvoicesPage({
       profileResult.data?.credit_card_owner_name ||
       profileResult.data?.display_name ||
       "Você";
+    closedCardIds = (closureResult.data ?? []).map(
+      (closure) => closure.card_id,
+    );
     const purchaseRows = purchaseResult.data ?? [];
     const splitsByPurchase = new Map<string, PurchaseSplit[]>();
     if (purchaseRows.length) {
@@ -107,6 +123,8 @@ export default async function InvoicesPage({
       amount: String(purchase.amount),
       purchasedOn: purchase.purchased_on,
       invoiceMonth: purchase.invoice_month.slice(0, 7),
+      installmentNumber: purchase.installment_number,
+      installmentCount: purchase.installment_count,
       splits: splitsByPurchase.get(purchase.id) ?? [],
     }));
   }
@@ -119,6 +137,7 @@ export default async function InvoicesPage({
       ownerName={ownerName}
       month={month}
       loadError={loadError}
+      closedCardIds={closedCardIds}
     />
   );
 }

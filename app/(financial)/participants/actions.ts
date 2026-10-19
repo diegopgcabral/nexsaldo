@@ -22,7 +22,10 @@ export async function saveParticipant(
   _previous: ParticipantActionState,
   formData: FormData,
 ): Promise<ParticipantActionState> {
-  const parsed = parseParticipantInput({ name: formData.get("name") });
+  const parsed = parseParticipantInput({
+    name: formData.get("name"),
+    phone: formData.get("phone"),
+  });
   if ("error" in parsed) return { error: parsed.error };
 
   const rawId = formData.get("id");
@@ -36,7 +39,7 @@ export async function saveParticipant(
   if (id?.success) {
     const { data, error } = await auth.supabase
       .from("credit_card_participants")
-      .update({ name: parsed.data!.name })
+      .update({ name: parsed.data!.name, phone: parsed.data!.phone })
       .eq("id", id.data)
       .eq("user_id", auth.userId)
       .select("id")
@@ -51,6 +54,7 @@ export async function saveParticipant(
       .insert({
         user_id: auth.userId,
         name: parsed.data!.name,
+        phone: parsed.data!.phone,
       });
     if (error?.code === "23505")
       return { error: "Já existe um participante com esse nome." };

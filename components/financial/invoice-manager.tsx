@@ -11,7 +11,10 @@ import {
 } from "react";
 
 import {
+  closeInvoice,
   deletePurchase,
+  movePurchaseToNextInvoice,
+  reopenInvoice,
   savePurchase,
   setSplitPayment,
   type PurchaseActionState,
@@ -79,6 +82,12 @@ function PurchaseForm({
   const [invoiceMonth, setInvoiceMonth] = useState(
     purchase?.invoiceMonth ?? month,
   );
+  const [installmentCount, setInstallmentCount] = useState(
+    purchase?.installmentCount ?? 1,
+  );
+  const [installmentNumber, setInstallmentNumber] = useState(
+    purchase?.installmentNumber ?? 1,
+  );
   const [splits, setSplits] = useState<PurchaseSplit[]>(
     purchase?.splits.length
       ? purchase.splits.map((split) => ({
@@ -131,6 +140,8 @@ function PurchaseForm({
     amount,
     purchasedOn,
     invoiceMonth,
+    installmentNumber,
+    installmentCount,
     splits,
   });
 
@@ -152,6 +163,65 @@ function PurchaseForm({
             value={description}
           />
         </label>
+        <label className="space-y-2">
+          <span className="block text-sm text-slate-200">Parcela atual</span>
+          {purchase ? (
+            <div className="rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-slate-300">
+              Parcela {purchase.installmentNumber}/{purchase.installmentCount}
+            </div>
+          ) : (
+            <input
+              className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
+              max={installmentCount}
+              min={1}
+              onChange={(event) =>
+                setInstallmentNumber(
+                  Math.min(
+                    installmentCount,
+                    Math.max(1, Number(event.target.value) || 1),
+                  ),
+                )
+              }
+              type="number"
+              value={installmentNumber}
+            />
+          )}
+        </label>
+        <label className="space-y-2">
+          <span className="block text-sm text-slate-200">
+            Total de parcelas
+          </span>
+          {purchase ? (
+            <div className="rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-slate-300">
+              {purchase.installmentCount} parcelas
+            </div>
+          ) : (
+            <input
+              className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
+              max={120}
+              min={1}
+              onChange={(event) => {
+                const nextCount = Math.min(
+                  120,
+                  Math.max(1, Number(event.target.value) || 1),
+                );
+                setInstallmentCount(nextCount);
+                setInstallmentNumber((current) => Math.min(current, nextCount));
+              }}
+              type="number"
+              value={installmentCount}
+            />
+          )}
+        </label>
+        <p className="-mt-2 text-xs text-slate-500 sm:col-span-2">
+          <span className="block text-xs text-slate-500">
+            {purchase
+              ? "Esta parcela pode ser ajustada sem modificar as demais."
+              : installmentCount === 1
+                ? "Compra à vista."
+                : `Serão criadas as parcelas ${installmentNumber}/${installmentCount} até ${installmentCount}/${installmentCount}, com o mesmo rateio.`}
+          </span>
+        </p>
         <label className="space-y-2">
           <span className="block text-sm text-slate-200">Valor total (R$)</span>
           <span className="relative block">
@@ -339,6 +409,7 @@ export function InvoiceManager({
   purchases,
   loadError,
   categories,
+  isClosed,
 }: {
   cards: CreditCardListItem[];
   selectedCardId: string;
@@ -348,12 +419,15 @@ export function InvoiceManager({
   purchases: PurchaseListItem[];
   loadError: boolean;
   categories: { name: string; iconKey: string | null }[];
+  isClosed: boolean;
 }) {
   const router = useRouter();
   const { notify } = useToast();
   const [editing, setEditing] = useState<PurchaseListItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirming, setConfirming] = useState<PurchaseListItem | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [settling, setSettling] = useState<PurchaseSplit | null>(null);
   const [includeExpense, setIncludeExpense] = useState(false);
   const [expenseCategory, setExpenseCategory] = useState("");
@@ -388,6 +462,43 @@ export function InvoiceManager({
         router.refresh();
       }
       setConfirming(null);
+    });
+  }
+
+  function movePurchase(purchase: PurchaseListItem) {
+    startTransition(async () => {
+      const result = await movePurchaseToNextInvoice(purchase.id);
+      if (result.error) notify("error", result.error);
+      else {
+        notify("success", "Compra movida para a próxima fatura.");
+        router.refresh();
+      }
+    });
+  }
+
+  function confirmCloseInvoice() {
+    if (!selectedCard) return;
+    startTransition(async () => {
+      const result = await closeInvoice(selectedCard.id, month);
+      if (result.error) notify("error", result.error);
+      else {
+        notify("success", "Fatura fechada. Novas compras estão bloqueadas.");
+        router.refresh();
+      }
+      setClosing(false);
+    });
+  }
+
+  function confirmReopenInvoice() {
+    if (!selectedCard) return;
+    startTransition(async () => {
+      const result = await reopenInvoice(selectedCard.id, month);
+      if (result.error) notify("error", result.error);
+      else {
+        notify("success", "Fatura reaberta. As compras podem ser alteradas.");
+        router.refresh();
+      }
+      setReopening(false);
     });
   }
 
@@ -430,16 +541,42 @@ export function InvoiceManager({
           </p>
         </div>
         {selectedCard ? (
-          <button
-            className="rounded-xl bg-[#00e599] px-5 py-3 text-sm font-semibold text-[#003822]"
-            onClick={() => {
-              setEditing(null);
-              setModalOpen(true);
-            }}
-            type="button"
-          >
-            + Adicionar compra
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {isClosed ? (
+              <>
+                <span className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-300">
+                  Fatura fechada
+                </span>
+                <button
+                  className="rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/15"
+                  onClick={() => setReopening(true)}
+                  type="button"
+                >
+                  Reabrir fatura
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/15"
+                  onClick={() => setClosing(true)}
+                  type="button"
+                >
+                  Fechar fatura
+                </button>
+                <button
+                  className="rounded-xl bg-[#00e599] px-5 py-3 text-sm font-semibold text-[#003822]"
+                  onClick={() => {
+                    setEditing(null);
+                    setModalOpen(true);
+                  }}
+                  type="button"
+                >
+                  + Adicionar compra
+                </button>
+              </>
+            )}
+          </div>
         ) : null}
       </header>
       <div className="flex flex-wrap gap-2 text-sm">
@@ -591,7 +728,15 @@ export function InvoiceManager({
           </div>
           <section className="rounded-2xl border border-white/5 bg-[#1d2026] p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-semibold text-white">Compras da fatura</h2>
+              <div>
+                <h2 className="font-semibold text-white">Compras da fatura</h2>
+                {isClosed ? (
+                  <p className="mt-1 text-xs text-slate-400">
+                    Esta fatura está fechada. Os pagamentos podem continuar
+                    sendo registrados.
+                  </p>
+                ) : null}
+              </div>
               <span className="text-xs text-slate-400">
                 {purchases.length} lançamentos
               </span>
@@ -607,6 +752,12 @@ export function InvoiceManager({
                       <div>
                         <p className="font-medium text-white">
                           {purchase.description}
+                          {purchase.installmentCount > 1 ? (
+                            <span className="ml-2 rounded-full bg-violet-400/10 px-2 py-0.5 text-xs font-semibold text-violet-200">
+                              {purchase.installmentNumber}/
+                              {purchase.installmentCount}
+                            </span>
+                          ) : null}
                         </p>
                         <p className="mt-1 text-xs text-slate-400">
                           {formatDate(purchase.purchasedOn)} ·{" "}
@@ -618,41 +769,60 @@ export function InvoiceManager({
                         <strong className="mr-2 text-white">
                           {formatCents(centsOrZero(purchase.amount))}
                         </strong>
-                        <button
-                          aria-label={`Editar ${purchase.description}`}
-                          className="rounded-lg p-2 text-slate-300 hover:bg-white/10"
-                          onClick={() => {
-                            setEditing(purchase);
-                            setModalOpen(true);
-                          }}
-                          type="button"
-                        >
-                          <Icon className="size-4" name="edit" />
-                        </button>
-                        <button
-                          aria-label={`Excluir ${purchase.description}`}
-                          className="rounded-lg p-2 text-red-300 hover:bg-red-400/10"
-                          onClick={() => setConfirming(purchase)}
-                          type="button"
-                        >
-                          <Icon className="size-4" name="trash" />
-                        </button>
+                        {!isClosed ? (
+                          <>
+                            <button
+                              aria-label={`Mover ${purchase.description} para a próxima fatura`}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-400/10 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:bg-sky-400/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-200"
+                              onClick={() => movePurchase(purchase)}
+                              type="button"
+                            >
+                              <span>Mover para mês seguinte</span>
+                              <Icon className="size-3.5" name="chevronRight" />
+                            </button>
+                            <button
+                              aria-label={`Editar ${purchase.description}`}
+                              className="rounded-lg p-2 text-slate-300 hover:bg-white/10"
+                              onClick={() => {
+                                setEditing(purchase);
+                                setModalOpen(true);
+                              }}
+                              type="button"
+                            >
+                              <Icon className="size-4" name="edit" />
+                            </button>
+                            <button
+                              aria-label={`Excluir ${purchase.description}`}
+                              className="rounded-lg p-2 text-red-300 hover:bg-red-400/10"
+                              onClick={() => setConfirming(purchase)}
+                              type="button"
+                            >
+                              <Icon className="size-4" name="trash" />
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       {purchase.splits.map((split) => (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 text-xs text-slate-300"
+                        <div
+                          className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-2"
                           key={split.id ?? split.participantId ?? "owner"}
                         >
-                          {split.participantId === null
-                            ? ownerName
-                            : (people.get(split.participantId) ??
-                              "Participante arquivado")}
-                          : {formatCents(centsOrZero(split.amount))}
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium text-slate-200">
+                              {split.participantId === null
+                                ? ownerName
+                                : (people.get(split.participantId) ??
+                                  "Participante arquivado")}
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-400">
+                              {formatCents(centsOrZero(split.amount))}
+                            </p>
+                          </div>
                           <button
                             aria-label={`${split.paidAt ? "Desfazer pagamento de" : "Marcar como paga"} ${split.participantId === null ? ownerName : (people.get(split.participantId) ?? "participante")}`}
-                            className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${split.paidAt ? "bg-emerald-400/15 text-emerald-300 hover:bg-red-400/15 hover:text-red-200" : "bg-amber-400/10 text-amber-200 hover:bg-emerald-400/15 hover:text-emerald-300"}`}
+                            className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${split.paidAt ? "bg-emerald-400/15 text-emerald-300 hover:bg-red-400/15 hover:text-red-200" : "bg-amber-400/10 text-amber-100 hover:bg-emerald-400/15 hover:text-emerald-300"}`}
                             onClick={() => {
                               if (split.participantId === null) {
                                 setSettling(split);
@@ -662,9 +832,13 @@ export function InvoiceManager({
                             }}
                             type="button"
                           >
-                            {split.paidAt ? "Pago" : "Marcar pago"}
+                            <Icon
+                              className="size-3.5"
+                              name={split.paidAt ? "check" : "wallet"}
+                            />
+                            {split.paidAt ? "Pago" : "Marcar como pago"}
                           </button>
-                        </span>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -675,16 +849,18 @@ export function InvoiceManager({
                 <p className="text-sm text-slate-400">
                   Nenhuma compra nesta fatura.
                 </p>
-                <button
-                  className="mt-4 rounded-xl bg-white/10 px-4 py-2.5 text-sm text-white"
-                  onClick={() => {
-                    setEditing(null);
-                    setModalOpen(true);
-                  }}
-                  type="button"
-                >
-                  Adicionar primeira compra
-                </button>
+                {!isClosed ? (
+                  <button
+                    className="mt-4 rounded-xl bg-white/10 px-4 py-2.5 text-sm text-white"
+                    onClick={() => {
+                      setEditing(null);
+                      setModalOpen(true);
+                    }}
+                    type="button"
+                  >
+                    Adicionar primeira compra
+                  </button>
+                ) : null}
               </div>
             )}
           </section>
@@ -849,6 +1025,85 @@ export function InvoiceManager({
                   : settling.paidAt
                     ? "Marcar em aberto"
                     : "Confirmar pagamento"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {closing ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div
+            aria-labelledby="close-invoice-title"
+            aria-modal="true"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1d2026] p-6"
+            role="dialog"
+          >
+            <h2
+              className="text-xl font-semibold text-white"
+              id="close-invoice-title"
+            >
+              Fechar fatura?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Não será possível adicionar, editar, excluir ou mover compras
+              desta fatura. Os pagamentos dos participantes continuam
+              disponíveis.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                className="rounded-xl bg-white/10 px-4 py-2.5 text-sm text-white"
+                disabled={busy}
+                onClick={() => setClosing(false)}
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button
+                className="rounded-xl bg-[#00e599] px-4 py-2.5 text-sm font-semibold text-[#003822] disabled:opacity-50"
+                disabled={busy}
+                onClick={confirmCloseInvoice}
+                type="button"
+              >
+                {busy ? "Fechando…" : "Fechar fatura"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {reopening ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div
+            aria-labelledby="reopen-invoice-title"
+            aria-modal="true"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1d2026] p-6"
+            role="dialog"
+          >
+            <h2
+              className="text-xl font-semibold text-white"
+              id="reopen-invoice-title"
+            >
+              Reabrir fatura?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              As compras desta fatura poderão ser adicionadas, editadas,
+              excluídas ou movidas novamente.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                className="rounded-xl bg-white/10 px-4 py-2.5 text-sm text-white"
+                disabled={busy}
+                onClick={() => setReopening(false)}
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button
+                className="rounded-xl bg-[#00e599] px-4 py-2.5 text-sm font-semibold text-[#003822] disabled:opacity-50"
+                disabled={busy}
+                onClick={confirmReopenInvoice}
+                type="button"
+              >
+                {busy ? "Reabrindo…" : "Reabrir fatura"}
               </button>
             </div>
           </div>

@@ -55,6 +55,11 @@ const categoryRules: Array<[string[], ExpenseCategoryIconKey, string]> = [
     "subscription",
     "text-pink-300 bg-pink-400/10 border-pink-400/20",
   ],
+  [
+    ["servico"],
+    "services",
+    "text-teal-300 bg-teal-400/10 border-teal-400/20",
+  ],
   [["cartao"], "card", "text-purple-300 bg-purple-400/10 border-purple-400/20"],
   [
     ["combustivel", "transporte", "uber"],
@@ -93,6 +98,7 @@ const iconColors: Record<ExpenseCategoryIconKey, string> = {
   medicine: "text-sky-300 bg-sky-400/10 border-sky-400/20",
   education: "text-emerald-300 bg-emerald-400/10 border-emerald-400/20",
   subscription: "text-pink-300 bg-pink-400/10 border-pink-400/20",
+  services: "text-teal-300 bg-teal-400/10 border-teal-400/20",
   water: "text-sky-300 bg-sky-400/10 border-sky-400/20",
   energy: "text-amber-300 bg-amber-400/10 border-amber-400/20",
   phone: "text-cyan-300 bg-cyan-400/10 border-cyan-400/20",
@@ -196,6 +202,10 @@ function CategoryIconPath({ icon }: { icon: ExpenseCategoryIconKey }) {
       );
     case "subscription":
       return <path d="M4 6h16v12H4V6Zm0 3h16m-9 4h2" />;
+    case "services":
+      return (
+        <path d="M14.7 6.3a4.5 4.5 0 0 0-6 6L3.5 17.5a2.1 2.1 0 0 0 3 3l5.2-5.2a4.5 4.5 0 0 0 6-6l-2.8 2.8-3.4-1.1-1.1-3.4 2.8-2.8a4.5 4.5 0 0 0 1.5 1.5Z" />
+      );
     case "water":
       return <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />;
     case "energy":
@@ -245,6 +255,8 @@ function CategoryIconPath({ icon }: { icon: ExpenseCategoryIconKey }) {
     case "bill":
       return <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6M9 12h6M9 16h3" />;
     default:
-      return <path d="M6 12h.01M12 12h.01M18 12h.01" />;
+      return (
+        <path d="M7 3h5v5H7V3Zm5 5h5v5h-5V8Zm-5 5h5v5H7v-5Zm5 5h5v3h-5v-3Z" />
+      );
   }
 }

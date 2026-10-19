@@ -21,6 +21,8 @@ function purchase(
     amount,
     purchasedOn: "2026-10-14",
     invoiceMonth: "2026-10",
+    installmentNumber: 1,
+    installmentCount: 1,
     splits,
   };
 }
@@ -79,6 +81,27 @@ test("requires a valid invoice month", () => {
   );
 });
 
+test("requires between one and 120 installments", () => {
+  assert.ok(
+    "error" in
+      parsePurchaseInput({
+        ...purchase([{ participantId: null, amount: "300,00" }]),
+        installmentCount: 121,
+      }),
+  );
+});
+
+test("rejects a current installment after the total", () => {
+  assert.match(
+    parsePurchaseInput({
+      ...purchase([{ participantId: null, amount: "300,00" }]),
+      installmentNumber: 5,
+      installmentCount: 4,
+    }).error ?? "",
+    /parcela atual/i,
+  );
+});
+
 test("summarizes each participant by card and for the month", () => {
   const first = {
     id: owner,
@@ -87,6 +110,8 @@ test("summarizes each participant by card and for the month", () => {
     amount: "300.00",
     purchasedOn: "2026-10-14",
     invoiceMonth: "2026-10",
+    installmentNumber: 1,
+    installmentCount: 1,
     splits: [
       { participantId: null, amount: "160.00" },
       {

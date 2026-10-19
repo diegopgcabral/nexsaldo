@@ -58,6 +58,7 @@ async function session() {
 
 function refresh(month: string) {
   revalidatePath("/expenses");
+  revalidatePath("/dashboard");
   if (isMonthReference(month)) revalidatePath(`/expenses?month=${month}`);
 }
 

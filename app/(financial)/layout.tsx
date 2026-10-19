@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { FinancialShell } from "@/components/financial/financial-shell";
 import { createClient } from "@/lib/supabase/server";
@@ -41,12 +41,14 @@ export default async function FinancialLayout({
   }
 
   return (
-    <FinancialShell
-      cycleStartDay={cycleStartDay}
-      displayName={displayName}
-      email={email}
-    >
-      {children}
-    </FinancialShell>
+    <Suspense fallback={<div className="min-h-screen bg-[#111319]" />}>
+      <FinancialShell
+        cycleStartDay={cycleStartDay}
+        displayName={displayName}
+        email={email}
+      >
+        {children}
+      </FinancialShell>
+    </Suspense>
   );
 }

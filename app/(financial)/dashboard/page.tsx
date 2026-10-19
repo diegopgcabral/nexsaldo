@@ -35,6 +35,16 @@ function formatDate(date: string) {
     .replace(".", "");
 }
 
+function buildChartPoints(movementsByDate: Map<string, bigint>) {
+  let runningBalance = 0n;
+  return Array.from(movementsByDate.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, movement]) => {
+      runningBalance += movement;
+      return { date, value: runningBalance };
+    });
+}
+
 export default async function DashboardPage({
   searchParams,
 }: DashboardPageProps) {
@@ -139,31 +149,23 @@ export default async function DashboardPage({
     (expense) => expense.status === "PENDING",
   ).length;
 
-  const eventDates = [
-    ...new Set([
-      ...incomes.map((item) => item.receivedOn),
-      ...expenses
-        .map((item) => item.paidAt)
-        .filter((date): date is string => Boolean(date)),
-    ]),
-  ].sort();
-  const chartPoints = eventDates.reduce<Array<{ date: string; value: bigint }>>(
-    (points, date) => {
-      const previousBalance = points.at(-1)?.value ?? 0n;
-      const incomeForDate = calculateIncomeTotal(
-        incomes.filter((income) => income.receivedOn === date),
-      );
-      const paidForDate = calculateExpenseTotals(
-        expenses.filter((expense) => expense.paidAt === date),
-      ).paidCents;
-
-      return [
-        ...points,
-        { date, value: previousBalance + incomeForDate - paidForDate },
-      ];
-    },
-    [],
-  );
+  const movementsByDate = new Map<string, bigint>();
+  for (const income of incomes) {
+    movementsByDate.set(
+      income.receivedOn,
+      (movementsByDate.get(income.receivedOn) ?? 0n) +
+        numericAmountToCents(income.amount),
+    );
+  }
+  for (const expense of expenses) {
+    if (!expense.paidAt) continue;
+    movementsByDate.set(
+      expense.paidAt,
+      (movementsByDate.get(expense.paidAt) ?? 0n) -
+        numericAmountToCents(expense.paidAmount),
+    );
+  }
+  const chartPoints = buildChartPoints(movementsByDate);
   const hasData = incomes.length > 0 || expenses.length > 0;
 
   return (
