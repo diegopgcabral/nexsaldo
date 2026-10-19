@@ -15,6 +15,8 @@ type IconName =
   | "plus"
   | "trash"
   | "wallet"
+  | "briefcase"
+  | "shield"
   | "close"
   | "category"
   | "more"
@@ -73,6 +75,13 @@ export function Icon({ name, className = "size-5" }: IconProps) {
         <path d="M4 8h16M15 14h2" />
       </>
     ),
+    briefcase: (
+      <>
+        <rect height="12" rx="2" width="18" x="3" y="8" />
+        <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18M10 13v2h4v-2" />
+      </>
+    ),
+    shield: <path d="M12 3 19 6v5c0 4.5-2.8 8-7 10-4.2-2-7-5.5-7-10V6l7-3Z M9.5 12l1.7 1.7 3.5-3.5" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
     category: (
       <>

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { incomeCategories } from "@/lib/financial/income-category";
+
 export const expenseStatuses = ["PENDING", "PAID", "CANCELLED"] as const;
 
 export const expenseStatusSchema = z.enum(expenseStatuses);
@@ -19,13 +21,16 @@ const positiveAmountSchema = decimalAmountSchema.refine(
 const dateSchema = z.iso.date();
 const descriptionSchema = z.string().trim().min(1).max(200);
 const categorySchema = z.string().trim().min(1).max(100);
+const incomeCategorySchema = z.enum(incomeCategories, {
+  error: "Selecione uma categoria de receita válida.",
+});
 const notesSchema = z.string().trim().max(2_000).optional();
 
 export const createIncomeSchema = z.object({
   description: descriptionSchema,
   amount: positiveAmountSchema,
   receivedOn: dateSchema,
-  category: categorySchema,
+  category: incomeCategorySchema,
   notes: notesSchema,
 });
 

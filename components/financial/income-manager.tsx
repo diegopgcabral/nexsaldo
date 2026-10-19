@@ -9,6 +9,7 @@ import {
   type IncomeActionState,
   updateIncome,
 } from "@/app/(financial)/income/actions";
+import { DarkSelect } from "@/components/financial/dark-select";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
 import {
@@ -16,6 +17,10 @@ import {
   formatCents,
   numericAmountToCents,
 } from "@/lib/financial/income";
+import {
+  incomeCategories,
+  isIncomeCategory,
+} from "@/lib/financial/income-category";
 
 type IncomeManagerProps = {
   incomes: IncomeListItem[];
@@ -23,13 +28,27 @@ type IncomeManagerProps = {
   totalCents: bigint;
 };
 const initialState: IncomeActionState = {};
-const categories = [
-  "Salário",
-  "Freelance",
-  "Reembolso",
-  "Rendimentos",
-  "Outros",
-];
+const incomeCategoryOptions = incomeCategories.map((category) => ({
+  value: category,
+  label: category,
+}));
+
+function incomeCategoryIcon(category: string) {
+  switch (category) {
+    case "Salário":
+      return "wallet" as const;
+    case "Freelance":
+      return "briefcase" as const;
+    case "Reembolso":
+      return "receipt" as const;
+    case "Rendimentos":
+      return "income" as const;
+    case "Reserva de emergência":
+      return "shield" as const;
+    default:
+      return "more" as const;
+  }
+}
 
 function formatIncomeDate(date: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(
@@ -86,6 +105,9 @@ function IncomeForm({
 }) {
   const action = income ? updateIncome : createIncome;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [category, setCategory] = useState(() =>
+    income && isIncomeCategory(income.category) ? income.category : "Salário",
+  );
   const router = useRouter();
   const { notify } = useToast();
 
@@ -146,23 +168,21 @@ function IncomeForm({
           </span>
         </label>
       </div>
-      <label className="space-y-1.5">
-        <span className="income-label">Categoria</span>
-        <input
-          className="income-input"
-          defaultValue={income?.category}
-          list="income-categories"
-          maxLength={100}
+      <div className="space-y-1.5">
+        <span className="income-label" id="income-category-label">Categoria</span>
+        <DarkSelect
+          ariaLabelledBy="income-category-label"
           name="category"
-          placeholder="Ex.: Salário"
-          required
+          onChange={(value) => {
+            if (isIncomeCategory(value)) setCategory(value);
+          }}
+          options={incomeCategoryOptions}
+          placeholder="Selecione uma categoria"
+          renderOptionPrefix={(option) => <Icon className="size-4 shrink-0 text-emerald-300" name={incomeCategoryIcon(option.value)} />}
+          value={category}
         />
-        <datalist id="income-categories">
-          {categories.map((category) => (
-            <option key={category} value={category} />
-          ))}
-        </datalist>
-      </label>
+        <span className="block text-xs text-slate-500">Categorias fixas para receitas</span>
+      </div>
       <label className="space-y-1.5">
         <span className="income-label">
           Observações{" "}
@@ -324,14 +344,15 @@ export function IncomeManager({
                 >
                   <div className="flex min-w-0 items-center gap-4">
                     <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#272a30] text-emerald-300 transition group-hover:bg-emerald-400/10">
-                      <Icon className="size-6" name="income" />
+                      <Icon className="size-6" name={incomeCategoryIcon(income.category)} />
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-white">
                         {income.description}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
-                        <span className="rounded-md bg-emerald-400/10 px-2 py-0.5 font-medium text-emerald-300">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-400/10 px-2 py-0.5 font-medium text-emerald-300">
+                          <Icon className="size-3" name={incomeCategoryIcon(income.category)} />
                           {income.category}
                         </span>
                         <span>{formatIncomeDate(income.receivedOn)}</span>

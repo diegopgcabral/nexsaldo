@@ -30,6 +30,17 @@ test("rejects an income with a zero amount", () => {
   assert.equal(result.success, false);
 });
 
+test("rejects an expense category when registering income", () => {
+  const result = createIncomeSchema.safeParse({
+    description: "Pagamento recebido",
+    amount: "200.00",
+    receivedOn: "2026-10-05",
+    category: "Moradia",
+  });
+
+  assert.equal(result.success, false);
+});
+
 test("normalizes Brazilian currency input before validating it", () => {
   assert.equal(normalizeCurrencyInput("50.000,25"), "50000.25");
   assert.equal(normalizeCurrencyInput("50000.25"), "50000.25");
