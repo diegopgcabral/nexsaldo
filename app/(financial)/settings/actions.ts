@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { expenseCategoryIconKeys } from "@/lib/financial/category";
+import {
+  navigationModuleKeys,
+  type NavigationModules,
+} from "@/lib/financial/navigation-modules";
 import { createClient } from "@/lib/supabase/server";
 
 export type SettingsActionState = { error?: string; success?: boolean };
@@ -22,6 +26,26 @@ async function getAuthenticatedUser() {
 function revalidateCategoryPages() {
   revalidatePath("/settings");
   revalidatePath("/expenses");
+}
+
+export async function saveNavigationModules(
+  _previous: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const modules = navigationModuleKeys.reduce<NavigationModules>(
+    (result, key) => ({ ...result, [key]: formData.get(key) === "on" }),
+    {} as NavigationModules,
+  );
+  const auth = await getAuthenticatedUser();
+  if ("error" in auth) return auth;
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update({ navigation_modules: modules })
+    .eq("id", auth.userId);
+  if (error) return { error: "Não foi possível salvar os menus." };
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+  return { success: true };
 }
 
 export async function saveFinancialCycle(

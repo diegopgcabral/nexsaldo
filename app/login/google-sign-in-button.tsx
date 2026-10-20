@@ -35,7 +35,7 @@ export function GoogleSignInButton() {
   return (
     <div className="space-y-3">
       <button
-        className="inline-flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold text-slate-950 shadow-xl shadow-emerald-400/20 transition hover:-translate-y-0.5 hover:bg-emerald-300 hover:shadow-emerald-400/30 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-3 rounded-xl bg-white px-6 py-4 text-base font-bold text-slate-950 shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isLoading}
         onClick={signInWithGoogle}
         type="button"
