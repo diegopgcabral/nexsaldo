@@ -1,5 +1,7 @@
 import { FinancialCycleSettings } from "@/components/financial/financial-cycle-settings";
 import { ExpenseCategorySettings } from "@/components/financial/expense-category-settings";
+import { NavigationModuleSettings } from "@/components/financial/navigation-module-settings";
+import { normalizeNavigationModules } from "@/lib/financial/navigation-modules";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function SettingsPage() {
@@ -10,7 +12,7 @@ export default async function SettingsPage() {
     typeof userId === "string"
       ? await supabase
           .from("profiles")
-          .select("financial_cycle_start_day")
+          .select("financial_cycle_start_day, navigation_modules")
           .eq("id", userId)
           .maybeSingle()
       : { data: null };
@@ -25,6 +27,9 @@ export default async function SettingsPage() {
       : { data: [] };
   return (
     <div className="space-y-6">
+      <NavigationModuleSettings
+        modules={normalizeNavigationModules(profile?.navigation_modules)}
+      />
       <FinancialCycleSettings
         initialDay={profile?.financial_cycle_start_day ?? 1}
       />

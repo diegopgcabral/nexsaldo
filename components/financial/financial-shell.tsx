@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -9,12 +10,14 @@ import { FloatingCalculator } from "@/components/financial/floating-calculator";
 import { Icon } from "@/components/financial/icons";
 import { MonthSelector } from "@/components/financial/month-selector";
 import { ToastProvider } from "@/components/financial/toast-provider";
+import type { NavigationModules } from "@/lib/financial/navigation-modules";
 
 type FinancialShellProps = {
   children: ReactNode;
   displayName: string;
   email?: string;
   cycleStartDay: number;
+  navigationModules: NavigationModules;
 };
 
 const navigation = [
@@ -28,6 +31,7 @@ export function FinancialShell({
   displayName,
   email,
   cycleStartDay,
+  navigationModules,
 }: FinancialShellProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -46,26 +50,23 @@ export function FinancialShell({
       <div className="min-h-screen bg-[#111319] text-[#e1e2ea]">
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col justify-between border-r border-white/5 bg-[#0b0e13]/90 p-4 backdrop-blur-xl md:flex">
           <div>
-            <Link
-              className="flex items-center gap-3 px-1 py-1"
-              href={`/dashboard${suffix}`}
-            >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-[#272a30] text-emerald-400 shadow-[0_0_16px_rgba(0,229,153,0.15)]">
-                <svg
-                  aria-hidden="true"
-                  className="size-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2Z" />
-                </svg>
-              </span>
-              <span className="text-xl font-bold tracking-tight text-white">
-                NexSaldo<span className="text-emerald-400">.</span>
+            <Link className="flex px-1 py-1" href={`/dashboard${suffix}`}>
+              <span
+                className="relative h-10 w-40 overflow-hidden"
+                aria-label="NexSaldo"
+              >
+                <Image
+                  alt="NexSaldo"
+                  className="scale-[1.6] object-cover"
+                  fill
+                  priority
+                  sizes="160px"
+                  src="/brand/nexsaldo-logo.png"
+                />
               </span>
             </Link>
             <nav aria-label="Navegação principal" className="mt-8 space-y-1">
-              {navigation.map((item) => {
+              {navigation.slice(0, 1).map((item) => {
                 const isActive = pathname === item.href;
 
                 return (
@@ -83,62 +84,101 @@ export function FinancialShell({
                   </Link>
                 );
               })}
-              <details
-                className="group"
-                open={
-                  pathname.startsWith("/cards") ||
-                  pathname.startsWith("/participants") ||
-                  pathname.startsWith("/invoices") ||
-                  pathname.startsWith("/reconciliation")
-                }
-              >
-                <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-100 [&::-webkit-details-marker]:hidden">
-                  <Icon className="size-5" name="creditCard" />
-                  <span className="flex-1">Cartões de crédito</span>
-                  <Icon
-                    className="size-4 transition group-open:rotate-180"
-                    name="chevronDown"
-                  />
-                </summary>
-                <div className="mt-1 space-y-1 pl-7">
-                  <Link
-                    aria-current={pathname === "/cards" ? "page" : undefined}
-                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${
-                      pathname === "/cards"
-                        ? "bg-emerald-400 text-[#003822]"
-                        : "text-slate-400 hover:bg-white/5 hover:text-white"
-                    }`}
-                    href="/cards"
-                  >
-                    Meus cartões
-                  </Link>
-                  <Link
-                    aria-current={
-                      pathname === "/participants" ? "page" : undefined
-                    }
-                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname === "/participants" ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
-                    href="/participants"
-                  >
-                    Participantes
-                  </Link>
-                  <Link
-                    aria-current={
-                      pathname.startsWith("/invoices") ? "page" : undefined
-                    }
-                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname.startsWith("/invoices") ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
-                    href="/invoices"
-                  >
-                    Faturas
-                  </Link>
-                  <Link
-                    aria-current={pathname === "/reconciliation" ? "page" : undefined}
-                    className={`block rounded-xl px-4 py-2.5 text-sm transition ${pathname === "/reconciliation" ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
-                    href="/reconciliation"
-                  >
-                    Conciliação
-                  </Link>
-                </div>
-              </details>
+              {navigationModules.transactions ? (
+                <details
+                  className="group"
+                  open={pathname === "/income" || pathname === "/expenses"}
+                >
+                  <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-100 [&::-webkit-details-marker]:hidden">
+                    <Icon className="size-5" name="receipt" />
+                    <span className="flex-1">Lançamentos</span>
+                    <Icon
+                      className="size-4 transition group-open:rotate-180"
+                      name="chevronDown"
+                    />
+                  </summary>
+                  <div className="mt-1 space-y-1 pl-7">
+                    <SubmenuLink
+                      active={pathname === "/income"}
+                      href="/income"
+                      icon="income"
+                      label="Receitas"
+                    />
+                    <SubmenuLink
+                      active={pathname === "/expenses"}
+                      href="/expenses"
+                      icon="expense"
+                      label="Despesas"
+                    />
+                  </div>
+                </details>
+              ) : null}
+              {navigationModules.creditCards ? (
+                <details
+                  className="group"
+                  open={
+                    pathname.startsWith("/cards") ||
+                    pathname.startsWith("/invoices") ||
+                    pathname.startsWith("/reconciliation") ||
+                    pathname.startsWith("/participants") ||
+                    pathname.startsWith("/account-division")
+                  }
+                >
+                  <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-100 [&::-webkit-details-marker]:hidden">
+                    <Icon className="size-5" name="creditCard" />
+                    <span className="flex-1">Cartões de crédito</span>
+                    <Icon
+                      className="size-4 transition group-open:rotate-180"
+                      name="chevronDown"
+                    />
+                  </summary>
+                  <div className="mt-1 space-y-1 pl-7">
+                    <SubmenuLink
+                      active={pathname === "/cards"}
+                      href="/cards"
+                      icon="creditCard"
+                      label="Meus cartões"
+                    />
+                    <SubmenuLink
+                      active={pathname.startsWith("/invoices")}
+                      href="/invoices"
+                      icon="receipt"
+                      label="Faturas"
+                    />
+                    <SubmenuLink
+                      active={pathname === "/reconciliation"}
+                      href="/reconciliation"
+                      icon="check"
+                      label="Conciliação"
+                    />
+                    <div>
+                      <div className="space-y-1">
+                        <SubmenuLink
+                          active={pathname.startsWith("/participants")}
+                          href="/participants"
+                          icon="person"
+                          label="Participantes"
+                        />
+                        <SubmenuLink
+                          active={pathname.startsWith("/account-division")}
+                          href="/account-division"
+                          icon="calculator"
+                          label="Divisão de contas"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              ) : null}
+              {navigationModules.investments ? (
+                <Link
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${pathname === "/investments" ? "bg-emerald-400 text-[#003822] shadow-[0_0_20px_rgba(0,229,153,0.18)]" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
+                  href="/investments"
+                >
+                  <Icon className="size-5" name="briefcase" />
+                  Investimentos
+                </Link>
+              ) : null}
               <Link
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
                   pathname === "/settings"
@@ -205,8 +245,34 @@ export function FinancialShell({
           className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-white/5 bg-[#0b0e13]/95 px-1 backdrop-blur-xl md:hidden"
         >
           {[
-            ...navigation,
-            { href: "/cards", label: "Cartões", icon: "creditCard" as const },
+            navigation[0],
+            ...(navigationModules.transactions
+              ? [
+                  {
+                    href: "/income",
+                    label: "Lançamentos",
+                    icon: "receipt" as const,
+                  },
+                ]
+              : []),
+            ...(navigationModules.creditCards
+              ? [
+                  {
+                    href: "/cards",
+                    label: "Cartões",
+                    icon: "creditCard" as const,
+                  },
+                ]
+              : []),
+            ...(navigationModules.investments
+              ? [
+                  {
+                    href: "/investments",
+                    label: "Investir",
+                    icon: "briefcase" as const,
+                  },
+                ]
+              : []),
             { href: "/settings", label: "Ajustes", icon: "settings" as const },
           ].map((item) => {
             const isActive =
@@ -214,7 +280,8 @@ export function FinancialShell({
               (item.href === "/cards" &&
                 (pathname === "/participants" ||
                   pathname.startsWith("/invoices") ||
-                  pathname.startsWith("/reconciliation")));
+                  pathname.startsWith("/reconciliation") ||
+                  pathname.startsWith("/account-division")));
 
             return (
               <Link
@@ -233,5 +300,35 @@ export function FinancialShell({
         <FloatingCalculator />
       </div>
     </ToastProvider>
+  );
+}
+
+function SubmenuLink({
+  active,
+  href,
+  icon,
+  label,
+}: {
+  active: boolean;
+  href: string;
+  icon:
+    | "calculator"
+    | "check"
+    | "creditCard"
+    | "expense"
+    | "income"
+    | "person"
+    | "receipt";
+  label: string;
+}) {
+  return (
+    <Link
+      aria-current={active ? "page" : undefined}
+      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm transition ${active ? "bg-emerald-400 text-[#003822]" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+      href={href}
+    >
+      <Icon className="size-4" name={icon} />
+      {label}
+    </Link>
   );
 }

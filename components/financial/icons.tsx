@@ -8,6 +8,7 @@ type IconName =
   | "chevronLeft"
   | "chevronRight"
   | "dashboard"
+  | "group"
   | "edit"
   | "expense"
   | "income"
@@ -62,6 +63,13 @@ export function Icon({ name, className = "size-5" }: IconProps) {
         <rect height="6" rx="1" width="6" x="15" y="15" />
       </>
     ),
+    group: (
+      <>
+        <circle cx="9" cy="8" r="3" />
+        <circle cx="17" cy="10" r="2.5" />
+        <path d="M3.5 20a5.5 5.5 0 0 1 11 0M14 20a4 4 0 0 1 6.5-3.1" />
+      </>
+    ),
     edit: (
       <path d="m4 20 4.3-1 10.5-10.5a2.1 2.1 0 0 0-3-3L5.3 16 4 20Z M13.5 7.7l3 3" />
     ),
@@ -81,7 +89,9 @@ export function Icon({ name, className = "size-5" }: IconProps) {
         <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18M10 13v2h4v-2" />
       </>
     ),
-    shield: <path d="M12 3 19 6v5c0 4.5-2.8 8-7 10-4.2-2-7-5.5-7-10V6l7-3Z M9.5 12l1.7 1.7 3.5-3.5" />,
+    shield: (
+      <path d="M12 3 19 6v5c0 4.5-2.8 8-7 10-4.2-2-7-5.5-7-10V6l7-3Z M9.5 12l1.7 1.7 3.5-3.5" />
+    ),
     close: <path d="m6 6 12 12M18 6 6 18" />,
     category: (
       <>

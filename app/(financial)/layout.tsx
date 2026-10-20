@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 
 import { FinancialShell } from "@/components/financial/financial-shell";
+import {
+  defaultNavigationModules,
+  normalizeNavigationModules,
+} from "@/lib/financial/navigation-modules";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +17,7 @@ export default async function FinancialLayout({
   let displayName = "Usuário";
   let email: string | undefined;
   let cycleStartDay = 1;
+  let navigationModules = defaultNavigationModules;
 
   try {
     const supabase = await createClient();
@@ -26,11 +31,14 @@ export default async function FinancialLayout({
     if (isAuthenticated) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, financial_cycle_start_day")
+        .select("display_name, financial_cycle_start_day, navigation_modules")
         .eq("id", userId)
         .maybeSingle();
       displayName = profile?.display_name || email?.split("@")[0] || "Usuário";
       cycleStartDay = profile?.financial_cycle_start_day ?? 1;
+      navigationModules = normalizeNavigationModules(
+        profile?.navigation_modules,
+      );
     }
   } catch {
     redirect("/login?error=configuration");
@@ -46,6 +54,7 @@ export default async function FinancialLayout({
         cycleStartDay={cycleStartDay}
         displayName={displayName}
         email={email}
+        navigationModules={navigationModules}
       >
         {children}
       </FinancialShell>
