@@ -50,7 +50,9 @@ export default async function AccountDivisionPrintPage({
       .eq("user_id", userId),
     supabase
       .from("participant_manual_charges")
-      .select("id, description, amount, due_on, notes")
+      .select(
+        "id, description, amount, due_on, notes, installment_number, installment_count",
+      )
       .eq("user_id", userId)
       .eq("participant_id", participantId)
       .eq("reference_month", `${month}-01`)
@@ -97,6 +99,8 @@ export default async function AccountDivisionPrintPage({
       amount: String(charge.amount),
       dueOn: charge.due_on,
       notes: charge.notes,
+      installmentNumber: charge.installment_number,
+      installmentCount: charge.installment_count,
     }),
   );
   const summary = summarizeStatement(purchases, charges, []);
@@ -106,7 +110,7 @@ export default async function AccountDivisionPrintPage({
   );
   const titleMonth = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)}/${year}`;
   return (
-    <main className="account-division-print min-h-screen bg-white p-4 text-slate-900 [print-color-adjust:exact] [-webkit-print-color-adjust:exact] sm:p-10">
+    <main className="account-division-print min-h-screen bg-white p-4 text-slate-900 [-webkit-print-color-adjust:exact] [print-color-adjust:exact] sm:p-10">
       <style>{`
         @media print {
           @page { margin: 0; }
@@ -127,7 +131,9 @@ export default async function AccountDivisionPrintPage({
         <section className="mt-6 flex items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
             <h1 className="text-[23px] font-bold">{person.name}</h1>
-            <p className="text-[13px] font-semibold text-slate-500">{titleMonth}</p>
+            <p className="text-[13px] font-semibold text-slate-500">
+              {titleMonth}
+            </p>
           </div>
           <div className="justify-self-end rounded-lg bg-emerald-600 px-5 py-3 text-right text-white">
             <p className="text-[9px] font-bold tracking-wider uppercase">
@@ -223,7 +229,15 @@ export default async function AccountDivisionPrintPage({
               <tbody>
                 {charges.map((charge) => (
                   <tr key={charge.id} className="odd:bg-slate-100">
-                    <td className="px-1.5 py-1">{charge.description}</td>
+                    <td className="px-1.5 py-1">
+                      {charge.description}{" "}
+                      {charge.installmentCount > 1 ? (
+                        <strong>
+                          - Parcela {charge.installmentNumber}/
+                          {charge.installmentCount}
+                        </strong>
+                      ) : null}
+                    </td>
                     <td className="px-1.5 py-1 text-right">
                       {centsToCurrency(
                         BigInt(Math.round(Number(charge.amount) * 100)),
@@ -265,13 +279,17 @@ function formatPdfDate(value: string) {
 }
 
 const cardThumbnailTones: Record<string, string> = {
-  violet: "border-violet-700 from-[#7020a7] to-[#251136] bg-gradient-to-br text-white",
-  orange: "border-orange-700 from-[#593113] to-[#1e1b1a] bg-gradient-to-br text-white",
-  slate: "border-slate-500 from-[#31353d] to-[#121418] bg-gradient-to-br text-white",
+  violet:
+    "border-violet-700 from-[#7020a7] to-[#251136] bg-gradient-to-br text-white",
+  orange:
+    "border-orange-700 from-[#593113] to-[#1e1b1a] bg-gradient-to-br text-white",
+  slate:
+    "border-slate-500 from-[#31353d] to-[#121418] bg-gradient-to-br text-white",
   blue: "border-sky-700 from-[#1a3c61] to-[#111923] bg-gradient-to-br text-white",
   red: "border-red-700 from-[#572229] to-[#19191d] bg-gradient-to-br text-white",
   gold: "border-amber-700 from-[#453b21] to-[#17191c] bg-gradient-to-br text-white",
   marketYellow:
     "border-[#c8a900] from-[#fff36a] to-[#e5bf00] bg-gradient-to-br text-[#161b24]",
-  emerald: "border-emerald-700 from-[#21443a] to-[#151d1b] bg-gradient-to-br text-white",
+  emerald:
+    "border-emerald-700 from-[#21443a] to-[#151d1b] bg-gradient-to-br text-white",
 };

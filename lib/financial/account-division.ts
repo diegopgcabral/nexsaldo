@@ -18,6 +18,8 @@ export type StatementManualCharge = {
   amount: string;
   dueOn: string | null;
   notes: string | null;
+  installmentNumber: number;
+  installmentCount: number;
 };
 export type StatementPayment = {
   id: string;

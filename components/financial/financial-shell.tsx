@@ -140,6 +140,12 @@ export function FinancialShell({
                       label="Meus cartões"
                     />
                     <SubmenuLink
+                      active={pathname.startsWith("/participants")}
+                      href="/participants"
+                      icon="person"
+                      label="Participantes"
+                    />
+                    <SubmenuLink
                       active={pathname.startsWith("/invoices")}
                       href="/invoices"
                       icon="receipt"
@@ -153,12 +159,6 @@ export function FinancialShell({
                     />
                     <div>
                       <div className="space-y-1">
-                        <SubmenuLink
-                          active={pathname.startsWith("/participants")}
-                          href="/participants"
-                          icon="person"
-                          label="Participantes"
-                        />
                         <SubmenuLink
                           active={pathname.startsWith("/account-division")}
                           href="/account-division"

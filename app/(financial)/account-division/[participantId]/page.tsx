@@ -40,26 +40,36 @@ export default async function AccountDivisionDetailPage({
     phone: person.phone,
     isActive: person.is_active,
   };
-  const [purchaseResult, cardResult, chargeResult] = await Promise.all([
-    supabase
-      .from("credit_card_purchases")
-      .select(
-        "id, card_id, description, purchased_on, installment_number, installment_count",
-      )
-      .eq("user_id", userId)
-      .eq("invoice_month", `${month}-01`),
-    supabase
-      .from("credit_cards")
-      .select("id, name, bank_name")
-      .eq("user_id", userId),
-    supabase
-      .from("participant_manual_charges")
-      .select("id, description, amount, due_on, notes")
-      .eq("user_id", userId)
-      .eq("participant_id", participantId)
-      .eq("reference_month", `${month}-01`)
-      .order("created_at"),
-  ]);
+  const [purchaseResult, cardResult, chargeResult, closureResult] =
+    await Promise.all([
+      supabase
+        .from("credit_card_purchases")
+        .select(
+          "id, card_id, description, purchased_on, installment_number, installment_count",
+        )
+        .eq("user_id", userId)
+        .eq("invoice_month", `${month}-01`),
+      supabase
+        .from("credit_cards")
+        .select("id, name, bank_name")
+        .eq("user_id", userId),
+      supabase
+        .from("participant_manual_charges")
+        .select(
+          "id, description, amount, due_on, notes, installment_number, installment_count",
+        )
+        .eq("user_id", userId)
+        .eq("participant_id", participantId)
+        .eq("reference_month", `${month}-01`)
+        .order("created_at"),
+      supabase
+        .from("participant_statement_closures")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("participant_id", participantId)
+        .eq("reference_month", `${month}-01`)
+        .maybeSingle(),
+    ]);
   const purchaseRows = purchaseResult.data ?? [];
   const cardMap = new Map(
     (cardResult.data ?? []).map((card) => [card.id, card]),
@@ -104,6 +114,8 @@ export default async function AccountDivisionDetailPage({
       amount: String(charge.amount),
       dueOn: charge.due_on,
       notes: charge.notes,
+      installmentNumber: charge.installment_number,
+      installmentCount: charge.installment_count,
     }),
   );
   return (
@@ -112,6 +124,7 @@ export default async function AccountDivisionDetailPage({
       participant={participant}
       purchases={purchases}
       manualCharges={manualCharges}
+      isFinalized={Boolean(closureResult.data)}
     />
   );
 }

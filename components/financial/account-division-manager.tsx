@@ -7,6 +7,9 @@ import {
   addManualCharge,
   confirmVisualStatementPayment,
   deleteStatementEntry,
+  finalizeStatement,
+  reopenStatement,
+  undoVisualStatementPayment,
   updateManualCharge,
 } from "@/app/(financial)/account-division/actions";
 import { Icon } from "@/components/financial/icons";
@@ -24,6 +27,7 @@ export type ParticipantStatementSummary = {
   cardsCents: bigint;
   manualCents: bigint;
   isPaymentConfirmed: boolean;
+  isFinalized: boolean;
 };
 
 export function AccountDivisionManager({
@@ -37,23 +41,49 @@ export function AccountDivisionManager({
   const [confirmingParticipantId, setConfirmingParticipantId] = useState<
     string | null
   >(null);
+  const [showFinalized, setShowFinalized] = useState(false);
+  const finalizedCount = summaries.filter(
+    (summary) => summary.isFinalized,
+  ).length;
+  const visibleSummaries = summaries.filter(
+    (summary) => summary.isFinalized === showFinalized,
+  );
   return (
     <div className="space-y-6">
-      <header>
-        <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
-          Pessoas / Divisão de contas
-        </p>
-        <h1 className="text-3xl font-bold tracking-tight text-white">
-          Divisão de contas
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Escolha uma pessoa para conferir as compras do mês e gerar seu
-          demonstrativo.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
+            Pessoas / Divisão de contas
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Divisão de contas
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            {showFinalized
+              ? "Demonstrativos finalizados nesta competência."
+              : "Escolha uma pessoa para conferir as compras do mês e gerar seu demonstrativo."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowFinalized((current) => !current)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
+        >
+          <Icon name="check" className="size-4 text-emerald-300" />
+          {showFinalized
+            ? "Ver divisões em aberto"
+            : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
+        </button>
       </header>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {summaries.map(
-          ({ participant, cardsCents, manualCents, isPaymentConfirmed }) => {
+        {visibleSummaries.map(
+          ({
+            participant,
+            cardsCents,
+            manualCents,
+            isPaymentConfirmed,
+            isFinalized,
+          }) => {
             const total = cardsCents + manualCents;
             return (
               <article
@@ -74,11 +104,27 @@ export function AccountDivisionManager({
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-1 text-[10px] font-bold ${isPaymentConfirmed ? "bg-emerald-400/15 text-emerald-300" : "bg-slate-400/10 text-slate-400"}`}
-                  >
-                    {isPaymentConfirmed ? "PAGO" : "PENDENTE"}
-                  </span>
+                  {isPaymentConfirmed ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        startTransition(async () => {
+                          await undoVisualStatementPayment({
+                            participantId: participant.id,
+                            month,
+                          });
+                        });
+                      }}
+                      className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-400/25"
+                      title="Desfazer confirmação de pagamento"
+                    >
+                      PAGO
+                    </button>
+                  ) : (
+                    <span className="rounded-full bg-slate-400/10 px-2 py-1 text-[10px] font-bold text-slate-400">
+                      {isFinalized ? "FINALIZADA" : "PENDENTE"}
+                    </span>
+                  )}
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-[#111319] p-3 text-xs">
                   <div>
@@ -102,27 +148,42 @@ export function AccountDivisionManager({
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {!isPaymentConfirmed ? (
+                    {isFinalized ? (
                       <button
-                      disabled={confirmingParticipantId === participant.id}
-                      onClick={() => {
-                        setConfirmingParticipantId(participant.id);
+                        type="button"
+                        onClick={() => {
                           startTransition(async () => {
-                          try {
-                            await confirmVisualStatementPayment({
+                            await reopenStatement({
                               participantId: participant.id,
                               month,
                             });
-                          } finally {
-                            setConfirmingParticipantId(null);
-                          }
-                        });
-                      }}
+                          });
+                        }}
+                        className="rounded-lg border border-amber-300/40 px-2.5 py-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
+                      >
+                        Reabrir
+                      </button>
+                    ) : !isPaymentConfirmed ? (
+                      <button
+                        disabled={confirmingParticipantId === participant.id}
+                        onClick={() => {
+                          setConfirmingParticipantId(participant.id);
+                          startTransition(async () => {
+                            try {
+                              await confirmVisualStatementPayment({
+                                participantId: participant.id,
+                                month,
+                              });
+                            } finally {
+                              setConfirmingParticipantId(null);
+                            }
+                          });
+                        }}
                         className="rounded-lg border border-emerald-400/40 px-2.5 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
                       >
-                      {confirmingParticipantId === participant.id
-                        ? "Confirmando…"
-                        : "Confirmar pagamento"}
+                        {confirmingParticipantId === participant.id
+                          ? "Confirmando…"
+                          : "Confirmar pagamento"}
                       </button>
                     ) : null}
                     <Link
@@ -138,9 +199,11 @@ export function AccountDivisionManager({
           },
         )}
       </section>
-      {summaries.length === 0 ? (
+      {visibleSummaries.length === 0 ? (
         <p className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-400">
-          Cadastre um participante para montar os demonstrativos.
+          {showFinalized
+            ? "Nenhuma divisão foi finalizada nesta competência."
+            : "Cadastre um participante para montar os demonstrativos."}
         </p>
       ) : null}
     </div>
@@ -152,11 +215,13 @@ export function AccountDivisionDetail({
   participant,
   purchases,
   manualCharges,
+  isFinalized,
 }: {
   month: string;
   participant: ParticipantListItem;
   purchases: StatementPurchase[];
   manualCharges: StatementManualCharge[];
+  isFinalized: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [showCharge, setShowCharge] = useState(false);
@@ -185,6 +250,38 @@ export function AccountDivisionDetail({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isFinalized ? (
+            <button
+              type="button"
+              onClick={() => {
+                startTransition(async () => {
+                  await reopenStatement({
+                    participantId: participant.id,
+                    month,
+                  });
+                });
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/40 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-300/10"
+            >
+              <Icon name="edit" className="size-4" /> Reabrir divisão
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                startTransition(async () => {
+                  await finalizeStatement({
+                    participantId: participant.id,
+                    month,
+                  });
+                });
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
+            >
+              <Icon name="check" className="size-4 text-emerald-300" />
+              Finalizar divisão
+            </button>
+          )}
           <button
             onClick={() => {
               const printWindow = window.open(
@@ -238,6 +335,12 @@ export function AccountDivisionDetail({
           <Metric label="Outras contas" value={summary.manualTotalCents} />
         </div>
       </section>
+      {isFinalized ? (
+        <p className="rounded-xl border border-amber-300/20 bg-amber-300/5 px-4 py-3 text-sm text-amber-100">
+          Esta divisão está finalizada. Reabra-a para incluir, editar ou excluir
+          outras contas.
+        </p>
+      ) : null}
       <section className="rounded-2xl border border-white/5 bg-[#191c21] p-5">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <Icon name="creditCard" className="size-5 text-emerald-300" /> Compras
@@ -288,15 +391,17 @@ export function AccountDivisionDetail({
       <section className="rounded-2xl border border-white/5 bg-[#191c21] p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-white">Outras contas</h2>
-          <button
-            onClick={() => {
-              setEditingCharge(null);
-              setShowCharge(true);
-            }}
-            className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-3 py-2 text-sm font-semibold text-emerald-300 hover:bg-white/10"
-          >
-            <Icon name="plus" className="size-4" /> Adicionar
-          </button>
+          {!isFinalized ? (
+            <button
+              onClick={() => {
+                setEditingCharge(null);
+                setShowCharge(true);
+              }}
+              className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-3 py-2 text-sm font-semibold text-emerald-300 hover:bg-white/10"
+            >
+              <Icon name="plus" className="size-4" /> Adicionar
+            </button>
+          ) : null}
         </div>
         <div className="mt-3 divide-y divide-white/5">
           {manualCharges.length ? (
@@ -308,6 +413,9 @@ export function AccountDivisionDetail({
                 <div>
                   <p className="text-sm text-slate-200">{charge.description}</p>
                   <p className="text-xs text-slate-500">
+                    {charge.installmentCount > 1
+                      ? `Parcela ${charge.installmentNumber}/${charge.installmentCount} · `
+                      : ""}
                     {charge.dueOn
                       ? `Competência ${formatStatementMonth(charge.dueOn.slice(0, 7))}`
                       : charge.notes || "Conta adicional"}
@@ -317,29 +425,35 @@ export function AccountDivisionDetail({
                   <p className="text-sm text-white">
                     {currency(charge.amount)}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingCharge(charge);
-                      setShowCharge(false);
-                    }}
-                    aria-label="Atualizar conta"
-                    className="flex size-7 items-center justify-center rounded-md text-slate-500 hover:bg-emerald-400/10 hover:text-emerald-300"
-                    title="Atualizar conta"
-                  >
-                    <Icon name="edit" className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      startTransition(() => deleteStatementEntry(charge.id))
-                    }
-                    aria-label="Excluir conta"
-                    className="flex size-7 items-center justify-center rounded-md text-slate-500 hover:bg-red-400/10 hover:text-red-300"
-                    title="Excluir conta"
-                  >
-                    <Icon name="trash" className="size-4" />
-                  </button>
+                  {!isFinalized ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCharge(charge);
+                          setShowCharge(false);
+                        }}
+                        aria-label="Atualizar conta"
+                        className="flex size-7 items-center justify-center rounded-md text-slate-500 hover:bg-emerald-400/10 hover:text-emerald-300"
+                        title="Atualizar conta"
+                      >
+                        <Icon name="edit" className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          startTransition(async () => {
+                            await deleteStatementEntry(charge.id);
+                          });
+                        }}
+                        aria-label="Excluir conta"
+                        className="flex size-7 items-center justify-center rounded-md text-slate-500 hover:bg-red-400/10 hover:text-red-300"
+                        title="Excluir conta"
+                      >
+                        <Icon name="trash" className="size-4" />
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))
@@ -575,6 +689,12 @@ function ManualChargeForm({
   const [amount, setAmount] = useState(
     charge ? formatStoredCurrency(charge.amount) : "",
   );
+  const [installmentCount, setInstallmentCount] = useState(
+    charge?.installmentCount ?? 1,
+  );
+  const [installmentNumber, setInstallmentNumber] = useState(
+    charge?.installmentNumber ?? 1,
+  );
   const editing = charge !== null;
   return (
     <form
@@ -607,6 +727,71 @@ function ManualChargeForm({
           className="w-full rounded-lg bg-white/5 px-3 py-2.5 text-sm text-white ring-1 ring-white/5 outline-none focus:ring-emerald-400/60"
         />
       </label>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-slate-200">
+            Parcela atual
+          </span>
+          {editing ? (
+            <div className="rounded-lg bg-white/5 px-3 py-2.5 text-sm text-slate-300 ring-1 ring-white/5">
+              Parcela {charge.installmentNumber}/{charge.installmentCount}
+            </div>
+          ) : (
+            <input
+              required
+              name="installmentNumber"
+              type="number"
+              min={1}
+              max={installmentCount}
+              value={installmentNumber}
+              onChange={(event) =>
+                setInstallmentNumber(
+                  Math.min(
+                    installmentCount,
+                    Math.max(1, Number(event.target.value) || 1),
+                  ),
+                )
+              }
+              className="w-full rounded-lg bg-white/5 px-3 py-2.5 text-sm text-white ring-1 ring-white/5 outline-none focus:ring-emerald-400/60"
+            />
+          )}
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-slate-200">
+            Total de parcelas
+          </span>
+          {editing ? (
+            <div className="rounded-lg bg-white/5 px-3 py-2.5 text-sm text-slate-300 ring-1 ring-white/5">
+              {charge.installmentCount} parcelas
+            </div>
+          ) : (
+            <input
+              required
+              name="installmentCount"
+              type="number"
+              min={1}
+              max={120}
+              value={installmentCount}
+              onChange={(event) => {
+                const nextCount = Math.min(
+                  120,
+                  Math.max(1, Number(event.target.value) || 1),
+                );
+                setInstallmentCount(nextCount);
+                setInstallmentNumber((current) => Math.min(current, nextCount));
+              }}
+              className="w-full rounded-lg bg-white/5 px-3 py-2.5 text-sm text-white ring-1 ring-white/5 outline-none focus:ring-emerald-400/60"
+            />
+          )}
+        </label>
+      </div>
+      <p className="-mt-2 text-xs text-slate-500">
+        {editing
+          ? "Esta parcela pode ser ajustada sem modificar as demais."
+          : installmentCount === 1
+            ? "Conta à vista."
+            : `Serão criadas as parcelas ${installmentNumber}/${installmentCount} até ${installmentCount}/${installmentCount} nas próximas competências.`}
+      </p>
       <label className="block space-y-1.5">
         <span className="text-sm font-medium text-slate-200">Valor</span>
         <input

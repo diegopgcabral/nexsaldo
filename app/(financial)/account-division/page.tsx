@@ -24,30 +24,40 @@ export default async function AccountDivisionPage({
   const userId = claims?.claims.sub;
   let summaries: ParticipantStatementSummary[] = [];
   if (typeof userId === "string") {
-    const [peopleResult, purchaseResult, chargeResult, statusResult] =
-      await Promise.all([
-        supabase
-          .from("credit_card_participants")
-          .select("id, name, phone, is_active")
-          .eq("user_id", userId)
-          .eq("is_active", true)
-          .order("name"),
-        supabase
-          .from("credit_card_purchases")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("invoice_month", `${month}-01`),
-        supabase
-          .from("participant_manual_charges")
-          .select("participant_id, amount")
-          .eq("user_id", userId)
-          .eq("reference_month", `${month}-01`),
-        supabase
-          .from("participant_statement_visual_payment_statuses")
-          .select("participant_id")
-          .eq("user_id", userId)
-          .eq("reference_month", `${month}-01`),
-      ]);
+    const [
+      peopleResult,
+      purchaseResult,
+      chargeResult,
+      statusResult,
+      closureResult,
+    ] = await Promise.all([
+      supabase
+        .from("credit_card_participants")
+        .select("id, name, phone, is_active")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .order("name"),
+      supabase
+        .from("credit_card_purchases")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("invoice_month", `${month}-01`),
+      supabase
+        .from("participant_manual_charges")
+        .select("participant_id, amount")
+        .eq("user_id", userId)
+        .eq("reference_month", `${month}-01`),
+      supabase
+        .from("participant_statement_visual_payment_statuses")
+        .select("participant_id")
+        .eq("user_id", userId)
+        .eq("reference_month", `${month}-01`),
+      supabase
+        .from("participant_statement_closures")
+        .select("participant_id")
+        .eq("user_id", userId)
+        .eq("reference_month", `${month}-01`),
+    ]);
     const participants: ParticipantListItem[] = (peopleResult.data ?? []).map(
       (person) => ({
         id: person.id,
@@ -83,11 +93,15 @@ export default async function AccountDivisionPage({
     const paidParticipantIds = new Set(
       (statusResult.data ?? []).map((status) => status.participant_id),
     );
+    const finalizedParticipantIds = new Set(
+      (closureResult.data ?? []).map((closure) => closure.participant_id),
+    );
     summaries = participants.map((participant) => ({
       participant,
       cardsCents: cardTotals.get(participant.id) ?? 0n,
       manualCents: manualTotals.get(participant.id) ?? 0n,
       isPaymentConfirmed: paidParticipantIds.has(participant.id),
+      isFinalized: finalizedParticipantIds.has(participant.id),
     }));
   }
   return <AccountDivisionManager month={month} summaries={summaries} />;
