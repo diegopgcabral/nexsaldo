@@ -38,7 +38,7 @@ export function AccountDivisionManager({
   summaries: ParticipantStatementSummary[];
 }) {
   const [, startTransition] = useTransition();
-  const [confirmingParticipantId, setConfirmingParticipantId] = useState<
+  const [paymentActionParticipantId, setPaymentActionParticipantId] = useState<
     string | null
   >(null);
   const [showFinalized, setShowFinalized] = useState(false);
@@ -111,21 +111,9 @@ export function AccountDivisionManager({
                       TITULAR
                     </span>
                   ) : isPaymentConfirmed ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        startTransition(async () => {
-                          await undoVisualStatementPayment({
-                            participantId: participant.id,
-                            month,
-                          });
-                        });
-                      }}
-                      className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-400/25"
-                      title="Desfazer confirmação de pagamento"
-                    >
+                    <span className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
                       PAGO
-                    </button>
+                    </span>
                   ) : (
                     <span className="rounded-full bg-slate-400/10 px-2 py-1 text-[10px] font-bold text-slate-400">
                       {isFinalized ? "FINALIZADA" : "PENDENTE"}
@@ -169,11 +157,39 @@ export function AccountDivisionManager({
                       >
                         Reabrir
                       </button>
-                    ) : !participant.isOwner && !isPaymentConfirmed ? (
+                    ) : null}
+                    {!participant.isOwner && isPaymentConfirmed ? (
                       <button
-                        disabled={confirmingParticipantId === participant.id}
+                        type="button"
+                        disabled={
+                          paymentActionParticipantId === participant.id
+                        }
                         onClick={() => {
-                          setConfirmingParticipantId(participant.id);
+                          setPaymentActionParticipantId(participant.id);
+                          startTransition(async () => {
+                            try {
+                              await undoVisualStatementPayment({
+                                participantId: participant.id,
+                                month,
+                              });
+                            } finally {
+                              setPaymentActionParticipantId(null);
+                            }
+                          });
+                        }}
+                        className="rounded-lg border border-amber-300/40 px-2.5 py-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {paymentActionParticipantId === participant.id
+                          ? "Desfazendo…"
+                          : "Desfazer pagamento"}
+                      </button>
+                    ) : !participant.isOwner && !isFinalized ? (
+                      <button
+                        disabled={
+                          paymentActionParticipantId === participant.id
+                        }
+                        onClick={() => {
+                          setPaymentActionParticipantId(participant.id);
                           startTransition(async () => {
                             try {
                               await confirmVisualStatementPayment({
@@ -181,13 +197,13 @@ export function AccountDivisionManager({
                                 month,
                               });
                             } finally {
-                              setConfirmingParticipantId(null);
+                              setPaymentActionParticipantId(null);
                             }
                           });
                         }}
                         className="rounded-lg border border-emerald-400/40 px-2.5 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
                       >
-                        {confirmingParticipantId === participant.id
+                        {paymentActionParticipantId === participant.id
                           ? "Confirmando…"
                           : "Confirmar pagamento"}
                       </button>
