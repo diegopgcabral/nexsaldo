@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import {
@@ -13,6 +14,7 @@ import {
   updateManualCharge,
 } from "@/app/(financial)/account-division/actions";
 import { Icon } from "@/components/financial/icons";
+import { useToast } from "@/components/financial/toast-provider";
 import {
   centsToCurrency,
   summarizeStatement,
@@ -37,6 +39,8 @@ export function AccountDivisionManager({
   month: string;
   summaries: ParticipantStatementSummary[];
 }) {
+  const router = useRouter();
+  const { notify } = useToast();
   const [, startTransition] = useTransition();
   const [paymentActionParticipantId, setPaymentActionParticipantId] = useState<
     string | null
@@ -147,10 +151,16 @@ export function AccountDivisionManager({
                         type="button"
                         onClick={() => {
                           startTransition(async () => {
-                            await reopenStatement({
+                            const result = await reopenStatement({
                               participantId: participant.id,
                               month,
                             });
+                            if (result.error) {
+                              notify("error", result.error);
+                              return;
+                            }
+                            notify("success", "Divisão reaberta.");
+                            router.refresh();
                           });
                         }}
                         className="rounded-lg border border-amber-300/40 px-2.5 py-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
@@ -168,10 +178,16 @@ export function AccountDivisionManager({
                           setPaymentActionParticipantId(participant.id);
                           startTransition(async () => {
                             try {
-                              await undoVisualStatementPayment({
+                              const result = await undoVisualStatementPayment({
                                 participantId: participant.id,
                                 month,
                               });
+                              if (result.error) {
+                                notify("error", result.error);
+                                return;
+                              }
+                              notify("success", "Pagamento desfeito.");
+                              router.refresh();
                             } finally {
                               setPaymentActionParticipantId(null);
                             }
@@ -192,10 +208,16 @@ export function AccountDivisionManager({
                           setPaymentActionParticipantId(participant.id);
                           startTransition(async () => {
                             try {
-                              await confirmVisualStatementPayment({
+                              const result = await confirmVisualStatementPayment({
                                 participantId: participant.id,
                                 month,
                               });
+                              if (result.error) {
+                                notify("error", result.error);
+                                return;
+                              }
+                              notify("success", "Pagamento confirmado.");
+                              router.refresh();
                             } finally {
                               setPaymentActionParticipantId(null);
                             }
@@ -245,7 +267,10 @@ export function AccountDivisionDetail({
   manualCharges: StatementManualCharge[];
   isFinalized: boolean;
 }) {
+  const router = useRouter();
+  const { notify } = useToast();
   const [pending, startTransition] = useTransition();
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [showCharge, setShowCharge] = useState(false);
   const [editingCharge, setEditingCharge] =
     useState<StatementManualCharge | null>(null);
@@ -275,33 +300,58 @@ export function AccountDivisionDetail({
           {isFinalized ? (
             <button
               type="button"
+              disabled={isFinalizing}
               onClick={() => {
+                setIsFinalizing(true);
                 startTransition(async () => {
-                  await reopenStatement({
-                    participantId: participant.id,
-                    month,
-                  });
+                  try {
+                    const result = await reopenStatement({
+                      participantId: participant.id,
+                      month,
+                    });
+                    if (result.error) {
+                      notify("error", result.error);
+                      return;
+                    }
+                    notify("success", "Divisão reaberta.");
+                    router.refresh();
+                  } finally {
+                    setIsFinalizing(false);
+                  }
                 });
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/40 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-300/10"
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/40 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
             >
-              <Icon name="edit" className="size-4" /> Reabrir divisão
+              <Icon name="edit" className="size-4" />
+              {isFinalizing ? "Reabrindo…" : "Reabrir divisão"}
             </button>
           ) : (
             <button
               type="button"
+              disabled={isFinalizing}
               onClick={() => {
+                setIsFinalizing(true);
                 startTransition(async () => {
-                  await finalizeStatement({
-                    participantId: participant.id,
-                    month,
-                  });
+                  try {
+                    const result = await finalizeStatement({
+                      participantId: participant.id,
+                      month,
+                    });
+                    if (result.error) {
+                      notify("error", result.error);
+                      return;
+                    }
+                    notify("success", "Divisão finalizada.");
+                    router.refresh();
+                  } finally {
+                    setIsFinalizing(false);
+                  }
                 });
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5 disabled:cursor-wait disabled:opacity-60"
             >
               <Icon name="check" className="size-4 text-emerald-300" />
-              Finalizar divisão
+              {isFinalizing ? "Finalizando…" : "Finalizar divisão"}
             </button>
           )}
           <button
