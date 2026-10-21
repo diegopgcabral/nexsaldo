@@ -79,7 +79,11 @@ export function AccountDivisionManager({
             : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
         </button>
       </header>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <section
+        className={`grid gap-3 sm:grid-cols-2 ${
+          showFinalized ? "xl:grid-cols-2" : "xl:grid-cols-3"
+        }`}
+      >
         {visibleSummaries.map(
           ({
             participant,
