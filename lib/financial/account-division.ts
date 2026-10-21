@@ -10,6 +10,7 @@ export type StatementPurchase = {
   purchasedOn: string;
   installmentNumber: number;
   installmentCount: number;
+  isRecurring?: boolean;
 };
 
 export type StatementManualCharge = {
@@ -20,6 +21,7 @@ export type StatementManualCharge = {
   notes: string | null;
   installmentNumber: number;
   installmentCount: number;
+  isRecurring: boolean;
 };
 export type StatementPayment = {
   id: string;

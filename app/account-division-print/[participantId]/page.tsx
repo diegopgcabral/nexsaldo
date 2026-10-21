@@ -31,16 +31,23 @@ export default async function AccountDivisionPrintPage({
   if (typeof userId !== "string") notFound();
   const { data: person } = await supabase
     .from("credit_card_participants")
-    .select("id, name, phone")
+    .select("id, name, phone, is_owner")
     .eq("id", participantId)
     .eq("user_id", userId)
     .maybeSingle();
   if (!person) notFound();
+  const { data: profile } = person.is_owner
+    ? await supabase
+        .from("profiles")
+        .select("credit_card_owner_name, display_name")
+        .eq("id", userId)
+        .maybeSingle()
+    : { data: null };
   const [purchaseResult, cardResult, chargeResult] = await Promise.all([
     supabase
       .from("credit_card_purchases")
       .select(
-        "id, card_id, description, purchased_on, installment_number, installment_count",
+        "id, card_id, description, purchased_on, installment_number, installment_count, is_recurring",
       )
       .eq("user_id", userId)
       .eq("invoice_month", `${month}-01`),
@@ -51,7 +58,7 @@ export default async function AccountDivisionPrintPage({
     supabase
       .from("participant_manual_charges")
       .select(
-        "id, description, amount, due_on, notes, installment_number, installment_count",
+        "id, description, amount, due_on, notes, installment_number, installment_count, is_recurring",
       )
       .eq("user_id", userId)
       .eq("participant_id", participantId)
@@ -60,16 +67,18 @@ export default async function AccountDivisionPrintPage({
   ]);
   const purchaseRows = purchaseResult.data ?? [];
   const cards = new Map((cardResult.data ?? []).map((card) => [card.id, card]));
+  const splitQuery = supabase
+    .from("credit_card_purchase_splits")
+    .select("purchase_id, amount")
+    .eq("user_id", userId)
+    .in(
+      "purchase_id",
+      purchaseRows.map((purchase) => purchase.id),
+    );
   const { data: splits } = purchaseRows.length
-    ? await supabase
-        .from("credit_card_purchase_splits")
-        .select("purchase_id, amount")
-        .eq("user_id", userId)
-        .eq("participant_id", participantId)
-        .in(
-          "purchase_id",
-          purchaseRows.map((purchase) => purchase.id),
-        )
+    ? person.is_owner
+      ? await splitQuery.is("participant_id", null)
+      : await splitQuery.eq("participant_id", participantId)
     : { data: [] };
   const splitMap = new Map(
     (splits ?? []).map((split) => [split.purchase_id, String(split.amount)]),
@@ -88,6 +97,7 @@ export default async function AccountDivisionPrintPage({
             purchasedOn: purchase.purchased_on,
             installmentNumber: purchase.installment_number,
             installmentCount: purchase.installment_count,
+            isRecurring: purchase.is_recurring,
           },
         ]
       : [];
@@ -101,6 +111,7 @@ export default async function AccountDivisionPrintPage({
       notes: charge.notes,
       installmentNumber: charge.installment_number,
       installmentCount: charge.installment_count,
+      isRecurring: charge.is_recurring,
     }),
   );
   const summary = summarizeStatement(purchases, charges, []);
@@ -130,7 +141,11 @@ export default async function AccountDivisionPrintPage({
         </header>
         <section className="mt-6 flex items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
-            <h1 className="text-[23px] font-bold">{person.name}</h1>
+            <h1 className="text-[23px] font-bold">
+              {profile?.credit_card_owner_name ||
+                profile?.display_name ||
+                person.name}
+            </h1>
             <p className="text-[13px] font-semibold text-slate-500">
               {titleMonth}
             </p>
@@ -192,6 +207,11 @@ export default async function AccountDivisionPrintPage({
                               {purchase.installmentCount}
                             </strong>
                           ) : null}
+                          {purchase.isRecurring ? (
+                            <span className="ml-1 inline-flex rounded bg-emerald-100 px-1 py-px text-[8px] font-bold text-emerald-800">
+                              RECORRENTE
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-1.5 py-1 text-right">
                           {centsToCurrency(
@@ -236,6 +256,11 @@ export default async function AccountDivisionPrintPage({
                           - Parcela {charge.installmentNumber}/
                           {charge.installmentCount}
                         </strong>
+                      ) : null}
+                      {charge.isRecurring ? (
+                        <span className="ml-1 inline-flex rounded bg-emerald-100 px-1 py-px text-[8px] font-bold text-emerald-800">
+                          RECORRENTE
+                        </span>
                       ) : null}
                     </td>
                     <td className="px-1.5 py-1 text-right">

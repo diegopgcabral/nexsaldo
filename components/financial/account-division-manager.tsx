@@ -100,11 +100,17 @@ export function AccountDivisionManager({
                         {participant.name}
                       </h2>
                       <p className="truncate text-xs text-slate-500">
-                        {participant.phone || "Celular não cadastrado"}
+                        {participant.isOwner
+                          ? "Titular da conta"
+                          : participant.phone || "Celular não cadastrado"}
                       </p>
                     </div>
                   </div>
-                  {isPaymentConfirmed ? (
+                  {participant.isOwner ? (
+                    <span className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
+                      TITULAR
+                    </span>
+                  ) : isPaymentConfirmed ? (
                     <button
                       type="button"
                       onClick={() => {
@@ -163,7 +169,7 @@ export function AccountDivisionManager({
                       >
                         Reabrir
                       </button>
-                    ) : !isPaymentConfirmed ? (
+                    ) : !participant.isOwner && !isPaymentConfirmed ? (
                       <button
                         disabled={confirmingParticipantId === participant.id}
                         onClick={() => {
@@ -289,9 +295,14 @@ export function AccountDivisionDetail({
                 "_blank",
               );
               if (!printWindow) {
-                setAskToSend(true);
+                if (!participant.isOwner) {
+                  setAskToSend(true);
+                }
                 return;
               }
+
+              if (participant.isOwner) return;
+
               const watcher = window.setInterval(() => {
                 if (!printWindow.closed) return;
                 window.clearInterval(watcher);
@@ -303,7 +314,7 @@ export function AccountDivisionDetail({
             <PrintIcon />
             Gerar demonstrativo
           </button>
-          {whatsapp ? (
+          {!participant.isOwner && whatsapp ? (
             <button
               type="button"
               onClick={() => openWhatsApp(whatsapp)}
@@ -312,7 +323,7 @@ export function AccountDivisionDetail({
               <WhatsAppIcon />
               Enviar pelo WhatsApp
             </button>
-          ) : (
+          ) : !participant.isOwner ? (
             <Link
               href="/participants"
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5"
@@ -320,7 +331,7 @@ export function AccountDivisionDetail({
               <WhatsAppIcon />
               Cadastrar WhatsApp
             </Link>
-          )}
+          ) : null}
         </div>
       </header>
       <section className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-5">
@@ -411,7 +422,14 @@ export function AccountDivisionDetail({
                 className="flex items-center justify-between gap-3 py-3"
               >
                 <div>
-                  <p className="text-sm text-slate-200">{charge.description}</p>
+                  <p className="text-sm text-slate-200">
+                    {charge.description}
+                    {charge.isRecurring ? (
+                      <span className="ml-2 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                        Recorrente
+                      </span>
+                    ) : null}
+                  </p>
                   <p className="text-xs text-slate-500">
                     {charge.installmentCount > 1
                       ? `Parcela ${charge.installmentNumber}/${charge.installmentCount} · `
@@ -475,7 +493,7 @@ export function AccountDivisionDetail({
           startTransition={startTransition}
         />
       ) : null}
-      {askToSend ? (
+      {askToSend && !participant.isOwner ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1d2026] p-6 shadow-2xl">
             <div className="flex items-center gap-3">
@@ -690,12 +708,15 @@ function ManualChargeForm({
     charge ? formatStoredCurrency(charge.amount) : "",
   );
   const [installmentCount, setInstallmentCount] = useState(
-    charge?.installmentCount ?? 1,
+    String(charge?.installmentCount ?? 1),
   );
   const [installmentNumber, setInstallmentNumber] = useState(
-    charge?.installmentNumber ?? 1,
+    String(charge?.installmentNumber ?? 1),
   );
+  const [isRecurring, setIsRecurring] = useState(charge?.isRecurring ?? false);
+  const [formError, setFormError] = useState<string | null>(null);
   const editing = charge !== null;
+  const hasMultipleInstallments = Number(installmentCount) > 1;
   return (
     <form
       onSubmit={(event) => {
@@ -706,6 +727,11 @@ function ManualChargeForm({
           const result = editing
             ? await updateManualCharge({ ...input, id: charge.id })
             : await addManualCharge(input);
+          if (result?.error) {
+            setFormError(result.error);
+            return;
+          }
+          setFormError(null);
           if (!result?.error) {
             form.reset();
             setAmount("");
@@ -717,6 +743,23 @@ function ManualChargeForm({
     >
       <input type="hidden" name="month" value={month} />
       <input type="hidden" name="participantId" value={participantId} />
+      {editing ? (
+        <input type="hidden" name="notes" value={charge.notes ?? ""} />
+      ) : null}
+      {editing ? (
+        <>
+          <input
+            type="hidden"
+            name="installmentNumber"
+            value={installmentNumber}
+          />
+          <input
+            type="hidden"
+            name="installmentCount"
+            value={installmentCount}
+          />
+        </>
+      ) : null}
       <label className="block space-y-1.5">
         <span className="text-sm font-medium text-slate-200">Descrição</span>
         <input
@@ -727,6 +770,35 @@ function ManualChargeForm({
           className="w-full rounded-lg bg-white/5 px-3 py-2.5 text-sm text-white ring-1 ring-white/5 outline-none focus:ring-emerald-400/60"
         />
       </label>
+      <label className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2.5 text-sm text-slate-200 ring-1 ring-white/5">
+        <input
+          checked={isRecurring}
+          className="size-4 accent-emerald-400"
+          name="isRecurring"
+          onChange={(event) => {
+            const checked = event.target.checked;
+            setIsRecurring(checked);
+            if (checked) {
+              setInstallmentNumber("1");
+              setInstallmentCount("1");
+            }
+          }}
+          type="checkbox"
+          value="true"
+        />
+        <span>
+          <span className="block font-medium text-white">Recorrente</span>
+          <span className="block text-xs text-slate-500">
+            Ao finalizar esta divisão, a conta será levada para o próximo mês.
+          </span>
+        </span>
+      </label>
+      {!editing && isRecurring ? (
+        <>
+          <input name="installmentNumber" type="hidden" value="1" />
+          <input name="installmentCount" type="hidden" value="1" />
+        </>
+      ) : null}
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-slate-200">
@@ -741,17 +813,9 @@ function ManualChargeForm({
               required
               name="installmentNumber"
               type="number"
-              min={1}
-              max={installmentCount}
               value={installmentNumber}
-              onChange={(event) =>
-                setInstallmentNumber(
-                  Math.min(
-                    installmentCount,
-                    Math.max(1, Number(event.target.value) || 1),
-                  ),
-                )
-              }
+              disabled={isRecurring}
+              onChange={(event) => setInstallmentNumber(event.target.value)}
               className="w-full rounded-lg bg-white/5 px-3 py-2.5 text-sm text-white ring-1 ring-white/5 outline-none focus:ring-emerald-400/60"
             />
           )}
@@ -769,17 +833,9 @@ function ManualChargeForm({
               required
               name="installmentCount"
               type="number"
-              min={1}
-              max={120}
               value={installmentCount}
-              onChange={(event) => {
-                const nextCount = Math.min(
-                  120,
-                  Math.max(1, Number(event.target.value) || 1),
-                );
-                setInstallmentCount(nextCount);
-                setInstallmentNumber((current) => Math.min(current, nextCount));
-              }}
+              disabled={isRecurring}
+              onChange={(event) => setInstallmentCount(event.target.value)}
               className="w-full rounded-lg bg-white/5 px-3 py-2.5 text-sm text-white ring-1 ring-white/5 outline-none focus:ring-emerald-400/60"
             />
           )}
@@ -788,10 +844,17 @@ function ManualChargeForm({
       <p className="-mt-2 text-xs text-slate-500">
         {editing
           ? "Esta parcela pode ser ajustada sem modificar as demais."
-          : installmentCount === 1
-            ? "Conta à vista."
-            : `Serão criadas as parcelas ${installmentNumber}/${installmentCount} até ${installmentCount}/${installmentCount} nas próximas competências.`}
+          : isRecurring
+            ? "Conta recorrente não utiliza parcelas."
+            : !hasMultipleInstallments
+              ? "Conta à vista."
+              : `Serão criadas as parcelas ${installmentNumber}/${installmentCount} até ${installmentCount}/${installmentCount} nas próximas competências.`}
       </p>
+      {formError ? (
+        <p className="rounded-lg bg-red-400/10 px-3 py-2 text-sm text-red-200">
+          {formError}
+        </p>
+      ) : null}
       <label className="block space-y-1.5">
         <span className="text-sm font-medium text-slate-200">Valor</span>
         <input

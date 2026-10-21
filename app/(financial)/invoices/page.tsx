@@ -37,37 +37,37 @@ export default async function InvoicesPage({
       profileResult,
       purchaseResult,
       closureResult,
-    ] =
-      await Promise.all([
-        supabase
-          .from("credit_cards")
-          .select("id, bank_name, name, due_day")
-          .eq("user_id", userId)
-          .order("due_day", { ascending: true, nullsFirst: false })
-          .order("name", { ascending: true }),
-        supabase
-          .from("credit_card_participants")
-          .select("id, name, is_active")
-          .eq("user_id", userId)
-          .order("name"),
-        supabase
-          .from("profiles")
-          .select("credit_card_owner_name, display_name")
-          .eq("id", userId)
-          .maybeSingle(),
-        supabase
-          .from("credit_card_purchases")
-          .select(
-            "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count",
-          )
-          .eq("user_id", userId)
-          .eq("invoice_month", `${month}-01`),
-        supabase
-          .from("credit_card_invoice_closures")
-          .select("card_id")
-          .eq("user_id", userId)
-          .eq("invoice_month", `${month}-01`),
-      ]);
+    ] = await Promise.all([
+      supabase
+        .from("credit_cards")
+        .select("id, bank_name, name, due_day")
+        .eq("user_id", userId)
+        .order("due_day", { ascending: true, nullsFirst: false })
+        .order("name", { ascending: true }),
+      supabase
+        .from("credit_card_participants")
+        .select("id, name, is_active")
+        .eq("user_id", userId)
+        .eq("is_owner", false)
+        .order("name"),
+      supabase
+        .from("profiles")
+        .select("credit_card_owner_name, display_name")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase
+        .from("credit_card_purchases")
+        .select(
+          "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count, is_recurring, invoice_matched",
+        )
+        .eq("user_id", userId)
+        .eq("invoice_month", `${month}-01`),
+      supabase
+        .from("credit_card_invoice_closures")
+        .select("card_id")
+        .eq("user_id", userId)
+        .eq("invoice_month", `${month}-01`),
+    ]);
     loadError = Boolean(
       cardResult.error ||
       participantResult.error ||
@@ -125,6 +125,8 @@ export default async function InvoicesPage({
       invoiceMonth: purchase.invoice_month.slice(0, 7),
       installmentNumber: purchase.installment_number,
       installmentCount: purchase.installment_count,
+      isRecurring: purchase.is_recurring,
+      isInvoiceMatched: purchase.invoice_matched,
       splits: splitsByPurchase.get(purchase.id) ?? [],
     }));
   }

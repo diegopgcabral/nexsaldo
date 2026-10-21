@@ -15,6 +15,7 @@ export default async function ParticipantsPage() {
       .from("credit_card_participants")
       .select("id, name, phone, is_active")
       .eq("user_id", userId)
+      .eq("is_owner", false)
       .order("name");
     const { data: profile, error: profileError } = await supabase
       .from("profiles")

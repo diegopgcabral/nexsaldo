@@ -51,6 +51,7 @@ export default async function CardInvoicePage({
           .from("credit_card_participants")
           .select("id, name, is_active")
           .eq("user_id", userId)
+          .eq("is_owner", false)
           .order("name"),
         supabase
           .from("profiles")
@@ -96,7 +97,7 @@ export default async function CardInvoicePage({
         supabase
           .from("credit_card_purchases")
           .select(
-            "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count",
+            "id, card_id, description, amount, purchased_on, invoice_month, installment_number, installment_count, is_recurring, invoice_matched",
           )
           .eq("user_id", userId)
           .eq("card_id", selectedCard.id)
@@ -142,6 +143,8 @@ export default async function CardInvoicePage({
         invoiceMonth: purchase.invoice_month.slice(0, 7),
         installmentNumber: purchase.installment_number,
         installmentCount: purchase.installment_count,
+        isRecurring: purchase.is_recurring,
+        isInvoiceMatched: purchase.invoice_matched,
         splits: splitsByPurchase.get(purchase.id) ?? [],
       }));
     }

@@ -14,6 +14,7 @@ type IconName =
   | "income"
   | "logout"
   | "plus"
+  | "archive"
   | "trash"
   | "wallet"
   | "briefcase"
@@ -76,6 +77,12 @@ export function Icon({ name, className = "size-5" }: IconProps) {
     expense: <path d="M4 7h16M4 12h12M4 17h8" />,
     income: <path d="m5 15 5-5 3 3 6-7M15 6h4v4" />,
     plus: <path d="M12 5v14M5 12h14" />,
+    archive: (
+      <>
+        <path d="M4 8h16v12H4zM3 4h18v4H3z" />
+        <path d="M9 13h6" />
+      </>
+    ),
     trash: <path d="M4 7h16M10 11v6M14 11v6M9 7l1-3h4l1 3M6 7l1 13h10l1-13" />,
     wallet: (
       <>

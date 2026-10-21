@@ -29,23 +29,32 @@ export default async function AccountDivisionDetailPage({
   if (typeof userId !== "string") notFound();
   const { data: person } = await supabase
     .from("credit_card_participants")
-    .select("id, name, phone, is_active")
+    .select("id, name, phone, is_active, is_owner")
     .eq("id", participantId)
     .eq("user_id", userId)
     .maybeSingle();
   if (!person) notFound();
+  const { data: profile } = person.is_owner
+    ? await supabase
+        .from("profiles")
+        .select("credit_card_owner_name, display_name")
+        .eq("id", userId)
+        .maybeSingle()
+    : { data: null };
   const participant: ParticipantListItem = {
     id: person.id,
-    name: person.name,
+    name:
+      profile?.credit_card_owner_name || profile?.display_name || person.name,
     phone: person.phone,
     isActive: person.is_active,
+    isOwner: person.is_owner,
   };
   const [purchaseResult, cardResult, chargeResult, closureResult] =
     await Promise.all([
       supabase
         .from("credit_card_purchases")
         .select(
-          "id, card_id, description, purchased_on, installment_number, installment_count",
+          "id, card_id, description, purchased_on, installment_number, installment_count, is_recurring",
         )
         .eq("user_id", userId)
         .eq("invoice_month", `${month}-01`),
@@ -56,7 +65,7 @@ export default async function AccountDivisionDetailPage({
       supabase
         .from("participant_manual_charges")
         .select(
-          "id, description, amount, due_on, notes, installment_number, installment_count",
+          "id, description, amount, due_on, notes, installment_number, installment_count, is_recurring",
         )
         .eq("user_id", userId)
         .eq("participant_id", participantId)
@@ -74,16 +83,18 @@ export default async function AccountDivisionDetailPage({
   const cardMap = new Map(
     (cardResult.data ?? []).map((card) => [card.id, card]),
   );
+  const splitQuery = supabase
+    .from("credit_card_purchase_splits")
+    .select("purchase_id, amount")
+    .eq("user_id", userId)
+    .in(
+      "purchase_id",
+      purchaseRows.map((purchase) => purchase.id),
+    );
   const { data: splits } = purchaseRows.length
-    ? await supabase
-        .from("credit_card_purchase_splits")
-        .select("purchase_id, amount")
-        .eq("user_id", userId)
-        .eq("participant_id", participantId)
-        .in(
-          "purchase_id",
-          purchaseRows.map((purchase) => purchase.id),
-        )
+    ? person.is_owner
+      ? await splitQuery.is("participant_id", null)
+      : await splitQuery.eq("participant_id", participantId)
     : { data: [] };
   const splitMap = new Map(
     (splits ?? []).map((split) => [split.purchase_id, String(split.amount)]),
@@ -103,6 +114,7 @@ export default async function AccountDivisionDetailPage({
             purchasedOn: purchase.purchased_on,
             installmentNumber: purchase.installment_number,
             installmentCount: purchase.installment_count,
+            isRecurring: purchase.is_recurring,
           },
         ]
       : [];
@@ -116,6 +128,7 @@ export default async function AccountDivisionDetailPage({
       notes: charge.notes,
       installmentNumber: charge.installment_number,
       installmentCount: charge.installment_count,
+      isRecurring: charge.is_recurring,
     }),
   );
   return (

@@ -46,6 +46,7 @@ test("groups participant purchases by card and subtracts payments", () => {
         notes: null,
         installmentNumber: 1,
         installmentCount: 1,
+        isRecurring: false,
       },
     ],
     [
