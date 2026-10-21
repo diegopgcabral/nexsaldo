@@ -194,11 +194,11 @@ export function AccountDivisionManager({
                           });
                         }}
                         title="Desfazer pagamento"
-                        className="inline-flex h-10 min-w-24 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-3 text-xs font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
+                        className="inline-flex h-10 min-w-32 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-3 text-xs font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
                       >
                         {paymentActionParticipantId === participant.id
                           ? "Desfazendo…"
-                          : "Desfazer"}
+                          : "Desfazer pagamento"}
                       </button>
                     ) : !participant.isOwner && !isFinalized ? (
                       <button
@@ -272,6 +272,8 @@ export function AccountDivisionDetail({
   const { notify } = useToast();
   const [pending, startTransition] = useTransition();
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isStatementFinalized, setIsStatementFinalized] =
+    useState(isFinalized);
   const [showCharge, setShowCharge] = useState(false);
   const [editingCharge, setEditingCharge] =
     useState<StatementManualCharge | null>(null);
@@ -298,7 +300,7 @@ export function AccountDivisionDetail({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isFinalized ? (
+          {isStatementFinalized ? (
             <button
               type="button"
               disabled={isFinalizing}
@@ -314,6 +316,7 @@ export function AccountDivisionDetail({
                       notify("error", result.error);
                       return;
                     }
+                    setIsStatementFinalized(false);
                     notify("success", "Divisão reaberta.");
                     router.refresh();
                   } finally {
@@ -342,6 +345,7 @@ export function AccountDivisionDetail({
                       notify("error", result.error);
                       return;
                     }
+                    setIsStatementFinalized(true);
                     notify("success", "Divisão finalizada.");
                     router.refresh();
                   } finally {
@@ -413,7 +417,7 @@ export function AccountDivisionDetail({
           <Metric label="Outras contas" value={summary.manualTotalCents} />
         </div>
       </section>
-      {isFinalized ? (
+      {isStatementFinalized ? (
         <p className="rounded-xl border border-amber-300/20 bg-amber-300/5 px-4 py-3 text-sm text-amber-100">
           Esta divisão está finalizada. Reabra-a para incluir, editar ou excluir
           outras contas.
@@ -469,7 +473,7 @@ export function AccountDivisionDetail({
       <section className="rounded-2xl border border-white/5 bg-[#191c21] p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-white">Outras contas</h2>
-          {!isFinalized ? (
+          {!isStatementFinalized ? (
             <button
               onClick={() => {
                 setEditingCharge(null);
@@ -510,7 +514,7 @@ export function AccountDivisionDetail({
                   <p className="text-sm text-white">
                     {currency(charge.amount)}
                   </p>
-                  {!isFinalized ? (
+                  {!isStatementFinalized ? (
                     <>
                       <button
                         type="button"
