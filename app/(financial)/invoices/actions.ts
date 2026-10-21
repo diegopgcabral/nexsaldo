@@ -38,11 +38,12 @@ export async function savePurchase(
     p_card_id: purchase.cardId,
     p_description: purchase.description,
     p_amount: purchase.amount,
-    p_purchased_on: purchase.purchasedOn,
+    p_purchased_on: purchase.purchasedOn ?? null,
     p_invoice_month: `${purchase.invoiceMonth}-01`,
     p_splits: purchase.splits,
     p_installment_number: purchase.installmentNumber,
     p_installment_count: purchase.installmentCount,
+    p_is_recurring: purchase.isRecurring,
   });
   if (error)
     return {
@@ -91,6 +92,33 @@ export async function movePurchaseToNextInvoice(
   );
   if (error)
     return { error: invoiceError(error, "Não foi possível mover a compra.") };
+  revalidatePath("/invoices");
+  return { success: true };
+}
+
+export async function setPurchaseInvoiceMatch(
+  purchaseId: string,
+  isMatched: boolean,
+): Promise<PurchaseActionState> {
+  const id = z.string().uuid().safeParse(purchaseId);
+  if (!id.success || typeof isMatched !== "boolean")
+    return { error: "Compra inválida." };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims.sub;
+  if (typeof userId !== "string")
+    return { error: "Sua sessão expirou. Entre novamente." };
+  const { data, error } = await supabase
+    .from("credit_card_purchases")
+    .update({ invoice_matched: isMatched })
+    .eq("id", id.data)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+  if (error || !data)
+    return {
+      error: invoiceError(error, "Não foi possível atualizar a conferência."),
+    };
   revalidatePath("/invoices");
   return { success: true };
 }

@@ -23,6 +23,7 @@ function purchase(
     invoiceMonth: "2026-10",
     installmentNumber: 1,
     installmentCount: 1,
+    isRecurring: false,
     splits,
   };
 }
@@ -102,6 +103,17 @@ test("rejects a current installment after the total", () => {
   );
 });
 
+test("rejects a recurring purchase with installments", () => {
+  assert.match(
+    parsePurchaseInput({
+      ...purchase([{ participantId: null, amount: "300,00" }]),
+      isRecurring: true,
+      installmentCount: 2,
+    }).error ?? "",
+    /recorrente/i,
+  );
+});
+
 test("summarizes each participant by card and for the month", () => {
   const first = {
     id: owner,
@@ -112,6 +124,8 @@ test("summarizes each participant by card and for the month", () => {
     invoiceMonth: "2026-10",
     installmentNumber: 1,
     installmentCount: 1,
+    isRecurring: false,
+    isInvoiceMatched: false,
     splits: [
       { participantId: null, amount: "160.00" },
       {

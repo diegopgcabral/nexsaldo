@@ -15,6 +15,31 @@ option {
   box-sizing: border-box;
 }
 
+button:not(:disabled),
+[role="button"],
+a[href],
+summary,
+label[for] {
+  cursor: pointer;
+}
+
+button:not(:disabled) {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    filter 150ms ease;
+}
+
+button:not(:disabled):hover {
+  filter: brightness(1.06);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 body {
   margin: 0;
   background: #09090b;

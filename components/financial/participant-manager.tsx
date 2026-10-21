@@ -198,6 +198,7 @@ export function ParticipantManager({
   const [confirming, setConfirming] = useState<ParticipantListItem | null>(
     null,
   );
+  const [deleting, setDeleting] = useState<ParticipantListItem | null>(null);
   const [busy, startTransition] = useTransition();
   const router = useRouter();
   const { notify } = useToast();
@@ -234,6 +235,29 @@ export function ParticipantManager({
         router.refresh();
       }
       setConfirming(null);
+    });
+  }
+
+  function removeParticipant(person: ParticipantListItem) {
+    startTransition(async () => {
+      const response = await fetch(`/api/participants/${person.id}`, {
+        method: "DELETE",
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        success?: boolean;
+      };
+
+      if (!response.ok || result.error) {
+        notify(
+          "error",
+          result.error ?? "Não foi possível excluir o participante agora.",
+        );
+      } else if (result.success) {
+        notify("success", "Participante excluído.");
+        router.refresh();
+      }
+      setDeleting(null);
     });
   }
 
@@ -367,9 +391,18 @@ export function ParticipantManager({
                 </button>
                 <button
                   aria-label={`Arquivar ${person.name}`}
-                  className="rounded-lg bg-white/5 p-2 text-red-300 hover:bg-red-400/10"
+                  className="rounded-lg bg-white/5 p-2 text-amber-200 hover:bg-amber-400/10"
                   onClick={() => setConfirming(person)}
                   title="Arquivar"
+                  type="button"
+                >
+                  <Icon className="size-4" name="archive" />
+                </button>
+                <button
+                  aria-label={`Excluir ${person.name}`}
+                  className="rounded-lg bg-white/5 p-2 text-red-300 hover:bg-red-400/10"
+                  onClick={() => setDeleting(person)}
+                  title="Excluir definitivamente"
                   type="button"
                 >
                   <Icon className="size-4" name="trash" />
@@ -520,6 +553,45 @@ export function ParticipantManager({
                 type="button"
               >
                 {busy ? "Arquivando…" : "Arquivar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {deleting ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
+          <div
+            aria-labelledby="delete-dialog-title"
+            aria-modal="true"
+            className="w-full max-w-md space-y-4 rounded-2xl border border-white/10 bg-[#1d2026] p-6"
+            role="dialog"
+          >
+            <h2
+              className="text-lg font-semibold text-white"
+              id="delete-dialog-title"
+            >
+              Excluir {deleting.name}?
+            </h2>
+            <p className="text-sm text-slate-400">
+              Esta ação remove o cadastro e suas contas vinculadas
+              definitivamente. Rateios de cartões são transferidos ao titular
+              para manter as faturas consistentes.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white"
+                onClick={() => setDeleting(null)}
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button
+                className="rounded-lg bg-red-400/15 px-4 py-2 text-sm text-red-200 disabled:opacity-50"
+                disabled={busy}
+                onClick={() => removeParticipant(deleting)}
+                type="button"
+              >
+                {busy ? "Excluindo…" : "Excluir definitivamente"}
               </button>
             </div>
           </div>

@@ -42,6 +42,7 @@ export async function saveParticipant(
       .update({ name: parsed.data!.name, phone: parsed.data!.phone })
       .eq("id", id.data)
       .eq("user_id", auth.userId)
+      .eq("is_owner", false)
       .select("id")
       .maybeSingle();
     if (error?.code === "23505")
@@ -80,6 +81,7 @@ export async function setParticipantActive(
     .update({ is_active: isActive })
     .eq("id", parsed.data)
     .eq("user_id", auth.userId)
+    .eq("is_owner", false)
     .select("id")
     .maybeSingle();
   if (error || !data)

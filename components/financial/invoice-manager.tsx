@@ -16,6 +16,7 @@ import {
   movePurchaseToNextInvoice,
   reopenInvoice,
   savePurchase,
+  setPurchaseInvoiceMatch,
   setSplitPayment,
   type PurchaseActionState,
 } from "@/app/(financial)/invoices/actions";
@@ -76,17 +77,17 @@ function PurchaseForm({
   const [amount, setAmount] = useState(
     purchase ? formatStoredMoney(purchase.amount) : "",
   );
-  const [purchasedOn, setPurchasedOn] = useState(
-    purchase?.purchasedOn ?? new Date().toLocaleDateString("en-CA"),
-  );
   const [invoiceMonth, setInvoiceMonth] = useState(
     purchase?.invoiceMonth ?? month,
   );
   const [installmentCount, setInstallmentCount] = useState(
-    purchase?.installmentCount ?? 1,
+    String(purchase?.installmentCount ?? 1),
   );
   const [installmentNumber, setInstallmentNumber] = useState(
-    purchase?.installmentNumber ?? 1,
+    String(purchase?.installmentNumber ?? 1),
+  );
+  const [isRecurring, setIsRecurring] = useState(
+    purchase?.isRecurring ?? false,
   );
   const [splits, setSplits] = useState<PurchaseSplit[]>(
     purchase?.splits.length
@@ -138,10 +139,11 @@ function PurchaseForm({
     cardId,
     description,
     amount,
-    purchasedOn,
+    purchasedOn: purchase?.purchasedOn,
     invoiceMonth,
-    installmentNumber,
-    installmentCount,
+    installmentNumber: Number(installmentNumber),
+    installmentCount: Number(installmentCount),
+    isRecurring,
     splits,
   });
 
@@ -163,6 +165,27 @@ function PurchaseForm({
             value={description}
           />
         </label>
+        <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-slate-200 sm:col-span-2">
+          <input
+            checked={isRecurring}
+            className="size-4 accent-emerald-400"
+            onChange={(event) => {
+              const checked = event.target.checked;
+              setIsRecurring(checked);
+              if (checked) {
+                setInstallmentNumber("1");
+                setInstallmentCount("1");
+              }
+            }}
+            type="checkbox"
+          />
+          <span>
+            <span className="block font-medium text-white">Recorrente</span>
+            <span className="block text-xs text-slate-500">
+              Ao fechar esta fatura, a compra será levada para o próximo mês.
+            </span>
+          </span>
+        </label>
         <label className="space-y-2">
           <span className="block text-sm text-slate-200">Parcela atual</span>
           {purchase ? (
@@ -172,16 +195,8 @@ function PurchaseForm({
           ) : (
             <input
               className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
-              max={installmentCount}
-              min={1}
-              onChange={(event) =>
-                setInstallmentNumber(
-                  Math.min(
-                    installmentCount,
-                    Math.max(1, Number(event.target.value) || 1),
-                  ),
-                )
-              }
+              disabled={isRecurring}
+              onChange={(event) => setInstallmentNumber(event.target.value)}
               type="number"
               value={installmentNumber}
             />
@@ -198,16 +213,8 @@ function PurchaseForm({
           ) : (
             <input
               className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
-              max={120}
-              min={1}
-              onChange={(event) => {
-                const nextCount = Math.min(
-                  120,
-                  Math.max(1, Number(event.target.value) || 1),
-                );
-                setInstallmentCount(nextCount);
-                setInstallmentNumber((current) => Math.min(current, nextCount));
-              }}
+              disabled={isRecurring}
+              onChange={(event) => setInstallmentCount(event.target.value)}
               type="number"
               value={installmentCount}
             />
@@ -217,9 +224,11 @@ function PurchaseForm({
           <span className="block text-xs text-slate-500">
             {purchase
               ? "Esta parcela pode ser ajustada sem modificar as demais."
-              : installmentCount === 1
-                ? "Compra à vista."
-                : `Serão criadas as parcelas ${installmentNumber}/${installmentCount} até ${installmentCount}/${installmentCount}, com o mesmo rateio.`}
+              : isRecurring
+                ? "Compra recorrente não utiliza parcelas."
+                : Number(installmentCount) === 1
+                  ? "Compra à vista."
+                  : `Serão criadas as parcelas ${installmentNumber}/${installmentCount} até ${installmentCount}/${installmentCount}, com o mesmo rateio.`}
           </span>
         </p>
         <label className="space-y-2">
@@ -242,16 +251,6 @@ function PurchaseForm({
               value={amount}
             />
           </span>
-        </label>
-        <label className="space-y-2">
-          <span className="block text-sm text-slate-200">Data da compra</span>
-          <input
-            className="w-full rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-sm text-white scheme-dark outline-none focus:border-emerald-400"
-            onChange={(event) => setPurchasedOn(event.target.value)}
-            required
-            type="date"
-            value={purchasedOn}
-          />
         </label>
         <label className="space-y-2 sm:col-span-2">
           <span className="block text-sm text-slate-200">Mês da fatura</span>
@@ -388,7 +387,6 @@ function PurchaseForm({
             total <= 0n ||
             difference !== 0n ||
             !description.trim() ||
-            !purchasedOn ||
             !invoiceMonth
           }
           type="submit"
@@ -426,6 +424,9 @@ export function InvoiceManager({
   const [editing, setEditing] = useState<PurchaseListItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirming, setConfirming] = useState<PurchaseListItem | null>(null);
+  const [matchingPurchaseId, setMatchingPurchaseId] = useState<string | null>(
+    null,
+  );
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [settling, setSettling] = useState<PurchaseSplit | null>(null);
@@ -439,6 +440,9 @@ export function InvoiceManager({
   );
   const summary = summarizeInvoice(purchases);
   const total = summary.total;
+  const matchedPurchaseCount = purchases.filter(
+    (purchase) => purchase.isInvoiceMatched,
+  ).length;
   const totalsByPerson = new Map<string, bigint>();
   const paidByPerson = new Map<string, bigint>();
   for (const [id, byCard] of summary.personCardTotals)
@@ -473,6 +477,19 @@ export function InvoiceManager({
         notify("success", "Compra movida para a próxima fatura.");
         router.refresh();
       }
+    });
+  }
+
+  function togglePurchaseMatch(purchase: PurchaseListItem) {
+    setMatchingPurchaseId(purchase.id);
+    startTransition(async () => {
+      const result = await setPurchaseInvoiceMatch(
+        purchase.id,
+        !purchase.isInvoiceMatched,
+      );
+      if (result.error) notify("error", result.error);
+      else router.refresh();
+      setMatchingPurchaseId(null);
     });
   }
 
@@ -738,24 +755,49 @@ export function InvoiceManager({
                 ) : null}
               </div>
               <span className="text-xs text-slate-400">
-                {purchases.length} lançamentos
+                {matchedPurchaseCount}/{purchases.length} conferidas
               </span>
             </div>
             {purchases.length ? (
               <div className="space-y-2">
                 {purchases.map((purchase) => (
                   <div
-                    className="rounded-xl border border-white/5 bg-[#111319] p-4"
+                    className={`rounded-xl border p-4 transition ${purchase.isInvoiceMatched ? "border-emerald-400/50 bg-emerald-400/10 shadow-[0_0_20px_rgba(52,211,153,0.2)]" : "border-white/5 bg-[#111319]"}`}
                     key={purchase.id}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
+                      <button
+                        aria-pressed={purchase.isInvoiceMatched}
+                        className="min-w-0 text-left disabled:cursor-default"
+                        disabled={
+                          isClosed || matchingPurchaseId === purchase.id
+                        }
+                        onClick={() => togglePurchaseMatch(purchase)}
+                        title={
+                          isClosed
+                            ? "A conferência fica bloqueada após o fechamento."
+                            : purchase.isInvoiceMatched
+                              ? "Remover marcação de conferência"
+                              : "Marcar como conferida na fatura"
+                        }
+                        type="button"
+                      >
                         <p className="font-medium text-white">
+                          <span
+                            className={`mr-2 inline-flex size-4 items-center justify-center rounded-full border align-[-2px] ${purchase.isInvoiceMatched ? "border-emerald-300 bg-emerald-400 text-[#003822]" : "border-slate-500 text-transparent"}`}
+                          >
+                            <Icon className="size-3" name="check" />
+                          </span>
                           {purchase.description}
                           {purchase.installmentCount > 1 ? (
                             <span className="ml-2 rounded-full bg-violet-400/10 px-2 py-0.5 text-xs font-semibold text-violet-200">
                               {purchase.installmentNumber}/
                               {purchase.installmentCount}
+                            </span>
+                          ) : null}
+                          {purchase.isRecurring ? (
+                            <span className="ml-2 rounded-full bg-emerald-400/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                              Recorrente
                             </span>
                           ) : null}
                         </p>
@@ -764,7 +806,7 @@ export function InvoiceManager({
                           {purchase.splits.length}{" "}
                           {purchase.splits.length === 1 ? "pessoa" : "pessoas"}
                         </p>
-                      </div>
+                      </button>
                       <div className="flex items-center gap-2">
                         <strong className="mr-2 text-white">
                           {formatCents(centsOrZero(purchase.amount))}

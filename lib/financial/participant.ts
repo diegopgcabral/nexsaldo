@@ -8,6 +8,7 @@ export type ParticipantListItem = {
   id: string;
   name: string;
   isActive: boolean;
+  isOwner?: boolean;
   phone?: string | null;
 };
 

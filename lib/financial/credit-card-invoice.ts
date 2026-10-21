@@ -21,6 +21,8 @@ export type PurchaseListItem = {
   invoiceMonth: string;
   installmentNumber: number;
   installmentCount: number;
+  isRecurring: boolean;
+  isInvoiceMatched: boolean;
   splits: PurchaseSplit[];
 };
 
@@ -90,10 +92,11 @@ export function parsePurchaseInput(input: unknown) {
       cardId: z.string().uuid(),
       description: z.string().trim().min(1).max(160),
       amount: z.string(),
-      purchasedOn: z.iso.date(),
+      purchasedOn: z.iso.date().optional(),
       invoiceMonth: z.string().refine(isMonthReference),
       installmentNumber: z.number().int().min(1).max(120),
       installmentCount: z.number().int().min(1).max(120),
+      isRecurring: z.boolean(),
       splits: z.array(splitSchema).min(1).max(100),
     })
     .safeParse(input);
@@ -102,6 +105,10 @@ export function parsePurchaseInput(input: unknown) {
   if (purchase.installmentNumber > purchase.installmentCount)
     return {
       error: "A parcela atual não pode ser maior que o total.",
+    } as const;
+  if (purchase.isRecurring && purchase.installmentCount !== 1)
+    return {
+      error: "Uma compra recorrente não pode ter parcelas.",
     } as const;
   const amount = normalizeCurrencyInput(purchase.amount);
   if (!amountSchema.safeParse(amount).success || amountToCents(amount) <= 0n)
