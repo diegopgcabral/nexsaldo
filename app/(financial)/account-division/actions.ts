@@ -109,11 +109,25 @@ export async function finalizeStatement(input: unknown) {
     })
     .select("id")
     .maybeSingle();
-  if (error && error.code !== "23505") {
+  const isExistingClosure =
+    error?.code === "23505" &&
+    error.message.includes(
+      "participant_statement_closures_user_participant_month_key",
+    );
+  if (error && !isExistingClosure) {
     console.error("Could not finalize participant statement", error);
     return { error: "Não foi possível finalizar a divisão." };
   }
-  if (!closure && error?.code === "23505") {
+  if (!closure && isExistingClosure) {
+    console.info("Participant statement already finalized", {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      message: error.message,
+      participantId: parsed.data.participantId,
+      referenceMonth: parsed.data.month,
+      userId,
+    });
     const { data: existing, error: lookupError } = await supabase
       .from("participant_statement_closures")
       .select("id")
