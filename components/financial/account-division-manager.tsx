@@ -212,7 +212,7 @@ export function AccountDivisionManager({
                           ? "Desfazendo…"
                           : "Desfazer pagamento"}
                       </button>
-                    ) : !participant.isOwner && !isFinalized ? (
+                    ) : !participant.isOwner ? (
                       <button
                         disabled={
                           paymentActionParticipantId === participant.id
