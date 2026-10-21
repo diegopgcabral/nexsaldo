@@ -54,30 +54,32 @@ export function AccountDivisionManager({
   );
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
-            Pessoas / Divisão de contas
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
-            Divisão de contas
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
+      <header className="space-y-3">
+        <p className="text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
+          Pessoas / Divisão de contas
+        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Divisão de contas
+            </h1>
+            <p className="mt-2 text-sm text-slate-400">
+              {showFinalized
+                ? "Demonstrativos finalizados nesta competência."
+                : "Escolha uma pessoa para conferir as compras do mês e gerar seu demonstrativo."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowFinalized((current) => !current)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
+          >
+            <Icon name="check" className="size-4 text-emerald-300" />
             {showFinalized
-              ? "Demonstrativos finalizados nesta competência."
-              : "Escolha uma pessoa para conferir as compras do mês e gerar seu demonstrativo."}
-          </p>
+              ? "Ver divisões em aberto"
+              : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowFinalized((current) => !current)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
-        >
-          <Icon name="check" className="size-4 text-emerald-300" />
-          {showFinalized
-            ? "Ver divisões em aberto"
-            : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
-        </button>
       </header>
       <section
         className={`grid max-w-[1100px] gap-3 sm:grid-cols-2 ${
@@ -115,15 +117,15 @@ export function AccountDivisionManager({
                     </div>
                   </div>
                   {participant.isOwner ? (
-                    <span className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
+                    <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
                       TITULAR
                     </span>
                   ) : isPaymentConfirmed ? (
-                    <span className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
+                    <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
                       PAGO
                     </span>
                   ) : (
-                    <span className="rounded-full bg-slate-400/10 px-2 py-1 text-[10px] font-bold text-slate-400">
+                    <span className="mt-1 shrink-0 rounded-full bg-slate-400/10 px-2 py-1 text-[10px] font-bold text-slate-400">
                       {isFinalized ? "FINALIZADA" : "PENDENTE"}
                     </span>
                   )}
