@@ -138,14 +138,14 @@ export function AccountDivisionManager({
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-col gap-3">
+                <div className="mt-3 flex items-center justify-between gap-2">
                   <div>
                     <p className="text-xs text-slate-500">Total do mês</p>
                     <p className="font-bold text-emerald-300">
                       {centsToCurrency(total)}
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2">
                     {isFinalized ? (
                       <button
                         type="button"
@@ -163,7 +163,7 @@ export function AccountDivisionManager({
                             router.refresh();
                           });
                         }}
-                        className="inline-flex h-10 min-w-24 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-3 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
+                        className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-2.5 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
                       >
                         Reabrir
                       </button>
@@ -194,7 +194,7 @@ export function AccountDivisionManager({
                           });
                         }}
                         title="Desfazer pagamento"
-                        className="inline-flex h-10 min-w-32 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-3 text-xs font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
+                        className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-2.5 text-[11px] font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
                       >
                         {paymentActionParticipantId === participant.id
                           ? "Desfazendo…"
@@ -224,7 +224,7 @@ export function AccountDivisionManager({
                             }
                           });
                         }}
-                        className="inline-flex h-10 min-w-32 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-400/40 px-3 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
+                        className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-400/40 px-2.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
                       >
                         {paymentActionParticipantId === participant.id
                           ? "Confirmando…"
@@ -233,7 +233,7 @@ export function AccountDivisionManager({
                     ) : null}
                     <Link
                       href={`/account-division/${participant.id}?month=${month}`}
-                      className="inline-flex h-10 min-w-24 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-400 px-3 text-xs font-bold text-[#003822]"
+                      className="inline-flex h-10 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-400 px-2.5 text-xs font-bold text-[#003822]"
                     >
                       <Icon name="receipt" className="size-4" /> Detalhes
                     </Link>
