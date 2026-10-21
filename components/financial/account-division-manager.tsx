@@ -224,11 +224,11 @@ export function AccountDivisionManager({
                             }
                           });
                         }}
-                        className="inline-flex h-10 min-w-24 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-400/40 px-3 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
+                        className="inline-flex h-10 min-w-32 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-400/40 px-3 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
                       >
                         {paymentActionParticipantId === participant.id
                           ? "Confirmando…"
-                          : "Confirmar"}
+                          : "Confirmar pagamento"}
                       </button>
                     ) : null}
                     <Link
