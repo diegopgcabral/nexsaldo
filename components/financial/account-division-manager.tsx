@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import {
@@ -13,6 +14,7 @@ import {
   updateManualCharge,
 } from "@/app/(financial)/account-division/actions";
 import { Icon } from "@/components/financial/icons";
+import { useToast } from "@/components/financial/toast-provider";
 import {
   centsToCurrency,
   summarizeStatement,
@@ -37,8 +39,10 @@ export function AccountDivisionManager({
   month: string;
   summaries: ParticipantStatementSummary[];
 }) {
+  const router = useRouter();
+  const { notify } = useToast();
   const [, startTransition] = useTransition();
-  const [confirmingParticipantId, setConfirmingParticipantId] = useState<
+  const [paymentActionParticipantId, setPaymentActionParticipantId] = useState<
     string | null
   >(null);
   const [showFinalized, setShowFinalized] = useState(false);
@@ -50,32 +54,44 @@ export function AccountDivisionManager({
   );
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
-            Pessoas / Divisão de contas
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
-            Divisão de contas
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
+      <header
+        className={`space-y-3 ${
+          showFinalized ? "max-w-[1100px]" : "max-w-[1200px]"
+        }`}
+      >
+        <p className="text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
+          Pessoas / Divisão de contas
+        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Divisão de contas
+            </h1>
+            <p className="mt-2 text-sm text-slate-400">
+              {showFinalized
+                ? "Demonstrativos finalizados nesta competência."
+                : "Escolha uma pessoa para conferir as compras do mês e gerar seu demonstrativo."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowFinalized((current) => !current)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
+          >
+            <Icon name="check" className="size-4 text-emerald-300" />
             {showFinalized
-              ? "Demonstrativos finalizados nesta competência."
-              : "Escolha uma pessoa para conferir as compras do mês e gerar seu demonstrativo."}
-          </p>
+              ? "Ver divisões em aberto"
+              : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowFinalized((current) => !current)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
-        >
-          <Icon name="check" className="size-4 text-emerald-300" />
-          {showFinalized
-            ? "Ver divisões em aberto"
-            : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
-        </button>
       </header>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <section
+        className={`grid gap-3 sm:grid-cols-2 ${
+          showFinalized
+            ? "max-w-[1100px] xl:grid-cols-2"
+            : "max-w-[1200px] xl:grid-cols-3"
+        }`}
+      >
         {visibleSummaries.map(
           ({
             participant,
@@ -107,27 +123,15 @@ export function AccountDivisionManager({
                     </div>
                   </div>
                   {participant.isOwner ? (
-                    <span className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
+                    <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
                       TITULAR
                     </span>
                   ) : isPaymentConfirmed ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        startTransition(async () => {
-                          await undoVisualStatementPayment({
-                            participantId: participant.id,
-                            month,
-                          });
-                        });
-                      }}
-                      className="rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-400/25"
-                      title="Desfazer confirmação de pagamento"
-                    >
+                    <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
                       PAGO
-                    </button>
+                    </span>
                   ) : (
-                    <span className="rounded-full bg-slate-400/10 px-2 py-1 text-[10px] font-bold text-slate-400">
+                    <span className="mt-1 shrink-0 rounded-full bg-slate-400/10 px-2 py-1 text-[10px] font-bold text-slate-400">
                       {isFinalized ? "FINALIZADA" : "PENDENTE"}
                     </span>
                   )}
@@ -146,55 +150,102 @@ export function AccountDivisionManager({
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <div>
+                <div className="mt-3 grid grid-cols-[minmax(78px,1fr)_auto] items-center gap-2">
+                  <div className="min-w-[78px]">
                     <p className="text-xs text-slate-500">Total do mês</p>
                     <p className="font-bold text-emerald-300">
                       {centsToCurrency(total)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-end gap-2">
                     {isFinalized ? (
                       <button
                         type="button"
                         onClick={() => {
                           startTransition(async () => {
-                            await reopenStatement({
+                            const result = await reopenStatement({
                               participantId: participant.id,
                               month,
                             });
+                            if (result.error) {
+                              notify("error", result.error);
+                              return;
+                            }
+                            notify("success", "Divisão reaberta.");
+                            router.refresh();
                           });
                         }}
-                        className="rounded-lg border border-amber-300/40 px-2.5 py-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
+                        className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-2.5 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
                       >
                         Reabrir
                       </button>
-                    ) : !participant.isOwner && !isPaymentConfirmed ? (
+                    ) : null}
+                    {!participant.isOwner && isPaymentConfirmed ? (
                       <button
-                        disabled={confirmingParticipantId === participant.id}
+                        type="button"
+                        disabled={
+                          paymentActionParticipantId === participant.id
+                        }
                         onClick={() => {
-                          setConfirmingParticipantId(participant.id);
+                          setPaymentActionParticipantId(participant.id);
                           startTransition(async () => {
                             try {
-                              await confirmVisualStatementPayment({
+                              const result = await undoVisualStatementPayment({
                                 participantId: participant.id,
                                 month,
                               });
+                              if (result.error) {
+                                notify("error", result.error);
+                                return;
+                              }
+                              notify("success", "Pagamento desfeito.");
+                              router.refresh();
                             } finally {
-                              setConfirmingParticipantId(null);
+                              setPaymentActionParticipantId(null);
                             }
                           });
                         }}
-                        className="rounded-lg border border-emerald-400/40 px-2.5 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
+                        title="Desfazer pagamento"
+                        className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-2.5 text-[11px] font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
                       >
-                        {confirmingParticipantId === participant.id
+                        {paymentActionParticipantId === participant.id
+                          ? "Desfazendo…"
+                          : "Desfazer pagamento"}
+                      </button>
+                    ) : !participant.isOwner ? (
+                      <button
+                        disabled={
+                          paymentActionParticipantId === participant.id
+                        }
+                        onClick={() => {
+                          setPaymentActionParticipantId(participant.id);
+                          startTransition(async () => {
+                            try {
+                              const result = await confirmVisualStatementPayment({
+                                participantId: participant.id,
+                                month,
+                              });
+                              if (result.error) {
+                                notify("error", result.error);
+                                return;
+                              }
+                              notify("success", "Pagamento confirmado.");
+                              router.refresh();
+                            } finally {
+                              setPaymentActionParticipantId(null);
+                            }
+                          });
+                        }}
+                        className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-400/40 px-2.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {paymentActionParticipantId === participant.id
                           ? "Confirmando…"
                           : "Confirmar pagamento"}
                       </button>
                     ) : null}
                     <Link
                       href={`/account-division/${participant.id}?month=${month}`}
-                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-400 px-3 py-2 text-sm font-bold text-[#003822]"
+                      className="inline-flex h-10 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-400 px-2.5 text-xs font-bold text-[#003822]"
                     >
                       <Icon name="receipt" className="size-4" /> Detalhes
                     </Link>
@@ -229,7 +280,12 @@ export function AccountDivisionDetail({
   manualCharges: StatementManualCharge[];
   isFinalized: boolean;
 }) {
+  const router = useRouter();
+  const { notify } = useToast();
   const [pending, startTransition] = useTransition();
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isStatementFinalized, setIsStatementFinalized] =
+    useState(isFinalized);
   const [showCharge, setShowCharge] = useState(false);
   const [editingCharge, setEditingCharge] =
     useState<StatementManualCharge | null>(null);
@@ -256,36 +312,63 @@ export function AccountDivisionDetail({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isFinalized ? (
+          {isStatementFinalized ? (
             <button
               type="button"
+              disabled={isFinalizing}
               onClick={() => {
+                setIsFinalizing(true);
                 startTransition(async () => {
-                  await reopenStatement({
-                    participantId: participant.id,
-                    month,
-                  });
+                  try {
+                    const result = await reopenStatement({
+                      participantId: participant.id,
+                      month,
+                    });
+                    if (result.error) {
+                      notify("error", result.error);
+                      return;
+                    }
+                    setIsStatementFinalized(false);
+                    notify("success", "Divisão reaberta.");
+                    router.refresh();
+                  } finally {
+                    setIsFinalizing(false);
+                  }
                 });
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/40 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-300/10"
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/40 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
             >
-              <Icon name="edit" className="size-4" /> Reabrir divisão
+              <Icon name="edit" className="size-4" />
+              {isFinalizing ? "Reabrindo…" : "Reabrir divisão"}
             </button>
           ) : (
             <button
               type="button"
+              disabled={isFinalizing}
               onClick={() => {
+                setIsFinalizing(true);
                 startTransition(async () => {
-                  await finalizeStatement({
-                    participantId: participant.id,
-                    month,
-                  });
+                  try {
+                    const result = await finalizeStatement({
+                      participantId: participant.id,
+                      month,
+                    });
+                    if (result.error) {
+                      notify("error", result.error);
+                      return;
+                    }
+                    setIsStatementFinalized(true);
+                    notify("success", "Divisão finalizada.");
+                    router.refresh();
+                  } finally {
+                    setIsFinalizing(false);
+                  }
                 });
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5 disabled:cursor-wait disabled:opacity-60"
             >
               <Icon name="check" className="size-4 text-emerald-300" />
-              Finalizar divisão
+              {isFinalizing ? "Finalizando…" : "Finalizar divisão"}
             </button>
           )}
           <button
@@ -346,7 +429,7 @@ export function AccountDivisionDetail({
           <Metric label="Outras contas" value={summary.manualTotalCents} />
         </div>
       </section>
-      {isFinalized ? (
+      {isStatementFinalized ? (
         <p className="rounded-xl border border-amber-300/20 bg-amber-300/5 px-4 py-3 text-sm text-amber-100">
           Esta divisão está finalizada. Reabra-a para incluir, editar ou excluir
           outras contas.
@@ -402,7 +485,7 @@ export function AccountDivisionDetail({
       <section className="rounded-2xl border border-white/5 bg-[#191c21] p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-white">Outras contas</h2>
-          {!isFinalized ? (
+          {!isStatementFinalized ? (
             <button
               onClick={() => {
                 setEditingCharge(null);
@@ -443,7 +526,7 @@ export function AccountDivisionDetail({
                   <p className="text-sm text-white">
                     {currency(charge.amount)}
                   </p>
-                  {!isFinalized ? (
+                  {!isStatementFinalized ? (
                     <>
                       <button
                         type="button"

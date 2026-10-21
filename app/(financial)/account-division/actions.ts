@@ -100,15 +100,49 @@ export async function finalizeStatement(input: unknown) {
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims.sub;
   if (typeof userId !== "string") return { error: "Sua sessão expirou." };
-  const { error } = await supabase
+  const { data: closure, error } = await supabase
     .from("participant_statement_closures")
     .insert({
       user_id: userId,
       participant_id: parsed.data.participantId,
       reference_month: `${parsed.data.month}-01`,
-    });
-  if (error && error.code !== "23505") {
+    })
+    .select("id")
+    .maybeSingle();
+  const isExistingClosure =
+    error?.code === "23505" &&
+    error.message.includes(
+      "participant_statement_closures_user_participant_month_key",
+    );
+  if (error && !isExistingClosure) {
+    console.error("Could not finalize participant statement", error);
     return { error: "Não foi possível finalizar a divisão." };
+  }
+  if (!closure && isExistingClosure) {
+    console.info("Participant statement already finalized", {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      message: error.message,
+      participantId: parsed.data.participantId,
+      referenceMonth: parsed.data.month,
+      userId,
+    });
+    const { data: existing, error: lookupError } = await supabase
+      .from("participant_statement_closures")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("participant_id", parsed.data.participantId)
+      .eq("reference_month", `${parsed.data.month}-01`)
+      .maybeSingle();
+    if (lookupError || !existing) {
+      console.error("Could not verify finalized participant statement", {
+        lookupError,
+        participantId: parsed.data.participantId,
+        referenceMonth: parsed.data.month,
+      });
+      return { error: "Não foi possível confirmar a finalização da divisão." };
+    }
   }
   revalidatePath("/account-division");
   revalidatePath(`/account-division/${parsed.data.participantId}`);
