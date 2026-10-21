@@ -82,8 +82,10 @@ export function AccountDivisionManager({
         </div>
       </header>
       <section
-        className={`grid max-w-[1100px] gap-3 sm:grid-cols-2 ${
-          showFinalized ? "xl:grid-cols-2" : "xl:grid-cols-3"
+        className={`grid gap-3 sm:grid-cols-2 ${
+          showFinalized
+            ? "max-w-[1100px] xl:grid-cols-2"
+            : "max-w-[1200px] xl:grid-cols-3"
         }`}
       >
         {visibleSummaries.map(
@@ -144,14 +146,14 @@ export function AccountDivisionManager({
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <div>
+                <div className="mt-3 grid grid-cols-[minmax(78px,1fr)_auto] items-center gap-2">
+                  <div className="min-w-[78px]">
                     <p className="text-xs text-slate-500">Total do mês</p>
                     <p className="font-bold text-emerald-300">
                       {centsToCurrency(total)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-end gap-2">
                     {isFinalized ? (
                       <button
                         type="button"
