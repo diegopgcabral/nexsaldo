@@ -138,14 +138,14 @@ export function AccountDivisionManager({
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-2">
+                <div className="mt-3 flex flex-col gap-3">
                   <div>
                     <p className="text-xs text-slate-500">Total do mês</p>
                     <p className="font-bold text-emerald-300">
                       {centsToCurrency(total)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {isFinalized ? (
                       <button
                         type="button"
