@@ -54,7 +54,11 @@ export function AccountDivisionManager({
   );
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
+      <header
+        className={`space-y-3 ${
+          showFinalized ? "max-w-[1100px]" : "max-w-[1200px]"
+        }`}
+      >
         <p className="text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
           Pessoas / Divisão de contas
         </p>
