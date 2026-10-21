@@ -163,7 +163,7 @@ export function AccountDivisionManager({
                             router.refresh();
                           });
                         }}
-                        className="rounded-lg border border-amber-300/40 px-2.5 py-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
+                        className="inline-flex h-10 min-w-24 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-3 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
                       >
                         Reabrir
                       </button>
@@ -193,11 +193,12 @@ export function AccountDivisionManager({
                             }
                           });
                         }}
-                        className="rounded-lg border border-amber-300/40 px-2.5 py-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
+                        title="Desfazer pagamento"
+                        className="inline-flex h-10 min-w-24 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-3 text-xs font-bold text-amber-200 hover:bg-amber-300/10 disabled:cursor-wait disabled:opacity-60"
                       >
                         {paymentActionParticipantId === participant.id
                           ? "Desfazendo…"
-                          : "Desfazer pagamento"}
+                          : "Desfazer"}
                       </button>
                     ) : !participant.isOwner && !isFinalized ? (
                       <button
@@ -223,16 +224,16 @@ export function AccountDivisionManager({
                             }
                           });
                         }}
-                        className="rounded-lg border border-emerald-400/40 px-2.5 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
+                        className="inline-flex h-10 min-w-24 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-400/40 px-3 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60"
                       >
                         {paymentActionParticipantId === participant.id
                           ? "Confirmando…"
-                          : "Confirmar pagamento"}
+                          : "Confirmar"}
                       </button>
                     ) : null}
                     <Link
                       href={`/account-division/${participant.id}?month=${month}`}
-                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-400 px-3 py-2 text-sm font-bold text-[#003822]"
+                      className="inline-flex h-10 min-w-24 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-400 px-3 text-xs font-bold text-[#003822]"
                     >
                       <Icon name="receipt" className="size-4" /> Detalhes
                     </Link>
