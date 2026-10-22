@@ -122,13 +122,13 @@ export function AccountDivisionManager({
                       </p>
                     </div>
                   </div>
-                  {participant.isOwner ? (
-                    <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
-                      TITULAR
-                    </span>
-                  ) : isPaymentConfirmed ? (
+                  {isPaymentConfirmed ? (
                     <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
                       PAGO
+                    </span>
+                  ) : participant.isOwner ? (
+                    <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
+                      TITULAR
                     </span>
                   ) : (
                     <span className="mt-1 shrink-0 rounded-full bg-slate-400/10 px-2 py-1 text-[10px] font-bold text-slate-400">
@@ -180,7 +180,7 @@ export function AccountDivisionManager({
                         Reabrir
                       </button>
                     ) : null}
-                    {!participant.isOwner && isPaymentConfirmed ? (
+                    {isPaymentConfirmed ? (
                       <button
                         type="button"
                         disabled={
@@ -212,7 +212,7 @@ export function AccountDivisionManager({
                           ? "Desfazendo…"
                           : "Desfazer pagamento"}
                       </button>
-                    ) : !participant.isOwner ? (
+                    ) : (
                       <button
                         disabled={
                           paymentActionParticipantId === participant.id
@@ -242,7 +242,7 @@ export function AccountDivisionManager({
                           ? "Confirmando…"
                           : "Confirmar pagamento"}
                       </button>
-                    ) : null}
+                    )}
                     <Link
                       href={`/account-division/${participant.id}?month=${month}`}
                       className="inline-flex h-10 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-400 px-2.5 text-xs font-bold text-[#003822]"
