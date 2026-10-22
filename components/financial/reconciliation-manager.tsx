@@ -141,11 +141,11 @@ export function ReconciliationManager({
           <details className="group overflow-hidden rounded-2xl border border-white/5 bg-[#191c21]" key={card.id}>
             <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden">
               <div className="flex min-w-0 items-center gap-3"><CardThumbnail bankName={card.bankName} /><div className="min-w-0"><p className="truncate font-semibold text-white">{card.name}</p><p className="truncate text-xs text-slate-500">{card.bankName} · Fatura fechada</p></div></div>
-              <div className="flex flex-wrap items-center gap-5 text-right text-xs">
+              <div className="grid grid-cols-[repeat(3,76px)_88px_16px] items-center gap-x-3 text-right text-xs">
                 <Value label="Fatura" value={total} />
                 <Value label="Cobertura" value={coverage} tone="text-emerald-300" />
                 <Value label="Falta" value={missing} tone={missing ? "text-amber-200" : "text-emerald-300"} />
-                <span className={`rounded-full px-2.5 py-1 font-semibold ${status === "Coberta" ? "bg-emerald-400/10 text-emerald-300" : status === "Parcial" ? "bg-amber-400/10 text-amber-200" : "bg-red-400/10 text-red-200"}`}>{status}</span>
+                <span className={`inline-flex w-[88px] justify-center rounded-full px-2.5 py-1 font-semibold ${status === "Coberta" ? "bg-emerald-400/10 text-emerald-300" : status === "Parcial" ? "bg-amber-400/10 text-amber-200" : "bg-red-400/10 text-red-200"}`}>{status}</span>
                 <Icon className="size-4 text-slate-400 transition group-open:rotate-180" name="chevronDown" />
               </div>
             </summary>
