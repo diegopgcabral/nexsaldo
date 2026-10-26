@@ -69,8 +69,9 @@ export default async function AccountDivisionPrintPage({
   const cards = new Map((cardResult.data ?? []).map((card) => [card.id, card]));
   const splitQuery = supabase
     .from("credit_card_purchase_splits")
-    .select("purchase_id, amount")
+    .select("purchase_id, amount, paid_at")
     .eq("user_id", userId)
+    .is("paid_at", null)
     .in(
       "purchase_id",
       purchaseRows.map((purchase) => purchase.id),
@@ -120,46 +121,50 @@ export default async function AccountDivisionPrintPage({
     new Date(Number(year), Number(monthNumber) - 1, 1),
   );
   const titleMonth = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)}/${year}`;
+  const statementName =
+    profile?.credit_card_owner_name || profile?.display_name || person.name;
+  const printFileName = `${statementName
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, "")
+    .replace(/\s+/g, "_")}_${monthNumber}${year}`;
   return (
     <main className="account-division-print min-h-screen bg-white p-4 text-slate-900 [-webkit-print-color-adjust:exact] [print-color-adjust:exact] sm:p-10">
       <style>{`
         @media print {
           @page { margin: 0; }
-          .account-division-print { padding: 12mm !important; }
+          .account-division-print { padding: 8mm !important; }
         }
       `}</style>
       <article className="mx-auto max-w-3xl bg-white p-7 font-sans shadow-xl print:max-w-none print:p-0 print:shadow-none">
-        <header className="border-b-2 border-emerald-600 pb-4">
+        <header className="border-b-2 border-emerald-600 pb-4 print:pb-2">
           <div>
-            <p className="text-[19px] font-extrabold">
+            <p className="text-[19px] font-extrabold print:text-[16px]">
               Nex<span className="text-emerald-600">Saldo</span>
             </p>
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-slate-500 print:mt-0 print:text-[10px]">
               Demonstrativo de contas
             </p>
           </div>
         </header>
-        <section className="mt-6 flex items-center justify-between gap-4">
+        <section className="mt-6 flex items-center justify-between gap-4 print:mt-3">
           <div className="flex items-baseline gap-3">
-            <h1 className="text-[23px] font-bold">
-              {profile?.credit_card_owner_name ||
-                profile?.display_name ||
-                person.name}
+            <h1 className="text-[23px] font-bold print:text-[20px]">
+              {statementName}
             </h1>
-            <p className="text-[13px] font-semibold text-slate-500">
+            <p className="text-[13px] font-semibold text-slate-500 print:text-[12px]">
               {titleMonth}
             </p>
           </div>
-          <div className="justify-self-end rounded-lg bg-emerald-600 px-5 py-3 text-right text-white">
+          <div className="justify-self-end rounded-lg bg-emerald-600 px-5 py-3 text-right text-white print:px-4 print:py-2">
             <p className="text-[9px] font-bold tracking-wider uppercase">
               Total a pagar
             </p>
-            <p className="text-[23px] font-extrabold">
+            <p className="text-[23px] font-extrabold print:text-[20px]">
               {centsToCurrency(summary.totalDueCents)}
             </p>
           </div>
         </section>
-        <section className="mt-6 space-y-3">
+        <section className="mt-6 space-y-3 print:mt-3 print:space-y-2">
           <h2 className="text-[11px] font-bold tracking-wider text-slate-700 uppercase">
             Descrição das contas
           </h2>
@@ -168,7 +173,7 @@ export default async function AccountDivisionPrintPage({
             return (
               <div
                 key={issuer.id}
-                className="overflow-hidden border-t-2 border-slate-200 pt-3 first:border-t-0 first:pt-0"
+                className="overflow-hidden border-t-2 border-slate-200 pt-3 first:border-t-0 first:pt-0 print:pt-2"
               >
                 <div className="flex items-center gap-2 px-1 pb-1.5">
                   <div className="flex items-center gap-3">
@@ -235,7 +240,7 @@ export default async function AccountDivisionPrintPage({
               </div>
             );
           })}
-          <div className="border-t-2 border-slate-200 pt-3">
+          <div className="border-t-2 border-slate-200 pt-3 print:pt-2">
             <div className="px-1 pb-1.5 text-[13px] font-bold uppercase">
               Contas adicionais
             </div>
@@ -285,12 +290,12 @@ export default async function AccountDivisionPrintPage({
             </table>
           </div>
         </section>
-        <footer className="mt-8 flex justify-between border-t-2 border-slate-900 pt-4 text-[17px] font-extrabold">
+        <footer className="mt-8 flex justify-between border-t-2 border-slate-900 pt-4 text-[17px] font-extrabold print:mt-4 print:pt-2">
           <span>Total a pagar</span>
           <span>{centsToCurrency(summary.totalDueCents)}</span>
         </footer>
       </article>
-      <PrintStatementButton floating />
+      <PrintStatementButton fileName={printFileName} floating />
     </main>
   );
 }

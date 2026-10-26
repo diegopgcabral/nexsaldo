@@ -1,10 +1,24 @@
 "use client";
 
-export function PrintStatementButton({ floating = false }: { floating?: boolean }) {
+export function PrintStatementButton({
+  fileName,
+  floating = false,
+}: {
+  fileName: string;
+  floating?: boolean;
+}) {
   return (
     <button
       type="button"
-      onClick={() => window.print()}
+      onClick={() => {
+        const previousTitle = document.title;
+        const restoreTitle = () => {
+          document.title = previousTitle;
+        };
+        document.title = fileName;
+        window.addEventListener("afterprint", restoreTitle, { once: true });
+        window.print();
+      }}
       className={
         floating
           ? "fixed right-6 bottom-6 z-10 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition-colors hover:bg-emerald-700 print:hidden"

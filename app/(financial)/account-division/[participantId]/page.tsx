@@ -85,8 +85,9 @@ export default async function AccountDivisionDetailPage({
   );
   const splitQuery = supabase
     .from("credit_card_purchase_splits")
-    .select("purchase_id, amount")
+    .select("purchase_id, amount, paid_at")
     .eq("user_id", userId)
+    .is("paid_at", null)
     .in(
       "purchase_id",
       purchaseRows.map((purchase) => purchase.id),

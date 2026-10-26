@@ -4,6 +4,7 @@ export const incomeCategories = [
   "Reembolso",
   "Rendimentos",
   "Reserva de emergência",
+  "Saldo do mês anterior",
   "Outros",
 ] as const;
 

@@ -427,6 +427,9 @@ export function InvoiceManager({
   const [matchingPurchaseId, setMatchingPurchaseId] = useState<string | null>(
     null,
   );
+  const [invoiceMatchOverrides, setInvoiceMatchOverrides] = useState<
+    Record<string, boolean>
+  >({});
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [settling, setSettling] = useState<PurchaseSplit | null>(null);
@@ -440,9 +443,10 @@ export function InvoiceManager({
   );
   const summary = summarizeInvoice(purchases);
   const total = summary.total;
-  const matchedPurchaseCount = purchases.filter(
-    (purchase) => purchase.isInvoiceMatched,
-  ).length;
+  function isPurchaseMatched(purchase: PurchaseListItem) {
+    return invoiceMatchOverrides[purchase.id] ?? purchase.isInvoiceMatched;
+  }
+  const matchedPurchaseCount = purchases.filter(isPurchaseMatched).length;
   const totalsByPerson = new Map<string, bigint>();
   const paidByPerson = new Map<string, bigint>();
   for (const [id, byCard] of summary.personCardTotals)
@@ -480,15 +484,22 @@ export function InvoiceManager({
     });
   }
 
-  function togglePurchaseMatch(purchase: PurchaseListItem) {
+  function togglePurchaseMatch(purchase: PurchaseListItem, isMatched: boolean) {
     setMatchingPurchaseId(purchase.id);
+    setInvoiceMatchOverrides((current) => ({
+      ...current,
+      [purchase.id]: !isMatched,
+    }));
     startTransition(async () => {
-      const result = await setPurchaseInvoiceMatch(
-        purchase.id,
-        !purchase.isInvoiceMatched,
-      );
-      if (result.error) notify("error", result.error);
-      else router.refresh();
+      const result = await setPurchaseInvoiceMatch(purchase.id, !isMatched);
+      if (result.error) {
+        setInvoiceMatchOverrides((current) => {
+          const next = { ...current };
+          delete next[purchase.id];
+          return next;
+        });
+        notify("error", result.error);
+      } else router.refresh();
       setMatchingPurchaseId(null);
     });
   }
@@ -760,131 +771,141 @@ export function InvoiceManager({
             </div>
             {purchases.length ? (
               <div className="space-y-2">
-                {purchases.map((purchase) => (
-                  <div
-                    className={`rounded-xl border p-4 transition ${purchase.isInvoiceMatched ? "border-emerald-400/50 bg-emerald-400/10 shadow-[0_0_20px_rgba(52,211,153,0.2)]" : "border-white/5 bg-[#111319]"}`}
-                    key={purchase.id}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <button
-                        aria-pressed={purchase.isInvoiceMatched}
-                        className="min-w-0 text-left disabled:cursor-default"
-                        disabled={
-                          isClosed || matchingPurchaseId === purchase.id
-                        }
-                        onClick={() => togglePurchaseMatch(purchase)}
-                        title={
-                          isClosed
-                            ? "A conferência fica bloqueada após o fechamento."
-                            : purchase.isInvoiceMatched
-                              ? "Remover marcação de conferência"
-                              : "Marcar como conferida na fatura"
-                        }
-                        type="button"
-                      >
-                        <p className="font-medium text-white">
-                          <span
-                            className={`mr-2 inline-flex size-4 items-center justify-center rounded-full border align-[-2px] ${purchase.isInvoiceMatched ? "border-emerald-300 bg-emerald-400 text-[#003822]" : "border-slate-500 text-transparent"}`}
-                          >
-                            <Icon className="size-3" name="check" />
-                          </span>
-                          {purchase.description}
-                          {purchase.installmentCount > 1 ? (
-                            <span className="ml-2 rounded-full bg-violet-400/10 px-2 py-0.5 text-xs font-semibold text-violet-200">
-                              {purchase.installmentNumber}/
-                              {purchase.installmentCount}
-                            </span>
-                          ) : null}
-                          {purchase.isRecurring ? (
-                            <span className="ml-2 rounded-full bg-emerald-400/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
-                              Recorrente
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-400">
-                          {formatDate(purchase.purchasedOn)} ·{" "}
-                          {purchase.splits.length}{" "}
-                          {purchase.splits.length === 1 ? "pessoa" : "pessoas"}
-                        </p>
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <strong className="mr-2 text-white">
-                          {formatCents(centsOrZero(purchase.amount))}
-                        </strong>
-                        {!isClosed ? (
-                          <>
-                            <button
-                              aria-label={`Mover ${purchase.description} para a próxima fatura`}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-400/10 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:bg-sky-400/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-200"
-                              onClick={() => movePurchase(purchase)}
-                              type="button"
+                {purchases.map((purchase) => {
+                  const isMatched = isPurchaseMatched(purchase);
+                  return (
+                    <div
+                      className={`rounded-xl border p-4 transition ${isMatched ? "border-emerald-400/50 bg-emerald-400/10 shadow-[0_0_20px_rgba(52,211,153,0.2)]" : "border-white/5 bg-[#111319]"}`}
+                      key={purchase.id}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <button
+                          aria-pressed={isMatched}
+                          className="min-w-0 cursor-pointer text-left disabled:cursor-default"
+                          disabled={
+                            isClosed || matchingPurchaseId === purchase.id
+                          }
+                          onClick={() =>
+                            togglePurchaseMatch(purchase, isMatched)
+                          }
+                          title={
+                            isClosed
+                              ? "A conferência fica bloqueada após o fechamento."
+                              : isMatched
+                                ? "Remover marcação de conferência"
+                                : "Marcar como conferida na fatura"
+                          }
+                          type="button"
+                        >
+                          <p className="font-medium text-white">
+                            <span
+                              className={`mr-2 inline-flex size-4 items-center justify-center rounded-full border align-[-2px] ${isMatched ? "border-emerald-300 bg-emerald-400 text-[#003822]" : "border-slate-500 text-transparent"}`}
                             >
-                              <span>Mover para mês seguinte</span>
-                              <Icon className="size-3.5" name="chevronRight" />
-                            </button>
+                              <Icon className="size-3" name="check" />
+                            </span>
+                            {purchase.description}
+                            {purchase.installmentCount > 1 ? (
+                              <span className="ml-2 rounded-full bg-violet-400/10 px-2 py-0.5 text-xs font-semibold text-violet-200">
+                                {purchase.installmentNumber}/
+                                {purchase.installmentCount}
+                              </span>
+                            ) : null}
+                            {purchase.isRecurring ? (
+                              <span className="ml-2 rounded-full bg-emerald-400/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                                Recorrente
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            {formatDate(purchase.purchasedOn)} ·{" "}
+                            {purchase.splits.length}{" "}
+                            {purchase.splits.length === 1
+                              ? "pessoa"
+                              : "pessoas"}
+                          </p>
+                        </button>
+                        <div className="flex items-center gap-2">
+                          <strong className="mr-2 text-white">
+                            {formatCents(centsOrZero(purchase.amount))}
+                          </strong>
+                          {!isClosed ? (
+                            <>
+                              <button
+                                aria-label={`Mover ${purchase.description} para a próxima fatura`}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-400/10 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:bg-sky-400/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-200"
+                                onClick={() => movePurchase(purchase)}
+                                type="button"
+                              >
+                                <span>Mover para mês seguinte</span>
+                                <Icon
+                                  className="size-3.5"
+                                  name="chevronRight"
+                                />
+                              </button>
+                              <button
+                                aria-label={`Editar ${purchase.description}`}
+                                className="rounded-lg p-2 text-slate-300 hover:bg-white/10"
+                                onClick={() => {
+                                  setEditing(purchase);
+                                  setModalOpen(true);
+                                }}
+                                type="button"
+                              >
+                                <Icon className="size-4" name="edit" />
+                              </button>
+                              <button
+                                aria-label={`Excluir ${purchase.description}`}
+                                className="rounded-lg p-2 text-red-300 hover:bg-red-400/10"
+                                onClick={() => setConfirming(purchase)}
+                                type="button"
+                              >
+                                <Icon className="size-4" name="trash" />
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {purchase.splits.map((split) => (
+                          <div
+                            className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-2"
+                            key={split.id ?? split.participantId ?? "owner"}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-medium text-slate-200">
+                                {split.participantId === null
+                                  ? ownerName
+                                  : (people.get(split.participantId) ??
+                                    "Participante arquivado")}
+                              </p>
+                              <p className="mt-0.5 text-xs text-slate-400">
+                                {formatCents(centsOrZero(split.amount))}
+                              </p>
+                            </div>
                             <button
-                              aria-label={`Editar ${purchase.description}`}
-                              className="rounded-lg p-2 text-slate-300 hover:bg-white/10"
+                              aria-label={`${split.paidAt ? "Desfazer pagamento de" : "Marcar como paga"} ${split.participantId === null ? ownerName : (people.get(split.participantId) ?? "participante")}`}
+                              className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${split.paidAt ? "bg-emerald-400/15 text-emerald-300 hover:bg-red-400/15 hover:text-red-200" : "bg-amber-400/10 text-amber-100 hover:bg-emerald-400/15 hover:text-emerald-300"}`}
                               onClick={() => {
-                                setEditing(purchase);
-                                setModalOpen(true);
+                                if (split.participantId === null) {
+                                  setSettling(split);
+                                  setIncludeExpense(false);
+                                  setExpenseCategory("");
+                                } else updateSplitPayment(split, !split.paidAt);
                               }}
                               type="button"
                             >
-                              <Icon className="size-4" name="edit" />
+                              <Icon
+                                className="size-3.5"
+                                name={split.paidAt ? "check" : "wallet"}
+                              />
+                              {split.paidAt ? "Pago" : "Marcar como pago"}
                             </button>
-                            <button
-                              aria-label={`Excluir ${purchase.description}`}
-                              className="rounded-lg p-2 text-red-300 hover:bg-red-400/10"
-                              onClick={() => setConfirming(purchase)}
-                              type="button"
-                            >
-                              <Icon className="size-4" name="trash" />
-                            </button>
-                          </>
-                        ) : null}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {purchase.splits.map((split) => (
-                        <div
-                          className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-2"
-                          key={split.id ?? split.participantId ?? "owner"}
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-medium text-slate-200">
-                              {split.participantId === null
-                                ? ownerName
-                                : (people.get(split.participantId) ??
-                                  "Participante arquivado")}
-                            </p>
-                            <p className="mt-0.5 text-xs text-slate-400">
-                              {formatCents(centsOrZero(split.amount))}
-                            </p>
-                          </div>
-                          <button
-                            aria-label={`${split.paidAt ? "Desfazer pagamento de" : "Marcar como paga"} ${split.participantId === null ? ownerName : (people.get(split.participantId) ?? "participante")}`}
-                            className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${split.paidAt ? "bg-emerald-400/15 text-emerald-300 hover:bg-red-400/15 hover:text-red-200" : "bg-amber-400/10 text-amber-100 hover:bg-emerald-400/15 hover:text-emerald-300"}`}
-                            onClick={() => {
-                              if (split.participantId === null) {
-                                setSettling(split);
-                                setIncludeExpense(false);
-                                setExpenseCategory("");
-                              } else updateSplitPayment(split, !split.paidAt);
-                            }}
-                            type="button"
-                          >
-                            <Icon
-                              className="size-3.5"
-                              name={split.paidAt ? "check" : "wallet"}
-                            />
-                            {split.paidAt ? "Pago" : "Marcar como pago"}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-white/10 p-10 text-center">

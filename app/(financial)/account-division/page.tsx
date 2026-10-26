@@ -89,6 +89,7 @@ export default async function AccountDivisionPage({
           .from("credit_card_purchase_splits")
           .select("participant_id, amount")
           .eq("user_id", userId)
+          .is("paid_at", null)
           .in("purchase_id", purchaseIds)
       : { data: [] };
     const cardTotals = new Map<string, bigint>();
