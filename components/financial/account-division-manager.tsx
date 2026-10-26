@@ -45,6 +45,9 @@ export function AccountDivisionManager({
   const [paymentActionParticipantId, setPaymentActionParticipantId] = useState<
     string | null
   >(null);
+  const [paymentStatusOverrides, setPaymentStatusOverrides] = useState<
+    Record<string, boolean>
+  >({});
   const [showFinalized, setShowFinalized] = useState(false);
   const finalizedCount = summaries.filter(
     (summary) => summary.isFinalized,
@@ -101,6 +104,8 @@ export function AccountDivisionManager({
             isFinalized,
           }) => {
             const total = cardsCents + manualCents;
+            const paymentConfirmed =
+              paymentStatusOverrides[participant.id] ?? isPaymentConfirmed;
             return (
               <article
                 key={participant.id}
@@ -122,7 +127,7 @@ export function AccountDivisionManager({
                       </p>
                     </div>
                   </div>
-                  {isPaymentConfirmed ? (
+                  {paymentConfirmed ? (
                     <span className="mt-1 shrink-0 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-300">
                       PAGO
                     </span>
@@ -180,7 +185,7 @@ export function AccountDivisionManager({
                         Reabrir
                       </button>
                     ) : null}
-                    {isPaymentConfirmed ? (
+                    {paymentConfirmed ? (
                       <button
                         type="button"
                         disabled={
@@ -188,6 +193,10 @@ export function AccountDivisionManager({
                         }
                         onClick={() => {
                           setPaymentActionParticipantId(participant.id);
+                          setPaymentStatusOverrides((current) => ({
+                            ...current,
+                            [participant.id]: false,
+                          }));
                           startTransition(async () => {
                             try {
                               const result = await undoVisualStatementPayment({
@@ -195,6 +204,11 @@ export function AccountDivisionManager({
                                 month,
                               });
                               if (result.error) {
+                                setPaymentStatusOverrides((current) => {
+                                  const next = { ...current };
+                                  delete next[participant.id];
+                                  return next;
+                                });
                                 notify("error", result.error);
                                 return;
                               }
@@ -219,6 +233,10 @@ export function AccountDivisionManager({
                         }
                         onClick={() => {
                           setPaymentActionParticipantId(participant.id);
+                          setPaymentStatusOverrides((current) => ({
+                            ...current,
+                            [participant.id]: true,
+                          }));
                           startTransition(async () => {
                             try {
                               const result = await confirmVisualStatementPayment({
@@ -226,6 +244,11 @@ export function AccountDivisionManager({
                                 month,
                               });
                               if (result.error) {
+                                setPaymentStatusOverrides((current) => {
+                                  const next = { ...current };
+                                  delete next[participant.id];
+                                  return next;
+                                });
                                 notify("error", result.error);
                                 return;
                               }

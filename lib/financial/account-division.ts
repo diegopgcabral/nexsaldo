@@ -11,6 +11,7 @@ export type StatementPurchase = {
   installmentNumber: number;
   installmentCount: number;
   isRecurring?: boolean;
+  paidAt?: string | null;
 };
 
 export type StatementManualCharge = {
@@ -55,10 +56,14 @@ export function summarizeStatement(
     }
   >();
   for (const purchase of purchases) {
+    if (purchase.paidAt) continue;
+
     const issuerKey = purchase.cardBankName.trim().toLocaleLowerCase("pt-BR");
-    const card = cards.get(issuerKey) ?? {
-      id: issuerKey,
-      name: purchase.cardBankName,
+    const name = purchase.cardName.trim() || purchase.cardBankName;
+    const cardKey = `${issuerKey}:${name.toLocaleLowerCase("pt-BR")}`;
+    const card = cards.get(cardKey) ?? {
+      id: cardKey,
+      name,
       bankName: purchase.cardBankName,
       lastFour: purchase.cardLastFour,
       purchases: [],
@@ -66,7 +71,7 @@ export function summarizeStatement(
     };
     card.purchases.push(purchase);
     card.totalCents += invoiceAmountToCents(purchase.amount);
-    cards.set(issuerKey, card);
+    cards.set(cardKey, card);
   }
   const cardsTotalCents = [...cards.values()].reduce(
     (total, card) => total + card.totalCents,
