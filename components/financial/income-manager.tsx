@@ -45,6 +45,8 @@ function incomeCategoryIcon(category: string) {
       return "income" as const;
     case "Reserva de emergência":
       return "shield" as const;
+    case "Saldo do mês anterior":
+      return "wallet" as const;
     default:
       return "more" as const;
   }

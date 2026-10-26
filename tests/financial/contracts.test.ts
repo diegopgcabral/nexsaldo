@@ -41,6 +41,17 @@ test("rejects an expense category when registering income", () => {
   assert.equal(result.success, false);
 });
 
+test("accepts the previous month balance as an income category", () => {
+  const result = createIncomeSchema.safeParse({
+    description: "Saldo trazido do mês anterior",
+    amount: "150.00",
+    receivedOn: "2026-10-01",
+    category: "Saldo do mês anterior",
+  });
+
+  assert.equal(result.success, true);
+});
+
 test("normalizes Brazilian currency input before validating it", () => {
   assert.equal(normalizeCurrencyInput("50.000,25"), "50000.25");
   assert.equal(normalizeCurrencyInput("50000.25"), "50000.25");
