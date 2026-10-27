@@ -6,12 +6,6 @@ import { previewB3Negotiations } from "@/app/(financial)/investments/actions";
 import type { B3ImportPreviewState } from "@/app/(financial)/investments/actions";
 import { Icon } from "@/components/financial/icons";
 
-const labels = {
-  FIXED_INCOME: "Tesouro Direto",
-  FII: "FIIs",
-  STOCK: "Ações",
-} as const;
-
 const initialB3ImportPreviewState: B3ImportPreviewState = {
   error: null,
   preview: null,
@@ -28,6 +22,17 @@ function formatQuantity(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 8,
   }).format(value);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+    .format(new Date(`${value}T00:00:00Z`))
+    .toUpperCase();
 }
 
 export function B3NegotiationImport() {
@@ -104,35 +109,91 @@ export function B3NegotiationImport() {
             </span>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-white/8">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-4 bg-white/[0.03] px-4 py-2 text-xs font-semibold tracking-wide text-slate-400 uppercase">
-              <span>Ativo</span>
-              <span>Quantidade</span>
-              <span className="text-right">Custo registrado</span>
-            </div>
-            <div className="divide-y divide-white/6">
-              {state.preview.positions.map((position) => (
-                <div
-                  className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-4 px-4 py-3 text-sm"
-                  key={`${position.assetClass}:${position.ticker ?? position.name}`}
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium text-white">
-                      {position.ticker ?? position.name}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-slate-400">
-                      {labels[position.assetClass]}
-                    </span>
-                  </span>
-                  <span className="self-center text-slate-200 tabular-nums">
-                    {formatQuantity(position.quantity)}
-                  </span>
-                  <span className="self-center text-right text-slate-200 tabular-nums">
-                    {formatCurrency(position.investedAmount)}
-                  </span>
+          <div className="mt-5 space-y-6">
+            {Object.entries(
+              state.preview.items.reduce<
+                Record<string, typeof state.preview.items>
+              >((groups, item) => {
+                groups[item.date] ??= [];
+                groups[item.date].push(item);
+                return groups;
+              }, {}),
+            )
+              .sort(([firstDate], [secondDate]) =>
+                secondDate.localeCompare(firstDate),
+              )
+              .map(([date, movements]) => (
+                <div key={date}>
+                  <h3 className="border-b border-emerald-400/45 pb-2 text-sm font-bold text-slate-100">
+                    {formatDate(date)}
+                  </h3>
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="w-full min-w-[1040px] text-left text-sm">
+                      <thead className="border-b border-white/8 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                        <tr>
+                          <th className="w-28 px-3 py-2">Tipo</th>
+                          <th className="px-3 py-2">Movimentação</th>
+                          <th className="px-3 py-2">Produto</th>
+                          <th className="px-3 py-2">Instituição</th>
+                          <th className="px-3 py-2 text-right">Quantidade</th>
+                          <th className="px-3 py-2 text-right">
+                            Preço unitário
+                          </th>
+                          <th className="px-3 py-2 text-right">Valor total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/6">
+                        {movements.map((movement) => {
+                          const isEntry = movement.quantity > 0;
+                          return (
+                            <tr key={movement.rowNumber}>
+                              <td className="px-3 py-3">
+                                <span
+                                  className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold tracking-wide uppercase ${isEntry ? "bg-emerald-400/15 text-emerald-300" : "bg-rose-400/15 text-rose-200"}`}
+                                >
+                                  {isEntry ? "Entrada" : "Saída"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-3 text-slate-300">
+                                {movement.operation}
+                              </td>
+                              <td className="px-3 py-3">
+                                <span className="font-medium text-white">
+                                  {movement.ticker ?? movement.name}
+                                </span>
+                                {movement.ticker ? (
+                                  <span className="mt-0.5 block max-w-64 truncate text-xs text-slate-400">
+                                    {movement.name.replace(
+                                      `${movement.ticker} - `,
+                                      "",
+                                    )}
+                                  </span>
+                                ) : null}
+                              </td>
+                              <td className="px-3 py-3 text-slate-400">
+                                {movement.institution}
+                              </td>
+                              <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                                {formatQuantity(Math.abs(movement.quantity))}
+                              </td>
+                              <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                                {movement.unitPrice === null
+                                  ? "—"
+                                  : formatCurrency(movement.unitPrice)}
+                              </td>
+                              <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                                {movement.totalAmount === null
+                                  ? "—"
+                                  : formatCurrency(movement.totalAmount)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))}
-            </div>
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-400">
