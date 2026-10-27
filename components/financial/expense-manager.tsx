@@ -622,7 +622,9 @@ export function ExpenseManager({
                     </button>
                   </th>
                 ))}
-                <th className="px-4 py-3.5 font-semibold">Recorrência</th>
+                <th className="px-4 py-3.5 font-semibold normal-case">
+                  Recorrência
+                </th>
                 <th className="px-5 py-3.5 font-semibold">
                   <span className="sr-only">Ações</span>
                 </th>
