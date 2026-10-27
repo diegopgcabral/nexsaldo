@@ -1,8 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
-import { previewB3Negotiations } from "@/app/(financial)/investments/actions";
+import {
+  importB3Negotiations,
+  previewB3Negotiations,
+} from "@/app/(financial)/investments/actions";
 import type { B3ImportPreviewState } from "@/app/(financial)/investments/actions";
 import { Icon } from "@/components/financial/icons";
 
@@ -41,6 +45,30 @@ export function B3NegotiationImport() {
     initialB3ImportPreviewState,
   );
   const [fileName, setFileName] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isImporting, startImportTransition] = useTransition();
+  const router = useRouter();
+
+  function importPreview() {
+    if (!file) {
+      setImportError(
+        "Selecione novamente o arquivo para confirmar a importação.",
+      );
+      return;
+    }
+    setImportError(null);
+    const formData = new FormData();
+    formData.set("file", file);
+    startImportTransition(async () => {
+      const result = await importB3Negotiations(formData);
+      if ("error" in result) {
+        setImportError(result.error ?? "Não foi possível importar o arquivo.");
+        return;
+      }
+      router.push(`/investments/portfolio?imported=${result.imported}`);
+    });
+  }
 
   return (
     <form action={action} className="space-y-5">
@@ -60,9 +88,11 @@ export function B3NegotiationImport() {
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             className="sr-only"
             name="file"
-            onChange={(event) =>
-              setFileName(event.target.files?.[0]?.name ?? null)
-            }
+            onChange={(event) => {
+              const selectedFile = event.target.files?.[0] ?? null;
+              setFile(selectedFile);
+              setFileName(selectedFile?.name ?? null);
+            }}
             required
             type="file"
           />
@@ -190,12 +220,29 @@ export function B3NegotiationImport() {
               ))}
           </div>
 
-          <p className="mt-4 text-xs leading-5 text-slate-400">
-            Ignoramos {state.preview.ignoredRows} movimentações que não são
-            negociações e {state.preview.excludedAssetRows} linhas de ativos
-            fora da lista inicial. Dividendos, rendimentos e JCP entram pela
-            opção Proventos.
-          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-5">
+            <p className="text-sm text-slate-400">
+              Confira os dados acima antes de gravar na carteira.
+            </p>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822] disabled:cursor-wait disabled:opacity-60"
+              disabled={isImporting}
+              onClick={importPreview}
+              type="button"
+            >
+              {isImporting
+                ? "Importando..."
+                : `Importar ${state.preview.items.length} negociações`}
+              {!isImporting ? (
+                <Icon className="size-4" name="chevronRight" />
+              ) : null}
+            </button>
+          </div>
+          {importError ? (
+            <p className="mt-3 rounded-xl bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+              {importError}
+            </p>
+          ) : null}
         </section>
       ) : null}
     </form>
