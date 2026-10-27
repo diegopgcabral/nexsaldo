@@ -179,8 +179,8 @@ export function FinancialShell({
                   <div className="mt-1 space-y-1 pl-7">
                     <SubmenuLink active={pathname === "/investments"} href="/investments" icon="dashboard" label="Dashboard" />
                     <SubmenuLink active={pathname.startsWith("/investments/portfolio")} href="/investments/portfolio" icon="wallet" label="Minha carteira" />
-                    <SubmenuLink active={pathname.startsWith("/investments/import")} href="/investments/import" icon="archive" label="Importação" />
                     <SubmenuLink active={pathname.startsWith("/investments/provents")} href="/investments/provents" icon="money" label="Proventos" />
+                    <SubmenuLink active={pathname.startsWith("/investments/import")} href="/investments/import" icon="archive" label="Importação" />
                   </div>
                 </details>
               ) : null}
