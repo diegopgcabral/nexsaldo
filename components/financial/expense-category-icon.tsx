@@ -15,6 +15,7 @@ const categoryRules: Array<[string[], ExpenseCategoryIconKey, string]> = [
     "text-emerald-300 bg-emerald-400/10 border-emerald-400/20",
   ],
   [["agua"], "water", "text-sky-300 bg-sky-400/10 border-sky-400/20"],
+  [["gas"], "gas", "text-orange-300 bg-orange-400/10 border-orange-400/20"],
   [
     ["energia", "luz"],
     "energy",
@@ -100,6 +101,7 @@ const iconColors: Record<ExpenseCategoryIconKey, string> = {
   subscription: "text-pink-300 bg-pink-400/10 border-pink-400/20",
   services: "text-teal-300 bg-teal-400/10 border-teal-400/20",
   water: "text-sky-300 bg-sky-400/10 border-sky-400/20",
+  gas: "text-orange-300 bg-orange-400/10 border-orange-400/20",
   energy: "text-amber-300 bg-amber-400/10 border-amber-400/20",
   phone: "text-cyan-300 bg-cyan-400/10 border-cyan-400/20",
   tv: "text-violet-300 bg-violet-400/10 border-violet-400/20",
@@ -208,6 +210,8 @@ function CategoryIconPath({ icon }: { icon: ExpenseCategoryIconKey }) {
       );
     case "water":
       return <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />;
+    case "gas":
+      return <path d="M12 21c4 0 6-2.7 6-6.1 0-3.2-2-5.2-4.7-8.5.1 2.4-1.1 4-2.6 5.2C10.8 8.3 8.9 6.2 7 4c.3 3.4-1 5.2-2.1 7.1C3.8 13.1 4 16 6 18.3A8 8 0 0 0 12 21Zm0-2.5c-1.6 0-2.7-1-2.7-2.5 0-1.2.9-2.3 2.7-4.3 1.8 2 2.7 3.1 2.7 4.3 0 1.5-1.1 2.5-2.7 2.5Z" />;
     case "energy":
       return <path d="m13 2-8 12h6l-1 8 8-12h-6l1-8Z" />;
     case "phone":
