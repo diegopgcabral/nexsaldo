@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { previewB3Negotiations } from "@/app/(financial)/investments/actions";
 import type { B3ImportPreviewState } from "@/app/(financial)/investments/actions";
@@ -35,40 +35,53 @@ export function B3NegotiationImport() {
     previewB3Negotiations,
     initialB3ImportPreviewState,
   );
+  const [fileName, setFileName] = useState<string | null>(null);
 
   return (
     <form action={action} className="space-y-5">
-      <label className="block cursor-pointer rounded-2xl border border-dashed border-emerald-400/35 bg-[#191c21] px-6 py-8 text-center transition hover:border-emerald-300 hover:bg-emerald-400/5">
-        <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
-          <Icon className="size-6" name="archive" />
-        </span>
-        <span className="mt-4 block font-semibold text-white">
-          Selecionar relatório de movimentação
-        </span>
-        <span className="mx-auto mt-2 block max-w-md text-sm leading-6 text-slate-400">
-          Envie o Excel baixado da B3. A primeira importação aceita somente os
-          ativos combinados e o Tesouro Direto.
-        </span>
-        <input
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          className="sr-only"
-          name="file"
-          required
-          type="file"
-        />
-        <span className="mt-5 inline-flex rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822]">
-          Escolher arquivo
-        </span>
-      </label>
+      <div className="rounded-2xl border border-dashed border-emerald-400/35 bg-[#191c21] px-6 py-8 text-center">
+        <label className="block cursor-pointer transition hover:text-emerald-200">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
+            <Icon className="size-6" name="archive" />
+          </span>
+          <span className="mt-4 block font-semibold text-white">
+            Selecionar relatório de movimentação
+          </span>
+          <span className="mx-auto mt-2 block max-w-md text-sm leading-6 text-slate-400">
+            Envie o Excel baixado da B3. A primeira importação aceita somente os
+            ativos combinados e o Tesouro Direto.
+          </span>
+          <input
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            className="sr-only"
+            name="file"
+            onChange={(event) =>
+              setFileName(event.target.files?.[0]?.name ?? null)
+            }
+            required
+            type="file"
+          />
+          <span className="mt-5 inline-flex rounded-xl border border-emerald-400/35 px-5 py-2.5 text-sm font-semibold text-emerald-300">
+            {fileName ? "Trocar arquivo" : "Escolher arquivo"}
+          </span>
+        </label>
 
-      <button
-        className="mx-auto flex items-center gap-2 rounded-xl border border-emerald-400/30 px-5 py-2.5 text-sm font-semibold text-emerald-300 disabled:cursor-wait disabled:opacity-60"
-        disabled={pending}
-        type="submit"
-      >
-        {pending ? "Lendo relatório..." : "Gerar prévia"}
-        {!pending ? <Icon className="size-4" name="chevronRight" /> : null}
-      </button>
+        {fileName ? (
+          <div className="mx-auto mt-5 max-w-md border-t border-white/8 pt-5">
+            <p className="truncate text-sm text-slate-300">{fileName}</p>
+            <button
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822] disabled:cursor-wait disabled:opacity-60"
+              disabled={pending}
+              type="submit"
+            >
+              {pending ? "Lendo relatório..." : "Gerar prévia"}
+              {!pending ? (
+                <Icon className="size-4" name="chevronRight" />
+              ) : null}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       {state.error ? (
         <p className="rounded-xl bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
