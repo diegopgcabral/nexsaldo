@@ -47,6 +47,7 @@ export function B3NegotiationImport() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<number | null>(null);
   const [isImporting, startImportTransition] = useTransition();
   const router = useRouter();
 
@@ -58,14 +59,25 @@ export function B3NegotiationImport() {
       return;
     }
     setImportError(null);
+    setImportProgress(5);
     const formData = new FormData();
     formData.set("file", file);
+    const timer = window.setInterval(() => {
+      setImportProgress((current) => {
+        if (current === null) return 5;
+        return Math.min(current < 60 ? current + 8 : current + 2, 92);
+      });
+    }, 350);
     startImportTransition(async () => {
       const result = await importB3Negotiations(formData);
+      window.clearInterval(timer);
       if ("error" in result) {
         setImportError(result.error ?? "Não foi possível importar o arquivo.");
+        setImportProgress(null);
         return;
       }
+      setImportProgress(100);
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
       router.push(`/investments/portfolio?imported=${result.imported}`);
     });
   }
@@ -219,6 +231,32 @@ export function B3NegotiationImport() {
                 </div>
               ))}
           </div>
+
+          {importProgress !== null ? (
+            <div className="mt-5 border-t border-white/8 pt-5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-slate-200">
+                  Importando negociações
+                </span>
+                <span className="font-semibold text-emerald-300 tabular-nums">
+                  {importProgress}%
+                </span>
+              </div>
+              <div
+                aria-label="Progresso da importação"
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={importProgress}
+                className="mt-2 h-2 overflow-hidden rounded-full bg-white/8"
+                role="progressbar"
+              >
+                <div
+                  className="h-full rounded-full bg-[#00e599] transition-[width] duration-300"
+                  style={{ width: `${importProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-5">
             <p className="text-sm text-slate-400">
