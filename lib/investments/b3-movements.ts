@@ -203,6 +203,13 @@ function parseDate(value: string) {
   return `${match[3]}-${match[2]}-${match[1]}`;
 }
 
+function normalizeInstitution(value: string) {
+  const normalized = value.trim().toUpperCase();
+  if (normalized.includes("NU INVEST")) return "Nubank";
+  if (normalized.includes("XP INVESTIMENTOS")) return "XP";
+  return value.trim();
+}
+
 function classifyAsset(
   tradeCode: string,
 ): Pick<B3Negotiation, "assetClass" | "name" | "ticker"> | null {
@@ -256,7 +263,7 @@ export function parseB3Negotiations(file: ArrayBuffer): B3ImportPreview {
     items.push({
       ...asset,
       date,
-      institution: row[4].trim(),
+      institution: normalizeInstitution(row[4]),
       market: row[2] ?? "—",
       maturityDate: row[3] ?? "—",
       name: asset.name,
