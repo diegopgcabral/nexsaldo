@@ -22,6 +22,7 @@ import {
 } from "@/app/(financial)/invoices/actions";
 import { DarkSelect } from "@/components/financial/dark-select";
 import { ExpenseCategoryIcon } from "@/components/financial/expense-category-icon";
+import { InvoiceCycleNotes } from "@/components/financial/invoice-cycle-notes";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
 import type { CreditCardListItem } from "@/lib/financial/credit-card";
@@ -37,6 +38,7 @@ import {
 import { formatCents } from "@/lib/financial/income";
 import { addMonths, formatMonthReference } from "@/lib/financial/month";
 import type { ParticipantListItem } from "@/lib/financial/participant";
+import type { InvoiceCycleNote } from "@/lib/financial/invoice-note";
 
 const centsOrZero = invoiceAmountToCents;
 
@@ -408,6 +410,7 @@ export function InvoiceManager({
   loadError,
   categories,
   isClosed,
+  notes,
 }: {
   cards: CreditCardListItem[];
   selectedCardId: string;
@@ -418,6 +421,7 @@ export function InvoiceManager({
   loadError: boolean;
   categories: { name: string; iconKey: string | null }[];
   isClosed: boolean;
+  notes: InvoiceCycleNote[];
 }) {
   const router = useRouter();
   const { notify } = useToast();
@@ -754,6 +758,11 @@ export function InvoiceManager({
               )}
             </div>
           </div>
+          <InvoiceCycleNotes
+            cardId={selectedCardId}
+            month={month}
+            notes={notes}
+          />
           <section className="rounded-2xl border border-white/5 bg-[#1d2026] p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>

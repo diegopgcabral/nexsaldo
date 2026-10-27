@@ -8,6 +8,100 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PurchaseActionState = { error?: string; success?: boolean };
 
+const noteInput = z.object({
+  id: z.string().uuid().optional(),
+  cardId: z.string().uuid(),
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  content: z.string().trim().max(10000),
+  checklist: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        text: z.string().trim().min(1).max(280),
+        checked: z.boolean(),
+      }),
+    )
+    .max(100),
+});
+
+async function noteSession() {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  return typeof auth?.claims.sub === "string"
+    ? { supabase, userId: auth.claims.sub }
+    : null;
+}
+
+export async function saveInvoiceCycleNote(input: unknown) {
+  const parsed = noteInput.safeParse(input);
+  if (
+    !parsed.success ||
+    (!parsed.data.content && !parsed.data.checklist.length)
+  )
+    return { error: "Escreva uma nota ou adicione um item à checklist." };
+  const session = await noteSession();
+  if (!session) return { error: "Sua sessão expirou. Entre novamente." };
+  const values = {
+    user_id: session.userId,
+    card_id: parsed.data.cardId,
+    invoice_month: `${parsed.data.month}-01`,
+    content: parsed.data.content,
+    checklist: parsed.data.checklist,
+  };
+  const query = parsed.data.id
+    ? session.supabase
+        .from("credit_card_invoice_notes")
+        .update(values)
+        .eq("id", parsed.data.id)
+        .eq("user_id", session.userId)
+    : session.supabase.from("credit_card_invoice_notes").insert(values);
+  const { error } = await query;
+  if (error) return { error: "Não foi possível salvar a nota." };
+  revalidatePath(`/invoices/${parsed.data.cardId}`);
+  return { success: true };
+}
+
+export async function setInvoiceCycleNoteCompleted(input: unknown) {
+  const parsed = z
+    .object({
+      id: z.string().uuid(),
+      cardId: z.string().uuid(),
+      completed: z.boolean(),
+    })
+    .safeParse(input);
+  if (!parsed.success) return { error: "Nota inválida." };
+  const session = await noteSession();
+  if (!session) return { error: "Sua sessão expirou. Entre novamente." };
+  const { error } = await session.supabase
+    .from("credit_card_invoice_notes")
+    .update({
+      is_completed: parsed.data.completed,
+      completed_at: parsed.data.completed ? new Date().toISOString() : null,
+    })
+    .eq("id", parsed.data.id)
+    .eq("user_id", session.userId);
+  if (error) return { error: "Não foi possível atualizar a nota." };
+  revalidatePath(`/invoices/${parsed.data.cardId}`);
+  return { success: true };
+}
+
+export async function deleteInvoiceCycleNote(input: unknown) {
+  const parsed = z
+    .object({ id: z.string().uuid(), cardId: z.string().uuid() })
+    .safeParse(input);
+  if (!parsed.success) return { error: "Nota inválida." };
+  const session = await noteSession();
+  if (!session) return { error: "Sua sessão expirou. Entre novamente." };
+  const { error } = await session.supabase
+    .from("credit_card_invoice_notes")
+    .delete()
+    .eq("id", parsed.data.id)
+    .eq("user_id", session.userId);
+  if (error) return { error: "Não foi possível excluir a nota." };
+  revalidatePath(`/invoices/${parsed.data.cardId}`);
+  return { success: true };
+}
+
 function invoiceError(error: { message?: string } | null, fallback: string) {
   return error?.message?.includes("Invoice is closed")
     ? "Esta fatura está fechada e não pode receber alterações."
