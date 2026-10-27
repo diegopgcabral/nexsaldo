@@ -1,15 +1,12 @@
 import Link from "next/link";
 
+import { PortfolioPositionTable } from "@/components/investments/portfolio-position-table";
 import { createClient } from "@/lib/supabase/server";
 
 const groups = [
-  { assetClass: "STOCK", label: "Ações", typeLabel: "ON / PN / UNIT" },
-  {
-    assetClass: "FII",
-    label: "FII · Fundo de Investimento Imobiliário",
-    typeLabel: "Cotas",
-  },
-  { assetClass: "FIXED_INCOME", label: "Renda fixa", typeLabel: "Título" },
+  { assetClass: "STOCK", label: "Ações" },
+  { assetClass: "FII", label: "FII · Fundo de Investimento Imobiliário" },
+  { assetClass: "FIXED_INCOME", label: "Renda fixa" },
 ] as const;
 
 function formatCurrency(value: number) {
@@ -17,21 +14,6 @@ function formatCurrency(value: number) {
     currency: "BRL",
     style: "currency",
   }).format(value);
-}
-
-function formatQuantity(value: number) {
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 8 }).format(
-    value,
-  );
-}
-
-function assetType(assetClass: string, ticker: string | null) {
-  if (assetClass === "FII") return "Cotas";
-  if (assetClass === "FIXED_INCOME") return "Título";
-  if (ticker?.endsWith("3")) return "ON";
-  if (ticker?.endsWith("4")) return "PN";
-  if (ticker?.endsWith("11")) return "UNIT";
-  return "—";
 }
 
 type Props = { searchParams: Promise<{ imported?: string }> };
@@ -46,7 +28,7 @@ export default async function InvestmentPortfolioPage({ searchParams }: Props) {
       ? await Promise.all([
           supabase
             .from("investment_positions")
-            .select("asset_id, quantity, invested_amount, current_amount")
+            .select("asset_id, quantity, invested_amount")
             .eq("user_id", userId),
           supabase
             .from("investment_assets")
@@ -116,13 +98,9 @@ export default async function InvestmentPortfolioPage({ searchParams }: Props) {
       {positions.length ? (
         <div className="space-y-8">
           {groups.map((group) => {
-            const rows = positions
-              .filter((position) => position.assetClass === group.assetClass)
-              .sort((first, second) =>
-                (first.ticker ?? first.name).localeCompare(
-                  second.ticker ?? second.name,
-                ),
-              );
+            const rows = positions.filter(
+              (position) => position.assetClass === group.assetClass,
+            );
             if (!rows.length) return null;
             const total = rows.reduce(
               (sum, row) => sum + row.investedAmount,
@@ -136,54 +114,7 @@ export default async function InvestmentPortfolioPage({ searchParams }: Props) {
                     TOTAL: {formatCurrency(total)}
                   </span>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px] table-fixed text-left text-sm">
-                    <colgroup>
-                      <col className="w-[34%]" />
-                      <col className="w-[12%]" />
-                      <col className="w-[22%]" />
-                      <col className="w-[11%]" />
-                      <col className="w-[11%]" />
-                      <col className="w-[12%]" />
-                    </colgroup>
-                    <thead className="border-b border-white/8 text-xs font-semibold tracking-wide text-slate-400 uppercase">
-                      <tr>
-                        <th className="px-3 py-3">Produto</th>
-                        <th className="px-3 py-3">Tipo</th>
-                        <th className="px-3 py-3">Instituição</th>
-                        <th className="px-3 py-3 text-right">Quantidade</th>
-                        <th className="px-3 py-3 text-right">Preço médio</th>
-                        <th className="px-3 py-3 text-right">
-                          Valor investido
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/6">
-                      {rows.map((row) => (
-                        <tr key={`${row.assetClass}:${row.ticker ?? row.name}`}>
-                          <td className="truncate px-3 py-3 font-medium text-white">
-                            {row.ticker ?? row.name}
-                          </td>
-                          <td className="px-3 py-3 text-slate-400">
-                            {assetType(row.assetClass, row.ticker)}
-                          </td>
-                          <td className="truncate px-3 py-3 text-slate-400">
-                            {row.institution}
-                          </td>
-                          <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                            {formatQuantity(row.quantity)}
-                          </td>
-                          <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                            {formatCurrency(row.investedAmount / row.quantity)}
-                          </td>
-                          <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                            {formatCurrency(row.investedAmount)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <PortfolioPositionTable rows={rows} />
               </section>
             );
           })}
