@@ -120,12 +120,21 @@ export async function importB3Negotiations(formData: FormData) {
 
   const assetIds = new Map<string, string>();
   for (const item of preview.positions) {
+    const assetKey = `${item.assetClass}:${item.ticker ?? item.name}`;
+    const firstNegotiation = preview.items.find(
+      (negotiation) =>
+        `${negotiation.assetClass}:${negotiation.ticker ?? negotiation.name}` ===
+        assetKey,
+    );
     const { data, error } = await auth.supabase
       .from("investment_assets")
       .upsert(
         {
           user_id: auth.userId,
           asset_class: item.assetClass,
+          institution_id: firstNegotiation
+            ? institutionIds.get(firstNegotiation.institution)
+            : null,
           name: item.name,
           ticker: item.ticker,
         },
@@ -135,7 +144,7 @@ export async function importB3Negotiations(formData: FormData) {
       .single();
     if (error || !data)
       return { error: "Não foi possível salvar os ativos da importação." };
-    assetIds.set(`${item.assetClass}:${item.ticker ?? item.name}`, data.id);
+    assetIds.set(assetKey, data.id);
   }
 
   const transactions = preview.items.map((item) => ({
