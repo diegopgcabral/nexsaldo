@@ -296,7 +296,7 @@ function UpcomingExpenses({
         </div>
       </div>
       {dueExpenses.length ? (
-        <div className="mt-5 divide-y divide-white/5">
+        <div className="category-scroll mt-5 max-h-[22rem] divide-y divide-white/5 overflow-y-auto pr-2">
           {dueExpenses.map((expense) => (
             <div
               className="flex items-center justify-between gap-4 py-3"
