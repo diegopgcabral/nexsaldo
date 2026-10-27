@@ -178,8 +178,8 @@ export function FinancialShell({
                   </summary>
                   <div className="mt-1 space-y-1 pl-7">
                     <SubmenuLink active={pathname === "/investments"} href="/investments" icon="dashboard" label="Dashboard" />
-                    <SubmenuLink active={pathname.startsWith("/investments/portfolio")} href="/investments/portfolio" icon="briefcase" label="Carteira" />
-                    <SubmenuLink active={pathname.startsWith("/investments/provents")} href="/investments/provents" icon="income" label="Proventos" />
+                    <SubmenuLink active={pathname.startsWith("/investments/portfolio")} href="/investments/portfolio" icon="wallet" label="Minha carteira" />
+                    <SubmenuLink active={pathname.startsWith("/investments/provents")} href="/investments/provents" icon="money" label="Proventos" />
                   </div>
                 </details>
               ) : null}
@@ -322,9 +322,11 @@ function SubmenuLink({
     | "dashboard"
     | "expense"
     | "income"
+    | "money"
     | "person"
     | "receipt"
-    | "briefcase";
+    | "briefcase"
+    | "wallet";
   label: string;
 }) {
   return (
