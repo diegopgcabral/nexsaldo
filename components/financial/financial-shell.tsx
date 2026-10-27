@@ -171,13 +171,17 @@ export function FinancialShell({
                 </details>
               ) : null}
               {navigationModules.investments ? (
-                <Link
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${pathname === "/investments" ? "bg-emerald-400 text-[#003822] shadow-[0_0_20px_rgba(0,229,153,0.18)]" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
-                  href="/investments"
-                >
-                  <Icon className="size-5" name="briefcase" />
-                  Investimentos
-                </Link>
+                <details open={pathname.startsWith("/investments")}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-slate-100">
+                    <span className="flex items-center gap-3"><Icon className="size-5" name="briefcase" />Investimentos</span>
+                    <Icon className="size-4 transition group-open:rotate-180" name="chevronDown" />
+                  </summary>
+                  <div className="mt-1 space-y-1 pl-7">
+                    <SubmenuLink active={pathname === "/investments"} href="/investments" icon="dashboard" label="Dashboard" />
+                    <SubmenuLink active={pathname.startsWith("/investments/portfolio")} href="/investments/portfolio" icon="briefcase" label="Carteira" />
+                    <SubmenuLink active={pathname.startsWith("/investments/provents")} href="/investments/provents" icon="income" label="Proventos" />
+                  </div>
+                </details>
               ) : null}
               <Link
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
@@ -315,10 +319,12 @@ function SubmenuLink({
     | "calculator"
     | "check"
     | "creditCard"
+    | "dashboard"
     | "expense"
     | "income"
     | "person"
-    | "receipt";
+    | "receipt"
+    | "briefcase";
   label: string;
 }) {
   return (
