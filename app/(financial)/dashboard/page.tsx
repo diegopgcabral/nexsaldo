@@ -139,9 +139,9 @@ export default async function DashboardPage({
             ? -1
             : 1,
       );
-    const dueExpenses = expenses
-      .filter((expense) => expense.status === "PENDING")
-      .slice(0, 5);
+    const dueExpenses = expenses.filter(
+      (expense) => expense.status === "PENDING",
+    );
     const projectedBalanceCents = balanceCents - expenseTotals.openCents;
     const hasData = incomes.length > 0 || expenses.length > 0;
 
