@@ -6,6 +6,7 @@ import type {
   PurchaseListItem,
   PurchaseSplit,
 } from "@/lib/financial/credit-card-invoice";
+import type { InvoiceCycleNote } from "@/lib/financial/invoice-note";
 import {
   getCurrentMonthReference,
   isMonthReference,
@@ -34,6 +35,7 @@ export default async function CardInvoicePage({
   let participants: ParticipantListItem[] = [];
   let purchases: PurchaseListItem[] = [];
   let categories: { name: string; iconKey: string | null }[] = [];
+  let notes: InvoiceCycleNote[] = [];
   let isClosed = false;
   let ownerName = "Você";
   let loadError = false;
@@ -93,7 +95,7 @@ export default async function CardInvoicePage({
       }));
     const selectedCard = cards.find((card) => card.id === cardId);
     if (selectedCard) {
-      const [purchaseResult, closureResult] = await Promise.all([
+      const [purchaseResult, closureResult, noteResult] = await Promise.all([
         supabase
           .from("credit_card_purchases")
           .select(
@@ -110,8 +112,19 @@ export default async function CardInvoicePage({
           .eq("card_id", selectedCard.id)
           .eq("invoice_month", `${month}-01`)
           .maybeSingle(),
+        supabase
+          .from("credit_card_invoice_notes")
+          .select(
+            "id, content, checklist, is_completed, created_at, updated_at",
+          )
+          .eq("user_id", userId)
+          .eq("card_id", selectedCard.id)
+          .eq("invoice_month", `${month}-01`)
+          .order("updated_at", { ascending: false }),
       ]);
-      loadError ||= Boolean(purchaseResult.error || closureResult.error);
+      loadError ||= Boolean(
+        purchaseResult.error || closureResult.error || noteResult.error,
+      );
       isClosed = Boolean(closureResult.data);
       const purchaseRows = purchaseResult.data ?? [];
       const ids = purchaseRows.map((purchase) => purchase.id);
@@ -147,6 +160,14 @@ export default async function CardInvoicePage({
         isInvoiceMatched: purchase.invoice_matched,
         splits: splitsByPurchase.get(purchase.id) ?? [],
       }));
+      notes = (noteResult.data ?? []).map((note) => ({
+        id: note.id,
+        content: note.content,
+        checklist: Array.isArray(note.checklist) ? note.checklist : [],
+        isCompleted: note.is_completed,
+        createdAt: note.created_at,
+        updatedAt: note.updated_at,
+      }));
     }
   }
   const selectedCardId = cards.some((card) => card.id === cardId) ? cardId : "";
@@ -162,6 +183,7 @@ export default async function CardInvoicePage({
       loadError={loadError}
       categories={categories}
       isClosed={isClosed}
+      notes={notes}
     />
   );
 }

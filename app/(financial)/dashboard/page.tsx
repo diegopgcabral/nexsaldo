@@ -83,7 +83,7 @@ export default async function DashboardPage({
         supabase
           .from("expenses")
           .select(
-            "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes",
+            "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes, is_recurring",
           )
           .eq("user_id", userId)
           .gte("due_date", startsOn)
@@ -113,6 +113,7 @@ export default async function DashboardPage({
         category: expense.category,
         status: expense.status,
         notes: expense.notes,
+        isRecurring: expense.is_recurring,
       }));
       categoryIcons = Object.fromEntries(
         (categoryRows ?? []).map((category) => [
@@ -138,9 +139,9 @@ export default async function DashboardPage({
             ? -1
             : 1,
       );
-    const dueExpenses = expenses
-      .filter((expense) => expense.status === "PENDING")
-      .slice(0, 5);
+    const dueExpenses = expenses.filter(
+      (expense) => expense.status === "PENDING",
+    );
     const projectedBalanceCents = balanceCents - expenseTotals.openCents;
     const hasData = incomes.length > 0 || expenses.length > 0;
 
@@ -295,7 +296,7 @@ function UpcomingExpenses({
         </div>
       </div>
       {dueExpenses.length ? (
-        <div className="mt-5 divide-y divide-white/5">
+        <div className="category-scroll mt-5 max-h-[22rem] divide-y divide-white/5 overflow-y-auto pr-2">
           {dueExpenses.map((expense) => (
             <div
               className="flex items-center justify-between gap-4 py-3"

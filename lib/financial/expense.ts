@@ -10,6 +10,7 @@ export type ExpenseListItem = {
   category: string;
   status: ExpenseStatus;
   notes: string | null;
+  isRecurring: boolean;
 };
 
 function toCents(value: string | number) {

@@ -118,6 +118,7 @@ function ExpenseForm({
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(!expense);
   const [categoryOptions, setCategoryOptions] = useState(categories);
   const [categoryError, setCategoryError] = useState<string>();
+  const [isRecurring, setIsRecurring] = useState(expense?.isRecurring ?? false);
   const [creatingCategory, startCreatingCategory] = useTransition();
   const router = useRouter();
   const { notify } = useToast();
@@ -332,6 +333,23 @@ function ExpenseForm({
           ))}
         </div>
       </fieldset>
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-[#111319] p-4 transition hover:border-emerald-400/35">
+        <input
+          checked={isRecurring}
+          className="mt-0.5 size-4 accent-emerald-400"
+          name="isRecurring"
+          onChange={(event) => setIsRecurring(event.target.checked)}
+          type="checkbox"
+        />
+        <span>
+          <span className="block text-sm font-semibold text-slate-100">
+            Repetir mensalmente
+          </span>
+          <span className="mt-0.5 block text-xs leading-5 text-slate-400">
+            Ao salvar, a despesa deste ciclo e a do próximo ciclo serão criadas.
+          </span>
+        </span>
+      </label>
       <label className="space-y-1.5">
         <span className="income-label">
           Observações{" "}
@@ -571,7 +589,7 @@ export function ExpenseManager({
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl bg-[#191c21] shadow-xl shadow-black/20">
-          <table className="w-full min-w-225 text-left text-sm">
+          <table className="w-full min-w-245 text-left text-sm">
             <thead className="bg-[#272a30]/70 text-xs tracking-wider text-slate-400 uppercase">
               <tr>
                 {sortableColumns.map(({ key, label }) => (
@@ -604,6 +622,9 @@ export function ExpenseManager({
                     </button>
                   </th>
                 ))}
+                <th className="px-4 py-3.5 font-semibold normal-case">
+                  Recorrência
+                </th>
                 <th className="px-5 py-3.5 font-semibold">
                   <span className="sr-only">Ações</span>
                 </th>
@@ -644,6 +665,15 @@ export function ExpenseManager({
                   </td>
                   <td className="px-4 py-4">
                     <Status status={item.status} />
+                  </td>
+                  <td className="px-4 py-4">
+                    {item.isRecurring ? (
+                      <span className="inline-flex rounded-full bg-violet-400/12 px-2.5 py-1 text-xs font-medium text-violet-200">
+                        Mensal
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-1">

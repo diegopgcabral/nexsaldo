@@ -31,6 +31,7 @@ function payload(formData: FormData) {
     category: value(formData, "category"),
     status: requestedStatus,
     notes: value(formData, "notes") || undefined,
+    isRecurring: value(formData, "isRecurring") === "on",
   });
   if (!parsed.success) return parsed;
 
@@ -71,16 +72,17 @@ export async function createExpense(
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const auth = await session();
   if ("error" in auth) return auth;
-  const { error } = await auth.supabase.from("expenses").insert({
-    user_id: auth.userId,
-    description: parsed.data.description,
-    reference_amount: parsed.data.referenceAmount,
-    paid_amount: parsed.data.paidAmount,
-    due_date: parsed.data.dueDate,
-    paid_at: paymentDate(parsed.data.status, parsed.data.dueDate),
-    category: parsed.data.category,
-    status: parsed.data.status,
-    notes: parsed.data.notes ?? null,
+  const { error } = await auth.supabase.rpc("save_expense", {
+    p_id: null,
+    p_description: parsed.data.description,
+    p_reference_amount: parsed.data.referenceAmount,
+    p_paid_amount: parsed.data.paidAmount,
+    p_due_date: parsed.data.dueDate,
+    p_paid_at: paymentDate(parsed.data.status, parsed.data.dueDate),
+    p_category: parsed.data.category,
+    p_status: parsed.data.status,
+    p_notes: parsed.data.notes ?? null,
+    p_is_recurring: parsed.data.isRecurring,
   });
   if (error) return { error: "Não foi possível salvar a despesa." };
   refresh(value(formData, "month"));
@@ -98,20 +100,18 @@ export async function updateExpense(
     return { error: parsed.error?.issues[0]?.message ?? "Dados inválidos." };
   const auth = await session();
   if ("error" in auth) return auth;
-  const { error } = await auth.supabase
-    .from("expenses")
-    .update({
-      description: parsed.data.description,
-      reference_amount: parsed.data.referenceAmount,
-      paid_amount: parsed.data.paidAmount,
-      due_date: parsed.data.dueDate,
-      paid_at: paymentDate(parsed.data.status, parsed.data.dueDate),
-      category: parsed.data.category,
-      status: parsed.data.status,
-      notes: parsed.data.notes ?? null,
-    })
-    .eq("id", id.data)
-    .eq("user_id", auth.userId);
+  const { error } = await auth.supabase.rpc("save_expense", {
+    p_id: id.data,
+    p_description: parsed.data.description,
+    p_reference_amount: parsed.data.referenceAmount,
+    p_paid_amount: parsed.data.paidAmount,
+    p_due_date: parsed.data.dueDate,
+    p_paid_at: paymentDate(parsed.data.status, parsed.data.dueDate),
+    p_category: parsed.data.category,
+    p_status: parsed.data.status,
+    p_notes: parsed.data.notes ?? null,
+    p_is_recurring: parsed.data.isRecurring,
+  });
   if (error) return { error: "Não foi possível atualizar a despesa." };
   refresh(value(formData, "month"));
   return { success: true };

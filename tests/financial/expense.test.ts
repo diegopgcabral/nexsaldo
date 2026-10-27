@@ -18,6 +18,7 @@ function expense(
     description: "Despesa teste",
     dueDate: "2026-10-01",
     id: crypto.randomUUID(),
+    isRecurring: false,
     notes: null,
     paidAt: null,
     paidAmount,

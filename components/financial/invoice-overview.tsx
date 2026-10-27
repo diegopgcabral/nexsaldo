@@ -227,19 +227,19 @@ export function InvoiceOverview({
                           const outstanding = amount - paid;
                           return (
                             <div className="space-y-1 text-sm" key={cardId}>
-                              <div className="flex justify-between gap-3">
-                                <span className="flex min-w-0 items-center gap-1.5">
-                                  <span className="truncate text-slate-400">
-                                    {cardsById.get(cardId)?.name ??
-                                      "Cartão removido"}
-                                  </span>
-                                  {closedCards.has(cardId) ? (
-                                    <span className="shrink-0 rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
-                                      Fechada
-                                    </span>
-                                  ) : null}
+                              <div className="grid grid-cols-[minmax(0,1fr)_62px_86px] items-center gap-2">
+                                <span className="truncate text-slate-400">
+                                  {cardsById.get(cardId)?.name ??
+                                    "Cartão removido"}
                                 </span>
-                                <span className="shrink-0 text-slate-200">
+                                {closedCards.has(cardId) ? (
+                                  <span className="justify-self-center rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+                                    Fechada
+                                  </span>
+                                ) : (
+                                  <span />
+                                )}
+                                <span className="shrink-0 text-right text-slate-200">
                                   {formatCents(amount)}
                                 </span>
                               </div>

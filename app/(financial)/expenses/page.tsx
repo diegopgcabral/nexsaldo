@@ -41,7 +41,7 @@ export default async function ExpensesPage({
     const { data } = await supabase
       .from("expenses")
       .select(
-        "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes",
+        "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes, is_recurring",
       )
       .eq("user_id", userId)
       .gte("due_date", startsOn)
@@ -57,6 +57,7 @@ export default async function ExpensesPage({
       category: expense.category,
       status: expense.status,
       notes: expense.notes,
+      isRecurring: expense.is_recurring,
     }));
     const { data: categoryRows } = await supabase
       .from("expense_categories")
