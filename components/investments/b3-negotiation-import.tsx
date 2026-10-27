@@ -50,11 +50,11 @@ export function B3NegotiationImport() {
             <Icon className="size-6" name="archive" />
           </span>
           <span className="mt-4 block font-semibold text-white">
-            Selecionar relatório de movimentação
+            Selecionar relatório de negociação
           </span>
           <span className="mx-auto mt-2 block max-w-md text-sm leading-6 text-slate-400">
-            Envie o Excel baixado da B3. A primeira importação aceita somente os
-            ativos combinados e o Tesouro Direto.
+            Envie o Excel de Negociação baixado da B3. A primeira importação
+            aceita somente os ativos combinados e o Tesouro Direto.
           </span>
           <input
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -128,13 +128,14 @@ export function B3NegotiationImport() {
                     {formatDate(date)}
                   </h3>
                   <div className="mt-2 overflow-x-auto">
-                    <table className="w-full min-w-[1040px] text-left text-sm">
+                    <table className="w-full min-w-[1180px] text-left text-sm">
                       <thead className="border-b border-white/8 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                         <tr>
-                          <th className="w-28 px-3 py-2">Tipo</th>
-                          <th className="px-3 py-2">Movimentação</th>
-                          <th className="px-3 py-2">Produto</th>
+                          <th className="w-32 px-3 py-2">Movimentação</th>
+                          <th className="px-3 py-2">Mercado</th>
+                          <th className="px-3 py-2">Vencimento</th>
                           <th className="px-3 py-2">Instituição</th>
+                          <th className="px-3 py-2">Cód. de negociação</th>
                           <th className="px-3 py-2 text-right">Quantidade</th>
                           <th className="px-3 py-2 text-right">
                             Preço unitário
@@ -144,34 +145,27 @@ export function B3NegotiationImport() {
                       </thead>
                       <tbody className="divide-y divide-white/6">
                         {movements.map((movement) => {
-                          const isEntry = movement.quantity > 0;
+                          const isPurchase = movement.transactionType === "BUY";
                           return (
                             <tr key={movement.rowNumber}>
                               <td className="px-3 py-3">
                                 <span
-                                  className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold tracking-wide uppercase ${isEntry ? "bg-emerald-400/15 text-emerald-300" : "bg-rose-400/15 text-rose-200"}`}
+                                  className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold tracking-wide uppercase ${isPurchase ? "bg-emerald-400/15 text-emerald-300" : "bg-rose-400/15 text-rose-200"}`}
                                 >
-                                  {isEntry ? "Entrada" : "Saída"}
+                                  {isPurchase ? "Compra" : "Venda"}
                                 </span>
                               </td>
                               <td className="px-3 py-3 text-slate-300">
-                                {movement.operation}
+                                {movement.market}
                               </td>
-                              <td className="px-3 py-3">
-                                <span className="font-medium text-white">
-                                  {movement.ticker ?? movement.name}
-                                </span>
-                                {movement.ticker ? (
-                                  <span className="mt-0.5 block max-w-64 truncate text-xs text-slate-400">
-                                    {movement.name.replace(
-                                      `${movement.ticker} - `,
-                                      "",
-                                    )}
-                                  </span>
-                                ) : null}
+                              <td className="px-3 py-3 text-slate-400">
+                                {movement.maturityDate}
                               </td>
                               <td className="px-3 py-3 text-slate-400">
                                 {movement.institution}
+                              </td>
+                              <td className="px-3 py-3 font-medium text-white">
+                                {movement.tradeCode}
                               </td>
                               <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
                                 {formatQuantity(Math.abs(movement.quantity))}

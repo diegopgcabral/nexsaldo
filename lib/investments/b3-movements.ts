@@ -28,18 +28,21 @@ export const allowedFiiTickers = new Set([
 
 export type InvestmentAssetClass = "FIXED_INCOME" | "STOCK" | "FII";
 export type InvestmentTransactionType =
-  "BUY" | "BONUS" | "SPLIT" | "CORPORATE_ACTION" | "TRANSFER_OUT";
+  "BUY" | "SELL" | "BONUS" | "SPLIT" | "CORPORATE_ACTION" | "TRANSFER_OUT";
 
 export type B3Negotiation = {
   assetClass: InvestmentAssetClass;
   date: string;
   institution: string;
+  market: string;
+  maturityDate: string;
   name: string;
   operation: string;
   quantity: number;
   rowNumber: number;
   ticker: string | null;
   totalAmount: number | null;
+  tradeCode: string;
   transactionType: InvestmentTransactionType;
   unitPrice: number | null;
 };
@@ -59,23 +62,20 @@ export type B3ImportPreview = {
 };
 
 const expectedHeaders = [
-  "Entrada/Saída",
-  "Data",
-  "Movimentação",
-  "Produto",
+  "Data do Negócio",
+  "Tipo de Movimentação",
+  "Mercado",
+  "Prazo/Vencimento",
   "Instituição",
+  "Código de Negociação",
   "Quantidade",
-  "Preço unitário",
-  "Valor da Operação",
+  "Preço",
+  "Valor",
 ];
 
 const supportedOperations: Record<string, InvestmentTransactionType> = {
   Compra: "BUY",
-  "Transferência - Liquidação": "BUY",
-  "Bonificação em Ativos": "BONUS",
-  Desdobro: "SPLIT",
-  Atualização: "CORPORATE_ACTION",
-  Transferência: "TRANSFER_OUT",
+  Venda: "SELL",
 };
 
 function decodeXml(value: string) {
@@ -204,18 +204,14 @@ function parseDate(value: string) {
 }
 
 function classifyAsset(
-  product: string,
+  tradeCode: string,
 ): Pick<B3Negotiation, "assetClass" | "name" | "ticker"> | null {
-  if (/^Tesouro\s/i.test(product.trim())) {
-    return { assetClass: "FIXED_INCOME", name: product.trim(), ticker: null };
-  }
-
-  const ticker = product.trim().match(/^([A-Z]{4}\d{1,2})\b/)?.[1];
+  const ticker = tradeCode.trim().toUpperCase().replace(/F$/, "");
   if (!ticker) return null;
   if (allowedFiiTickers.has(ticker))
-    return { assetClass: "FII", name: product.trim(), ticker };
+    return { assetClass: "FII", name: ticker, ticker };
   if (allowedStockTickers.has(ticker))
-    return { assetClass: "STOCK", name: product.trim(), ticker };
+    return { assetClass: "STOCK", name: ticker, ticker };
   return null;
 }
 
@@ -224,12 +220,12 @@ export function parseB3Negotiations(file: ArrayBuffer): B3ImportPreview {
   const sharedStrings = entries.get("xl/sharedStrings.xml")?.toString("utf8");
   const worksheet = entries.get("xl/worksheets/sheet1.xml")?.toString("utf8");
   if (!sharedStrings || !worksheet)
-    throw new Error("Não encontrei a planilha de movimentação no arquivo.");
+    throw new Error("Não encontrei a planilha de negociação no arquivo.");
 
   const rows = parseWorksheet(worksheet, parseSharedStrings(sharedStrings));
   if (expectedHeaders.some((header, index) => rows[0]?.[index] !== header)) {
     throw new Error(
-      "Este arquivo não é o relatório de movimentação da B3 esperado.",
+      "Este arquivo não é o relatório de negociação da B3 esperado.",
     );
   }
 
@@ -238,21 +234,21 @@ export function parseB3Negotiations(file: ArrayBuffer): B3ImportPreview {
   const items: B3Negotiation[] = [];
 
   rows.slice(1).forEach((row, index) => {
-    const asset = classifyAsset(row[3] ?? "");
+    const asset = classifyAsset(row[5] ?? "");
     if (!asset) {
       excludedAssetRows += 1;
       return;
     }
 
-    const transactionType = supportedOperations[row[2] ?? ""];
+    const transactionType = supportedOperations[row[1] ?? ""];
     if (!transactionType) {
       ignoredRows += 1;
       return;
     }
 
-    const date = parseDate(row[1] ?? "");
-    const quantity = parseNumber(row[5] ?? "");
-    if (!date || quantity === null || quantity <= 0 || !row[4]) {
+    const date = parseDate(row[0] ?? "");
+    const quantity = parseNumber(row[6] ?? "");
+    if (!date || quantity === null || quantity <= 0 || !row[4] || !row[5]) {
       ignoredRows += 1;
       return;
     }
@@ -261,13 +257,16 @@ export function parseB3Negotiations(file: ArrayBuffer): B3ImportPreview {
       ...asset,
       date,
       institution: row[4].trim(),
+      market: row[2] ?? "—",
+      maturityDate: row[3] ?? "—",
       name: asset.name,
-      operation: row[2],
-      quantity: transactionType === "TRANSFER_OUT" ? -quantity : quantity,
+      operation: row[1],
+      quantity: transactionType === "SELL" ? -quantity : quantity,
       rowNumber: index + 2,
-      totalAmount: parseNumber(row[7] ?? ""),
+      totalAmount: parseNumber(row[8] ?? ""),
+      tradeCode: row[5].trim(),
       transactionType,
-      unitPrice: parseNumber(row[6] ?? ""),
+      unitPrice: parseNumber(row[7] ?? ""),
     });
   });
 

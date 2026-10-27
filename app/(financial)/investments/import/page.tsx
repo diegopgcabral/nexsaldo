@@ -25,7 +25,9 @@ export default async function InvestmentImportPage({ searchParams }: Props) {
   const selected = types.find((item) => item.key === type);
 
   return (
-    <section className="mx-auto max-w-2xl space-y-6 py-4">
+    <section
+      className={`mx-auto space-y-6 py-4 ${selected?.key === "trades" ? "max-w-[1400px]" : "max-w-2xl"}`}
+    >
       <div className="text-center">
         <p className="text-xs font-semibold tracking-[.16em] text-emerald-300 uppercase">
           Investimentos
