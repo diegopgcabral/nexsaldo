@@ -128,7 +128,15 @@ export function B3NegotiationImport() {
                     {formatDate(date)}
                   </h3>
                   <div className="mt-2 overflow-x-auto">
-                    <table className="w-full min-w-[900px] text-left text-sm">
+                    <table className="w-full min-w-[900px] table-fixed text-left text-sm">
+                      <colgroup>
+                        <col className="w-32" />
+                        <col className="w-36" />
+                        <col className="w-44" />
+                        <col className="w-32" />
+                        <col className="w-28" />
+                        <col className="w-32" />
+                      </colgroup>
                       <thead className="border-b border-white/8 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                         <tr>
                           <th className="w-32 px-3 py-2">Movimentação</th>
@@ -153,7 +161,7 @@ export function B3NegotiationImport() {
                                   {isPurchase ? "Compra" : "Venda"}
                                 </span>
                               </td>
-                              <td className="px-3 py-3 text-slate-400">
+                              <td className="truncate px-3 py-3 text-slate-400">
                                 {movement.institution}
                               </td>
                               <td className="px-3 py-3 font-medium text-white">
