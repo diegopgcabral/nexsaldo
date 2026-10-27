@@ -28,3 +28,15 @@ export async function createInvestmentAsset(formData: FormData) {
   await auth.supabase.from("investment_assets").insert({ user_id: auth.userId, name: input.data.name, ticker: input.data.ticker || null, asset_class: input.data.assetClass, institution_id: input.data.institutionId ?? null });
   revalidatePath("/investments");
 }
+
+export async function createFixedIncomePosition(formData: FormData) {
+  const input = z.object({ name: z.string().trim().min(1).max(160), institution: z.string().trim().min(1).max(100), maturityDate: z.iso.date(), quantity: z.coerce.number().positive(), investedAmount: z.coerce.number().min(0), currentAmount: z.coerce.number().min(0), asOfDate: z.iso.date() }).safeParse({ name: formData.get("name"), institution: formData.get("institution"), maturityDate: formData.get("maturityDate"), quantity: formData.get("quantity"), investedAmount: formData.get("investedAmount"), currentAmount: formData.get("currentAmount"), asOfDate: formData.get("asOfDate") });
+  const auth = await session();
+  if (!input.success || !auth) return;
+  const { data: institution } = await auth.supabase.from("investment_institutions").upsert({ user_id: auth.userId, name: input.data.institution }, { onConflict: "user_id,normalized_name" }).select("id").single();
+  if (!institution) return;
+  const { data: asset } = await auth.supabase.from("investment_assets").insert({ user_id: auth.userId, institution_id: institution.id, asset_class: "FIXED_INCOME", name: input.data.name, ticker: null }).select("id").single();
+  if (!asset) return;
+  await auth.supabase.from("investment_positions").insert({ user_id: auth.userId, asset_id: asset.id, quantity: input.data.quantity, invested_amount: input.data.investedAmount, current_amount: input.data.currentAmount, maturity_date: input.data.maturityDate, as_of_date: input.data.asOfDate });
+  revalidatePath("/investments/portfolio");
+}
