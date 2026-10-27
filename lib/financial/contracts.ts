@@ -43,6 +43,7 @@ export const createExpenseSchema = z
     category: categorySchema,
     status: expenseStatusSchema.default("PENDING"),
     notes: notesSchema,
+    isRecurring: z.boolean().default(false),
   })
   .superRefine((expense, context) => {
     const paidAmount = amountToCents(expense.paidAmount);

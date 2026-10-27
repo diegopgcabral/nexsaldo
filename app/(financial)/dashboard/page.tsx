@@ -83,7 +83,7 @@ export default async function DashboardPage({
         supabase
           .from("expenses")
           .select(
-            "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes",
+            "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes, is_recurring",
           )
           .eq("user_id", userId)
           .gte("due_date", startsOn)
@@ -113,6 +113,7 @@ export default async function DashboardPage({
         category: expense.category,
         status: expense.status,
         notes: expense.notes,
+        isRecurring: expense.is_recurring,
       }));
       categoryIcons = Object.fromEntries(
         (categoryRows ?? []).map((category) => [

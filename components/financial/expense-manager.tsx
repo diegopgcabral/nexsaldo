@@ -118,6 +118,7 @@ function ExpenseForm({
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(!expense);
   const [categoryOptions, setCategoryOptions] = useState(categories);
   const [categoryError, setCategoryError] = useState<string>();
+  const [isRecurring, setIsRecurring] = useState(expense?.isRecurring ?? false);
   const [creatingCategory, startCreatingCategory] = useTransition();
   const router = useRouter();
   const { notify } = useToast();
@@ -332,6 +333,23 @@ function ExpenseForm({
           ))}
         </div>
       </fieldset>
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-[#111319] p-4 transition hover:border-emerald-400/35">
+        <input
+          checked={isRecurring}
+          className="mt-0.5 size-4 accent-emerald-400"
+          name="isRecurring"
+          onChange={(event) => setIsRecurring(event.target.checked)}
+          type="checkbox"
+        />
+        <span>
+          <span className="block text-sm font-semibold text-slate-100">
+            Repetir mensalmente
+          </span>
+          <span className="mt-0.5 block text-xs leading-5 text-slate-400">
+            Ao salvar, a despesa deste ciclo e a do próximo ciclo serão criadas.
+          </span>
+        </span>
+      </label>
       <label className="space-y-1.5">
         <span className="income-label">
           Observações{" "}
@@ -626,6 +644,11 @@ export function ExpenseManager({
                       >
                         {item.description}
                       </span>
+                      {item.isRecurring ? (
+                        <span className="rounded-full bg-violet-400/12 px-2 py-0.5 text-[11px] font-medium text-violet-200">
+                          Mensal
+                        </span>
+                      ) : null}
                     </div>
                   </td>
                   <td className="min-w-42 px-4 py-4">
