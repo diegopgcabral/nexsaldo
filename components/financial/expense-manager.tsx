@@ -589,7 +589,7 @@ export function ExpenseManager({
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl bg-[#191c21] shadow-xl shadow-black/20">
-          <table className="w-full min-w-225 text-left text-sm">
+          <table className="w-full min-w-245 text-left text-sm">
             <thead className="bg-[#272a30]/70 text-xs tracking-wider text-slate-400 uppercase">
               <tr>
                 {sortableColumns.map(({ key, label }) => (
@@ -622,6 +622,7 @@ export function ExpenseManager({
                     </button>
                   </th>
                 ))}
+                <th className="px-4 py-3.5 font-semibold">Recorrência</th>
                 <th className="px-5 py-3.5 font-semibold">
                   <span className="sr-only">Ações</span>
                 </th>
@@ -644,11 +645,6 @@ export function ExpenseManager({
                       >
                         {item.description}
                       </span>
-                      {item.isRecurring ? (
-                        <span className="rounded-full bg-violet-400/12 px-2 py-0.5 text-[11px] font-medium text-violet-200">
-                          Mensal
-                        </span>
-                      ) : null}
                     </div>
                   </td>
                   <td className="min-w-42 px-4 py-4">
@@ -667,6 +663,15 @@ export function ExpenseManager({
                   </td>
                   <td className="px-4 py-4">
                     <Status status={item.status} />
+                  </td>
+                  <td className="px-4 py-4">
+                    {item.isRecurring ? (
+                      <span className="inline-flex rounded-full bg-violet-400/12 px-2.5 py-1 text-xs font-medium text-violet-200">
+                        Mensal
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-1">
