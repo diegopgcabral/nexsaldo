@@ -166,7 +166,7 @@ export function PortfolioPositionTable({
             {header("Quantidade", "quantity", "right")}
             {header("Preço médio", "averagePrice", "right")}
             {header("Valor investido", "investedAmount", "right")}
-            <th className="px-3 py-3 text-right">Detalhes</th>
+            <th aria-label="Detalhes" className="px-3 py-3" />
           </tr>
         </thead>
         <tbody className="divide-y divide-white/6">
@@ -201,7 +201,7 @@ export function PortfolioPositionTable({
               <td className="px-3 py-3 text-right">
                 <button
                   aria-disabled="true"
-                  className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-emerald-200"
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-400/45 hover:bg-emerald-400/15"
                   title="Detalhes do ativo em breve"
                   type="button"
                 >
