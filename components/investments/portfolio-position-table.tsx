@@ -155,6 +155,7 @@ export function PortfolioPositionTable({
           <col className="w-[11%]" />
           <col className="w-[11%]" />
           <col className="w-[12%]" />
+          <col className="w-[11%]" />
         </colgroup>
         <thead className="sticky top-8 z-10 border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
           <tr>
@@ -165,6 +166,7 @@ export function PortfolioPositionTable({
             {header("Quantidade", "quantity", "right")}
             {header("Preço médio", "averagePrice", "right")}
             {header("Valor investido", "investedAmount", "right")}
+            <th className="px-3 py-3 text-right">Detalhes</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/6">
@@ -195,6 +197,17 @@ export function PortfolioPositionTable({
               </td>
               <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
                 {formatCurrency(row.investedAmount)}
+              </td>
+              <td className="px-3 py-3 text-right">
+                <button
+                  aria-disabled="true"
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-emerald-200"
+                  title="Detalhes do ativo em breve"
+                  type="button"
+                >
+                  Detalhes
+                  <span aria-hidden="true">→</span>
+                </button>
               </td>
             </tr>
           ))}
