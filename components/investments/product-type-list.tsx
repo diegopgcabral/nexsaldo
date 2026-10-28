@@ -130,26 +130,29 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-sm font-medium text-slate-400">Adicionar tipo</span>
+      <section className="rounded-2xl border border-white/6 bg-[#191c21] p-4">
+        <p className="text-sm font-semibold text-white">Disponíveis para adicionar</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {productTypes.filter((type) => !registered.has(type.value)).map((type) => (
             <button
-              className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-[#191c21] px-3 py-2 text-sm text-slate-300 transition hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-emerald-200 disabled:opacity-50"
+              className="flex items-center gap-3 rounded-xl border border-white/8 bg-[#111319] px-3 py-2.5 text-left text-sm text-slate-300 transition hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-emerald-200 disabled:opacity-50"
               disabled={isPending}
               key={type.value}
               onClick={() => addType(type.value)}
               type="button"
             >
-              <span className={`flex size-6 items-center justify-center rounded-md ${type.className}`}>
-                <Icon className="size-3.5" name={type.icon} />
+              <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${type.className}`}>
+                <Icon className="size-4" name={type.icon} />
               </span>
-              {type.label}
+              <span className="flex-1 font-medium">{type.label}</span>
+              <Icon className="size-4 text-emerald-300" name="plus" />
             </button>
           ))}
           {!productTypes.some((type) => !registered.has(type.value)) ? (
             <span className="text-sm text-slate-500">Todos os tipos estão adicionados.</span>
           ) : null}
-      </div>
+        </div>
+      </section>
 
       <section className="overflow-hidden rounded-2xl border border-white/6 bg-[#191c21]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/7 px-5 py-4">
