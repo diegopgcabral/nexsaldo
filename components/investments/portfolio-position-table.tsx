@@ -150,7 +150,7 @@ export function PortfolioPositionTable({
           <col className="w-[11%]" />
           <col className="w-[12%]" />
         </colgroup>
-        <thead className="border-b border-white/8 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+        <thead className="border-b border-white/8 text-[13px] font-semibold tracking-wide text-slate-400 uppercase">
           <tr>
             {header("Produto", "product")}
             {header("Tipo", "type")}
