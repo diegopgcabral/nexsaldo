@@ -76,8 +76,8 @@ export function PortfolioPositionTable({
   rows: PortfolioPosition[];
 }) {
   const [sort, setSort] = useState<{ direction: SortDirection; key: SortKey }>({
-    direction: "asc",
-    key: "product",
+    direction: "desc",
+    key: "quantity",
   });
   const sortedRows = useMemo(
     () =>
