@@ -15,6 +15,7 @@ type SortKey =
   | "averagePrice"
   | "institution"
   | "investedAmount"
+  | "name"
   | "product"
   | "quantity"
   | "type";
@@ -85,6 +86,8 @@ export function PortfolioPositionTable({
         const firstValue =
           sort.key === "product"
             ? (first.ticker ?? first.name)
+            : sort.key === "name"
+              ? assetNames[first.ticker ?? ""] ?? first.name
             : sort.key === "type"
               ? assetType(first.assetClass, first.ticker)
               : sort.key === "averagePrice"
@@ -93,6 +96,8 @@ export function PortfolioPositionTable({
         const secondValue =
           sort.key === "product"
             ? (second.ticker ?? second.name)
+            : sort.key === "name"
+              ? assetNames[second.ticker ?? ""] ?? second.name
             : sort.key === "type"
               ? assetType(second.assetClass, second.ticker)
               : sort.key === "averagePrice"
@@ -141,18 +146,20 @@ export function PortfolioPositionTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px] table-fixed text-left text-sm">
+      <table className="w-full min-w-[1020px] table-fixed text-left text-sm">
         <colgroup>
-          <col className="w-[34%]" />
           <col className="w-[12%]" />
-          <col className="w-[22%]" />
+          <col className="w-[24%]" />
+          <col className="w-[10%]" />
+          <col className="w-[20%]" />
           <col className="w-[11%]" />
           <col className="w-[11%]" />
           <col className="w-[12%]" />
         </colgroup>
         <thead className="sticky top-8 z-10 border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
           <tr>
-            {header("Produto", "product")}
+            {header("Código", "product")}
+            {header("Nome", "name")}
             {header("Tipo", "type")}
             {header("Instituição", "institution")}
             {header("Quantidade", "quantity", "right")}
@@ -168,16 +175,11 @@ export function PortfolioPositionTable({
               }
               key={`${row.assetClass}:${row.ticker ?? row.name}`}
             >
-              <td className="px-3 py-3 font-medium text-white">
-                <span className="block truncate">
-                  <span>{row.ticker ?? row.name}</span>
-                  {row.ticker ? (
-                    <span className="font-normal text-slate-500">
-                      {" "}
-                      · {assetNames[row.ticker] ?? row.name}
-                    </span>
-                  ) : null}
-                </span>
+              <td className="truncate px-3 py-3 font-medium text-white">
+                {row.ticker ?? "—"}
+              </td>
+              <td className="truncate px-3 py-3 text-slate-400">
+                {assetNames[row.ticker ?? ""] ?? row.name}
               </td>
               <td className="px-3 py-3 text-slate-400">
                 {assetType(row.assetClass, row.ticker)}
