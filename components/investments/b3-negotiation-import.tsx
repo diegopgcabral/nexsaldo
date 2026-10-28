@@ -78,7 +78,7 @@ export function B3NegotiationImport() {
       }
       setImportProgress(100);
       await new Promise((resolve) => window.setTimeout(resolve, 250));
-      router.push(`/investments/portfolio?imported=${result.imported}`);
+      router.push("/investments/portfolio");
     });
   }
 

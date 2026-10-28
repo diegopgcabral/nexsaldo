@@ -16,10 +16,7 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-type Props = { searchParams: Promise<{ imported?: string }> };
-
-export default async function InvestmentPortfolioPage({ searchParams }: Props) {
-  const { imported } = await searchParams;
+export default async function InvestmentPortfolioPage() {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
@@ -107,12 +104,6 @@ export default async function InvestmentPortfolioPage({ searchParams }: Props) {
           Importar negociações
         </Link>
       </div>
-
-      {imported ? (
-        <p className="rounded-xl bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
-          {imported} negociações foram importadas com sucesso.
-        </p>
-      ) : null}
 
       {positions.length ? (
         <div className="space-y-8">
