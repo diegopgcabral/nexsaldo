@@ -97,6 +97,7 @@ export function ProductTypeList({
   assetClasses: string[];
   productTypes: Array<{ asset_class: string; is_active: boolean }>;
 }) {
+  const storedTypes = Array.isArray(savedTypes) ? savedTypes : [];
   const router = useRouter();
   const { notify } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -108,13 +109,13 @@ export function ProductTypeList({
         types.add(assetClass as ProductType);
       }
     }
-    for (const type of savedTypes) {
+    for (const type of storedTypes) {
       if (!productTypes.some((product) => product.value === type.asset_class)) continue;
       if (type.is_active) types.add(type.asset_class as ProductType);
       else types.delete(type.asset_class as ProductType);
     }
     return types;
-  }, [assetClasses, savedTypes]);
+  }, [assetClasses, storedTypes]);
   const visibleTypes = useMemo(() => {
     const normalized = filter.trim().toLocaleLowerCase("pt-BR");
     return productTypes.filter(

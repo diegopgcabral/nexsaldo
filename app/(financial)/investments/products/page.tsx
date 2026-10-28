@@ -21,8 +21,14 @@ export default async function InvestmentProductsPage() {
 
   return (
     <ProductTypeList
-      assetClasses={(assetsResult.data ?? []).map((asset) => asset.asset_class)}
-      productTypes={productTypesResult.data ?? []}
+      assetClasses={
+        Array.isArray(assetsResult.data)
+          ? assetsResult.data.map((asset) => asset.asset_class)
+          : []
+      }
+      productTypes={
+        Array.isArray(productTypesResult.data) ? productTypesResult.data : []
+      }
     />
   );
 }
