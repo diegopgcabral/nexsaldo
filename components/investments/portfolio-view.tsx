@@ -21,9 +21,10 @@ const groups = [
   { assetClass: "CRYPTO", label: "Cripto" },
 ] as const;
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    currency: "BRL",
+function formatCurrency(value: number, assetClass: string) {
+  const isUsdAsset = assetClass === "US_ETF";
+  return new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
+    currency: isUsdAsset ? "USD" : "BRL",
     style: "currency",
   }).format(value);
 }
@@ -124,7 +125,7 @@ export function PortfolioView({
                   </span>
                 </div>
                 <span className="whitespace-nowrap">
-                  TOTAL: {formatCurrency(total)}
+                  TOTAL: {formatCurrency(total, group.assetClass)}
                 </span>
               </div>
               {rows.length ? (

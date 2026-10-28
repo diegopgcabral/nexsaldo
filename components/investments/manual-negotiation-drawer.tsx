@@ -62,18 +62,19 @@ function todayReference() {
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function parseQuantity(value: string) {
+function parseQuantity(value: string, isUsdAsset: boolean) {
+  if (isUsdAsset) return Number(value) || 0;
   const normalized = value.includes(",")
     ? value.replaceAll(".", "").replace(",", ".")
     : value;
   return Number(normalized) || 0;
+}
+
+function formatAmount(value: number, isUsdAsset: boolean) {
+  return new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
+    currency: isUsdAsset ? "USD" : "BRL",
+    style: "currency",
+  }).format(value);
 }
 
 export function ManualNegotiationDrawer({
@@ -126,7 +127,8 @@ export function ManualNegotiationDrawer({
   const selectedInstitution = institutions.find(
     (institution) => institution.id === institutionId,
   );
-  const totalAmount = parseQuantity(quantity) * unitPrice;
+  const isUsdAsset = assetClass === "US_ETF";
+  const totalAmount = parseQuantity(quantity, isUsdAsset) * unitPrice;
   const matchingAssets = assets.filter(
     (asset) =>
       asset.assetClass === assetClass &&
@@ -236,6 +238,8 @@ export function ManualNegotiationDrawer({
                         setTicker("");
                         setTickerQuery("");
                         setAssetName("");
+                        setQuantity("");
+                        setUnitPrice(0);
                         setPicker(null);
                       }}
                       type="button"
@@ -514,6 +518,15 @@ export function ManualNegotiationDrawer({
                   inputMode="decimal"
                   name="quantity"
                   onChange={(event) => {
+                    if (isUsdAsset) {
+                      const [whole, ...decimal] = event.target.value
+                        .replace(/[^\d.]/g, "")
+                        .split(".");
+                      setQuantity(
+                        decimal.length ? `${whole}.${decimal.join("")}` : whole,
+                      );
+                      return;
+                    }
                     const [whole, ...decimal] = event.target.value
                       .replaceAll(".", ",")
                       .replace(/[^\d,]/g, "")
@@ -522,8 +535,10 @@ export function ManualNegotiationDrawer({
                       decimal.length ? `${whole},${decimal.join("")}` : whole,
                     );
                   }}
-                  pattern="[0-9]+([,][0-9]+)?"
-                  placeholder="0"
+                  pattern={
+                    isUsdAsset ? "[0-9]+([.][0-9]+)?" : "[0-9]+([,][0-9]+)?"
+                  }
+                  placeholder={isUsdAsset ? "0.00" : "0"}
                   required
                   type="text"
                   value={quantity}
@@ -532,6 +547,8 @@ export function ManualNegotiationDrawer({
               <label className="space-y-2.5">
                 <span className={fieldLabelClass}>Preço unitário</span>
                 <CurrencyInput
+                  currency={isUsdAsset ? "USD" : "BRL"}
+                  key={isUsdAsset ? "USD" : "BRL"}
                   name="unitPrice"
                   onAmountChange={setUnitPrice}
                   required
@@ -539,11 +556,13 @@ export function ManualNegotiationDrawer({
               </label>
             </div>
             <label className="space-y-2.5">
-              <span className={fieldLabelClass}>Valor total calculado</span>
+              <span className={fieldLabelClass}>
+                {isUsdAsset ? "Valor total em USD" : "Valor total calculado"}
+              </span>
               <input
                 className="income-input cursor-not-allowed text-sm font-semibold text-slate-300"
                 disabled
-                value={`R$ ${formatCurrency(totalAmount)}`}
+                value={formatAmount(totalAmount, isUsdAsset)}
               />
               <input
                 name="totalAmount"

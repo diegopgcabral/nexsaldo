@@ -42,17 +42,19 @@ const assetNames: Record<string, string> = {
   WEGE3: "WEG S.A.",
 };
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    currency: "BRL",
+function formatCurrency(value: number, assetClass: string) {
+  const isUsdAsset = assetClass === "US_ETF";
+  return new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
+    currency: isUsdAsset ? "USD" : "BRL",
     style: "currency",
   }).format(value);
 }
 
-function formatQuantity(value: number) {
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 8 }).format(
-    value,
-  );
+function formatQuantity(value: number, assetClass: string) {
+  return new Intl.NumberFormat(
+    assetClass === "US_ETF" ? "en-US" : "pt-BR",
+    { maximumFractionDigits: 8 },
+  ).format(value);
 }
 
 function assetType(assetClass: string, ticker: string | null) {
@@ -204,13 +206,16 @@ export function PortfolioPositionTable({
                     {row.institution}
                   </td>
                   <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                    {formatQuantity(row.quantity)}
+                    {formatQuantity(row.quantity, row.assetClass)}
                   </td>
                   <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                    {formatCurrency(row.investedAmount / row.quantity)}
+                    {formatCurrency(
+                      row.investedAmount / row.quantity,
+                      row.assetClass,
+                    )}
                   </td>
                   <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                    {formatCurrency(row.investedAmount)}
+                    {formatCurrency(row.investedAmount, row.assetClass)}
                   </td>
                   <td className="px-3 py-3 text-right">
                     <button
