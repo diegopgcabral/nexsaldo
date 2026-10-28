@@ -140,13 +140,16 @@ export function AccountDivisionManager({
             return (
               <article
                 key={participant.id}
-                className={`rounded-2xl border border-white/5 bg-[#1d2026] p-4 transition hover:border-white/12 ${isFinalized ? "lg:col-start-2" : "lg:col-start-1"}`}
+                className={`cursor-grab rounded-2xl border border-white/5 bg-[#1d2026] p-4 transition hover:border-white/12 active:cursor-grabbing ${isFinalized ? "lg:col-start-2" : "lg:col-start-1"}`}
                 draggable
                 onDragEnd={() => setDraggedParticipantId(null)}
                 onDragStart={(event) => {
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData("text/plain", participant.id);
-                  setDraggedParticipantId(participant.id);
+                  window.setTimeout(
+                    () => setDraggedParticipantId(participant.id),
+                    0,
+                  );
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
