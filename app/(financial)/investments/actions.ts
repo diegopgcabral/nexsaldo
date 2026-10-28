@@ -516,12 +516,35 @@ export async function addInvestmentProductType(assetClass: string) {
   const { error } = await auth.supabase
     .from("investment_product_types")
     .upsert(
-      { user_id: auth.userId, asset_class: parsedClass.data },
-      { onConflict: "user_id,asset_class", ignoreDuplicates: true },
+      {
+        user_id: auth.userId,
+        asset_class: parsedClass.data,
+        is_active: true,
+      },
+      { onConflict: "user_id,asset_class" },
     );
   if (error) return { error: "Não foi possível adicionar o tipo de produto." };
   revalidateInvestmentProductPaths();
   return { success: "Tipo de produto adicionado." };
+}
+
+export async function removeInvestmentProductType(assetClass: string) {
+  const parsedClass = z.enum(classes).safeParse(assetClass);
+  const auth = await session();
+  if (!parsedClass.success || !auth) return { error: "Tipo de produto inválido." };
+  const { error } = await auth.supabase
+    .from("investment_product_types")
+    .upsert(
+      {
+        user_id: auth.userId,
+        asset_class: parsedClass.data,
+        is_active: false,
+      },
+      { onConflict: "user_id,asset_class" },
+    );
+  if (error) return { error: "Não foi possível remover o tipo de produto." };
+  revalidateInvestmentProductPaths();
+  return { success: "Tipo removido da lista." };
 }
 
 export async function createFixedIncomePosition(formData: FormData) {

@@ -14,17 +14,15 @@ export default async function InvestmentProductsPage() {
             .eq("user_id", userId),
           supabase
             .from("investment_product_types")
-            .select("asset_class")
+            .select("asset_class, is_active")
             .eq("user_id", userId),
         ])
       : [{ data: [] }, { data: [] }];
 
   return (
     <ProductTypeList
-      assetClasses={[
-        ...(assetsResult.data ?? []).map((asset) => asset.asset_class),
-        ...(productTypesResult.data ?? []).map((type) => type.asset_class),
-      ]}
+      assetClasses={(assetsResult.data ?? []).map((asset) => asset.asset_class)}
+      productTypes={productTypesResult.data ?? []}
     />
   );
 }

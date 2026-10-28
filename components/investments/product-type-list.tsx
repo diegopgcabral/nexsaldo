@@ -3,7 +3,10 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { addInvestmentProductType } from "@/app/(financial)/investments/actions";
+import {
+  addInvestmentProductType,
+  removeInvestmentProductType,
+} from "@/app/(financial)/investments/actions";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
 
@@ -87,7 +90,13 @@ const productTypes: Array<{
   },
 ];
 
-export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
+export function ProductTypeList({
+  assetClasses,
+  productTypes: savedTypes,
+}: {
+  assetClasses: string[];
+  productTypes: Array<{ asset_class: string; is_active: boolean }>;
+}) {
   const router = useRouter();
   const { notify } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -99,8 +108,13 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
         types.add(assetClass as ProductType);
       }
     }
+    for (const type of savedTypes) {
+      if (!productTypes.some((product) => product.value === type.asset_class)) continue;
+      if (type.is_active) types.add(type.asset_class as ProductType);
+      else types.delete(type.asset_class as ProductType);
+    }
     return types;
-  }, [assetClasses]);
+  }, [assetClasses, savedTypes]);
   const visibleTypes = useMemo(() => {
     const normalized = filter.trim().toLocaleLowerCase("pt-BR");
     return productTypes.filter(
@@ -114,6 +128,14 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
       const result = await addInvestmentProductType(type);
       if (result?.error) return notify("error", result.error);
       notify("success", result?.success ?? "Tipo de produto adicionado.");
+      router.refresh();
+    });
+  };
+  const removeType = (type: ProductType) => {
+    startTransition(async () => {
+      const result = await removeInvestmentProductType(type);
+      if (result?.error) return notify("error", result.error);
+      notify("success", result?.success ?? "Tipo removido da lista.");
       router.refresh();
     });
   };
@@ -192,7 +214,7 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
               <thead className="border-b border-white/7 bg-[#12151a] text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
                 <tr>
                   <th className="px-5 py-3">Produto</th>
-                  <th className="px-5 py-3 text-right">Status</th>
+                  <th className="w-[108px] px-3 py-3 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/6">
@@ -215,10 +237,18 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-xs text-emerald-200">
-                        Ativo
-                      </span>
+                    <td className="px-3 py-3.5">
+                      <div className="flex justify-center">
+                        <button
+                          aria-label={`Remover ${type.label}`}
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-400/10 hover:text-red-300"
+                          disabled={isPending}
+                          onClick={() => removeType(type.value)}
+                          type="button"
+                        >
+                          <Icon className="size-4" name="trash" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
