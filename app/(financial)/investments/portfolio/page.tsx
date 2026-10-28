@@ -88,6 +88,17 @@ export default async function InvestmentPortfolioPage() {
     <section>
       {positions.length || productTypes.size ? (
         <PortfolioView
+          assets={(assetResult.data ?? []).flatMap((asset) =>
+            asset.ticker && !asset.ticker.startsWith("manual-")
+              ? [
+                  {
+                    assetClass: asset.asset_class,
+                    name: asset.name,
+                    ticker: asset.ticker,
+                  },
+                ]
+              : [],
+          )}
           institutions={(institutionResult.data ?? []).map((institution) => ({
             id: institution.id,
             name: institution.name,

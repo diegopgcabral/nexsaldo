@@ -29,10 +29,12 @@ function formatCurrency(value: number) {
 }
 
 export function PortfolioView({
+  assets,
   institutions,
   positions,
   productTypes,
 }: {
+  assets: Array<{ assetClass: string; name: string; ticker: string }>;
   institutions: Array<{ id: string; name: string }>;
   positions: PortfolioPosition[];
   productTypes: string[];
@@ -245,6 +247,7 @@ export function PortfolioView({
         </aside>
       </div>
       <ManualNegotiationDrawer
+        assets={assets}
         institutions={institutions}
         isOpen={isNegotiationOpen}
         onClose={() => setNegotiationOpen(false)}

@@ -16,6 +16,7 @@ import {
   updateExpense,
 } from "@/app/(financial)/expenses/actions";
 import { createExpenseCategory } from "@/app/(financial)/settings/actions";
+import { CurrencyInput } from "@/components/financial/currency-input";
 import { ExpenseCategoryIcon } from "@/components/financial/expense-category-icon";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
@@ -61,47 +62,6 @@ function todayReference() {
 
 function cents(value: string | number) {
   return amountToCents(String(value));
-}
-
-function CurrencyInput({
-  name,
-  defaultValue,
-  required = false,
-}: {
-  name: string;
-  defaultValue?: string | number;
-  required?: boolean;
-}) {
-  const formatTypingValue = (raw: string) =>
-    new Intl.NumberFormat("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(raw.replace(/\D/g, "") || "0") / 100);
-  const formatStoredValue = (raw: string | number) =>
-    new Intl.NumberFormat("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(raw));
-  const [value, setValue] = useState(() =>
-    defaultValue === undefined ? "" : formatStoredValue(defaultValue),
-  );
-  return (
-    <span className="relative block">
-      <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-semibold text-emerald-300">
-        R$
-      </span>
-      <input
-        className="income-input font-semibold"
-        inputMode="numeric"
-        name={name}
-        onChange={(event) => setValue(formatTypingValue(event.target.value))}
-        placeholder="0,00"
-        required={required}
-        style={{ paddingLeft: "3rem" }}
-        value={value}
-      />
-    </span>
-  );
 }
 
 function ExpenseForm({

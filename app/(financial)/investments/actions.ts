@@ -8,6 +8,7 @@ import {
   parseB3Negotiations,
   type B3ImportPreview,
 } from "@/lib/investments/b3-movements";
+import { normalizeCurrencyInput } from "@/lib/financial/contracts";
 import { createClient } from "@/lib/supabase/server";
 
 const classes = [
@@ -21,6 +22,17 @@ const classes = [
   "PENSION",
   "CASH_BOX",
   "CRYPTO",
+] as const;
+
+const fixedIncomeSubtypes = [
+  "DIRECT_TREASURY",
+  "CDB",
+  "LCI",
+  "LCA",
+  "DEBENTURE",
+  "CRI_CRA",
+  "CASH_BOX",
+  "OTHER",
 ] as const;
 
 export type B3ImportPreviewState =
@@ -408,6 +420,8 @@ export async function createInvestmentAsset(formData: FormData) {
     name: input.data.name,
     ticker,
     asset_class: input.data.assetClass,
+    fixed_income_subtype:
+      input.data.assetClass === "FIXED_INCOME" ? "OTHER" : null,
     institution_id: input.data.institutionId ?? null,
   }, { onConflict: "user_id,asset_class,ticker" });
   revalidatePath("/investments");
@@ -422,6 +436,7 @@ export async function createManualInvestmentTransaction(
   const input = z
     .object({
       assetClass: z.enum(classes),
+      fixedIncomeSubtype: z.enum(fixedIncomeSubtypes).optional(),
       institutionId: z.string().uuid(),
       name: z.string().trim().max(160),
       quantity: z.coerce.number().positive(),
@@ -431,20 +446,39 @@ export async function createManualInvestmentTransaction(
       transactionType: z.enum(["BUY", "SELL"]),
       unitPrice: z.coerce.number().positive(),
     })
+    .superRefine((value, context) => {
+      if (value.assetClass === "FIXED_INCOME" && !value.fixedIncomeSubtype) {
+        context.addIssue({
+          code: "custom",
+          message: "Selecione o tipo de renda fixa.",
+          path: ["fixedIncomeSubtype"],
+        });
+      }
+    })
     .safeParse({
       assetClass: formData.get("assetClass"),
+      fixedIncomeSubtype: formData.get("fixedIncomeSubtype") || undefined,
       institutionId: formData.get("institutionId"),
       name: formData.get("name"),
-      quantity: formData.get("quantity"),
+      quantity: normalizeCurrencyInput(String(formData.get("quantity") ?? "")),
       ticker: formData.get("ticker"),
-      totalAmount: formData.get("totalAmount"),
+      totalAmount: normalizeCurrencyInput(
+        String(formData.get("totalAmount") ?? ""),
+      ),
       transactionDate: formData.get("transactionDate"),
       transactionType: formData.get("transactionType"),
-      unitPrice: formData.get("unitPrice"),
+      unitPrice: normalizeCurrencyInput(
+        String(formData.get("unitPrice") ?? ""),
+      ),
     });
   const auth = await session();
-  if (!input.success || !auth)
-    return { error: "Revise os campos obrigatórios da negociação." };
+  if (!input.success)
+    return {
+      error:
+        input.error.issues[0]?.message ??
+        "Revise os campos obrigatórios da negociação.",
+    };
+  if (!auth) return { error: "Faça login novamente para continuar." };
 
   const { data: institution, error: institutionError } = await auth.supabase
     .from("investment_institutions")
@@ -474,6 +508,10 @@ export async function createManualInvestmentTransaction(
           user_id: auth.userId,
           institution_id: input.data.institutionId,
           asset_class: input.data.assetClass,
+          fixed_income_subtype:
+            input.data.assetClass === "FIXED_INCOME"
+              ? input.data.fixedIncomeSubtype
+              : null,
           name: input.data.name || ticker,
           ticker,
         })
@@ -575,6 +613,8 @@ export async function createManualInvestment(formData: FormData) {
         user_id: auth.userId,
         institution_id: input.data.institutionId,
         asset_class: input.data.assetClass,
+        fixed_income_subtype:
+          input.data.assetClass === "FIXED_INCOME" ? "OTHER" : null,
         name: input.data.name,
         ticker,
       },
@@ -642,6 +682,8 @@ export async function updateManualInvestment(formData: FormData) {
     .from("investment_assets")
     .update({
       asset_class: input.data.assetClass,
+      fixed_income_subtype:
+        input.data.assetClass === "FIXED_INCOME" ? "OTHER" : null,
       institution_id: input.data.institutionId,
       name: input.data.name,
       ticker,
@@ -763,6 +805,7 @@ export async function createFixedIncomePosition(formData: FormData) {
       user_id: auth.userId,
       institution_id: institution.id,
       asset_class: "FIXED_INCOME",
+      fixed_income_subtype: "OTHER",
       name: input.data.name,
       ticker: null,
     })
