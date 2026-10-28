@@ -20,6 +20,27 @@ type SortKey =
   | "type";
 type SortDirection = "asc" | "desc";
 
+const assetNames: Record<string, string> = {
+  B3SA3: "B3 S.A. · Brasil, Bolsa, Balcão",
+  BBAS3: "Banco do Brasil S.A.",
+  BBSE3: "BB Seguridade Participações S.A.",
+  BRCO11: "Bresco Logística FII",
+  BTLG11: "BTG Pactual Logística FII",
+  CSMG3: "Copasa MG",
+  CXSE3: "Caixa Seguridade Participações S.A.",
+  FLRY3: "Fleury S.A.",
+  ISAE4: "Isa Energia Brasil S.A.",
+  ITSA4: "Itaúsa S.A.",
+  KLBN11: "Klabin S.A.",
+  KNCR11: "Kinea Rendimentos Imobiliários FII",
+  KNRI11: "Kinea Renda Imobiliária FII",
+  SAPR11: "Sanepar",
+  TAEE11: "Taesa",
+  TRXF11: "TRX Real Estate FII",
+  VISC11: "Vinci Shopping Centers FII",
+  WEGE3: "WEG S.A.",
+};
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
@@ -143,7 +164,10 @@ export function PortfolioPositionTable({
           {sortedRows.map((row) => (
             <tr key={`${row.assetClass}:${row.ticker ?? row.name}`}>
               <td className="px-3 py-3 font-medium text-white">
-                <span className="truncate">{row.ticker ?? row.name}</span>
+                <span className="block truncate">{row.ticker ?? row.name}</span>
+                <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">
+                  {row.ticker ? (assetNames[row.ticker] ?? row.name) : row.name}
+                </span>
               </td>
               <td className="px-3 py-3 text-slate-400">
                 {assetType(row.assetClass, row.ticker)}
