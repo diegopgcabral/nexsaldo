@@ -6,7 +6,7 @@ import type {
   StatementPurchase,
 } from "@/lib/financial/account-division";
 import {
-  getCurrentMonthReference,
+  getCurrentCycleReference,
   isMonthReference,
 } from "@/lib/financial/month";
 import type { ParticipantListItem } from "@/lib/financial/participant";
@@ -20,13 +20,21 @@ export default async function AccountDivisionDetailPage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const [{ participantId }, query] = await Promise.all([params, searchParams]);
-  const month = isMonthReference(query.month ?? null)
-    ? query.month!
-    : getCurrentMonthReference();
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
   if (typeof userId !== "string") notFound();
+  const { data: cycleProfile } = await supabase
+    .from("profiles")
+    .select("financial_cycle_start_day")
+    .eq("id", userId)
+    .maybeSingle();
+  const month = isMonthReference(query.month ?? null)
+    ? query.month!
+    : getCurrentCycleReference(
+        new Date(),
+        cycleProfile?.financial_cycle_start_day ?? 1,
+      );
   const { data: person } = await supabase
     .from("credit_card_participants")
     .select("id, name, phone, is_active, is_owner")

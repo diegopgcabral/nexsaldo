@@ -13,6 +13,7 @@ import {
   undoVisualStatementPayment,
   updateManualCharge,
 } from "@/app/(financial)/account-division/actions";
+import { CycleMonthNavigator } from "@/components/financial/cycle-month-navigator";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
 import {
@@ -76,16 +77,19 @@ export function AccountDivisionManager({
                 : "Escolha uma pessoa para conferir as compras do mês e gerar seu demonstrativo."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowFinalized((current) => !current)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
-          >
-            <Icon name="check" className="size-4 text-emerald-300" />
-            {showFinalized
-              ? "Ver divisões em aberto"
-              : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <CycleMonthNavigator month={month} pathname="/account-division" />
+            <button
+              type="button"
+              onClick={() => setShowFinalized((current) => !current)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
+            >
+              <Icon name="check" className="size-4 text-emerald-300" />
+              {showFinalized
+                ? "Ver divisões em aberto"
+                : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
+            </button>
+          </div>
         </div>
       </header>
       <section
