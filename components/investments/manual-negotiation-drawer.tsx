@@ -405,7 +405,7 @@ export function ManualNegotiationDrawer({
                       />
                       <input
                         autoFocus
-                        className="income-input h-10 py-2 pr-3 pl-9 text-sm placeholder:text-xs"
+                        className="income-input h-10 py-2 text-sm placeholder:text-xs"
                         onChange={(event) =>
                           setTickerQuery(event.target.value.toUpperCase())
                         }
@@ -413,6 +413,7 @@ export function ManualNegotiationDrawer({
                           if (event.key === "Escape") setPicker(null);
                         }}
                         placeholder="Buscar ou adicionar código"
+                        style={{ paddingLeft: "2.25rem", paddingRight: "0.75rem" }}
                         value={tickerQuery}
                       />
                     </div>
