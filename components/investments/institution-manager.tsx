@@ -117,27 +117,40 @@ export function InstitutionManager({
         <div className="flex items-center justify-between border-b border-white/7 px-5 py-4">
           <h2 className="font-semibold text-white">Instituições cadastradas</h2>
           <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-xs text-emerald-200">
-            {institutions.length}
+            {institutions.length} cadastradas
           </span>
         </div>
         {institutions.length ? (
-          <div className="divide-y divide-white/6">
-            {institutions.map((institution) => {
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-sm">
+              <thead className="border-b border-white/7 bg-[#12151a] text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                <tr>
+                  <th className="px-5 py-3">Instituição</th>
+                  <th className="px-5 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/6">
+            {institutions.map((institution, index) => {
               const brand = getBrandStyle(institution.name);
               return (
-                <div
-                  className="flex items-center gap-4 px-5 py-4 transition hover:bg-white/[0.025]"
+                <tr
+                  className={`transition hover:bg-emerald-400/[0.04] ${
+                    index % 2 === 0 ? "bg-white/[0.025]" : "bg-transparent"
+                  }`}
                   key={institution.id}
                 >
-                  <span
-                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${brand.className}`}
-                  >
-                    {brand.label}
-                  </span>
-                  <p className="min-w-0 flex-1 truncate font-medium text-white">
-                    {institution.name}
-                  </p>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${brand.className}`}
+                      >
+                        {brand.label}
+                      </span>
+                      <p className="font-medium text-white">{institution.name}</p>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex justify-end gap-1">
                     <button
                       aria-label={`Editar ${institution.name}`}
                       className="rounded-lg p-2 text-slate-400 transition hover:bg-white/6 hover:text-emerald-300"
@@ -156,10 +169,13 @@ export function InstitutionManager({
                     >
                       <Icon className="size-4" name="trash" />
                     </button>
-                  </div>
-                </div>
+                    </div>
+                  </td>
+                </tr>
               );
             })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <p className="px-5 py-8 text-sm text-slate-400">Nenhuma instituição cadastrada.</p>
