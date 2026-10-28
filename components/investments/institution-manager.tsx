@@ -41,6 +41,12 @@ export function InstitutionManager({
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [editing, setEditing] = useState<Institution | null>(null);
+  const [filter, setFilter] = useState("");
+  const visibleInstitutions = institutions.filter((institution) =>
+    institution.name.toLocaleLowerCase("pt-BR").includes(
+      filter.trim().toLocaleLowerCase("pt-BR"),
+    ),
+  );
 
   const submitNewInstitution = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -114,13 +120,35 @@ export function InstitutionManager({
       </form>
 
       <section className="overflow-hidden rounded-2xl border border-white/6 bg-[#191c21]">
-        <div className="flex items-center justify-between border-b border-white/7 px-5 py-4">
-          <h2 className="font-semibold text-white">Instituições cadastradas</h2>
-          <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-xs text-emerald-200">
-            {institutions.length} cadastradas
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/7 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-white">Instituições cadastradas</h2>
+            <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-xs text-emerald-200">
+              {institutions.length} cadastradas
+            </span>
+          </div>
+          <div className="relative w-full sm:w-60">
+            <Icon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-500" name="search" />
+            <input
+              aria-label="Filtrar instituições"
+              className="h-9 w-full rounded-lg border border-white/7 bg-[#111319] pr-9 pl-9 text-xs text-slate-200 outline-none placeholder:text-slate-600 focus:border-emerald-400/45"
+              onChange={(event) => setFilter(event.target.value)}
+              placeholder="Buscar instituição..."
+              value={filter}
+            />
+            {filter ? (
+              <button
+                aria-label="Limpar filtro"
+                className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/7 hover:text-white"
+                onClick={() => setFilter("")}
+                type="button"
+              >
+                <Icon className="size-3.5" name="close" />
+              </button>
+            ) : null}
+          </div>
         </div>
-        {institutions.length ? (
+        {visibleInstitutions.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="border-b border-white/7 bg-[#12151a] text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
@@ -130,7 +158,7 @@ export function InstitutionManager({
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/6">
-            {institutions.map((institution, index) => {
+            {visibleInstitutions.map((institution, index) => {
               const brand = getBrandStyle(institution.name);
               return (
                 <tr
@@ -177,6 +205,10 @@ export function InstitutionManager({
               </tbody>
             </table>
           </div>
+        ) : filter ? (
+          <p className="px-5 py-8 text-sm text-slate-400">
+            Nenhuma instituição encontrada.
+          </p>
         ) : (
           <p className="px-5 py-8 text-sm text-slate-400">Nenhuma instituição cadastrada.</p>
         )}
