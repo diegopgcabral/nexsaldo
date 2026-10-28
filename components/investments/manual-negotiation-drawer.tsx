@@ -310,17 +310,36 @@ export function ManualNegotiationDrawer({
               <div className="relative space-y-1.5">
                 <span className="income-label">Ticker / código</span>
                 <input
-                  className="income-input placeholder:text-xs"
+                  className="income-input pr-10 placeholder:text-xs"
                   name="ticker"
                   onChange={(event) => {
                     setTicker(event.target.value.toUpperCase());
                     setTickerMenuOpen(true);
                   }}
                   onFocus={() => setTickerMenuOpen(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setTickerMenuOpen(false);
+                  }}
                   placeholder={assetClass ? "Buscar ou adicionar código" : "Selecione o tipo primeiro"}
                   required
                   value={ticker}
                 />
+                <button
+                  aria-label={
+                    isTickerMenuOpen
+                      ? "Fechar sugestões de ticker"
+                      : "Abrir sugestões de ticker"
+                  }
+                  className="absolute top-[29px] right-2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
+                  disabled={!assetClass}
+                  onClick={() => setTickerMenuOpen((isOpen) => !isOpen)}
+                  type="button"
+                >
+                  <Icon
+                    className="size-4"
+                    name={isTickerMenuOpen ? "chevronUp" : "chevronDown"}
+                  />
+                </button>
                 {isTickerMenuOpen && assetClass ? (
                   <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-white/8 bg-[#0b0e13] p-2 shadow-2xl">
                     <div className="max-h-52 overflow-y-auto">
