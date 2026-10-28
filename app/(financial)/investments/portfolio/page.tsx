@@ -1,4 +1,5 @@
 import { PortfolioView } from "@/components/investments/portfolio-view";
+import { investmentAssetName } from "@/lib/investments/asset-catalog";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function InvestmentPortfolioPage() {
@@ -93,7 +94,7 @@ export default async function InvestmentPortfolioPage() {
               ? [
                   {
                     assetClass: asset.asset_class,
-                    name: asset.name,
+                    name: investmentAssetName(asset.ticker, asset.name),
                     ticker: asset.ticker,
                   },
                 ]

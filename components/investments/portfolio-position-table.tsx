@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { investmentAssetName } from "@/lib/investments/asset-catalog";
+
 export type PortfolioPosition = {
   assetClass: string;
   institution: string;
@@ -20,27 +22,6 @@ type SortKey =
   | "quantity"
   | "type";
 type SortDirection = "asc" | "desc";
-
-const assetNames: Record<string, string> = {
-  B3SA3: "B3 S.A. · Brasil, Bolsa, Balcão",
-  BBAS3: "Banco do Brasil S.A.",
-  BBSE3: "BB Seguridade Participações S.A.",
-  BRCO11: "Bresco Logística FII",
-  BTLG11: "BTG Pactual Logística FII",
-  CSMG3: "Copasa MG",
-  CXSE3: "Caixa Seguridade Participações S.A.",
-  FLRY3: "Fleury S.A.",
-  ISAE4: "Isa Energia Brasil S.A.",
-  ITSA4: "Itaúsa S.A.",
-  KLBN11: "Klabin S.A.",
-  KNCR11: "Kinea Rendimentos Imobiliários FII",
-  KNRI11: "Kinea Renda Imobiliária FII",
-  SAPR11: "Sanepar",
-  TAEE11: "Taesa",
-  TRXF11: "TRX Real Estate FII",
-  VISC11: "Vinci Shopping Centers FII",
-  WEGE3: "WEG S.A.",
-};
 
 function formatCurrency(value: number, assetClass: string) {
   const isUsdAsset = assetClass === "US_ETF";
@@ -89,7 +70,7 @@ export function PortfolioPositionTable({
           sort.key === "product"
             ? (first.ticker ?? first.name)
             : sort.key === "name"
-              ? assetNames[first.ticker ?? ""] ?? first.name
+              ? investmentAssetName(first.ticker, first.name)
             : sort.key === "type"
               ? assetType(first.assetClass, first.ticker)
               : sort.key === "averagePrice"
@@ -99,7 +80,7 @@ export function PortfolioPositionTable({
           sort.key === "product"
             ? (second.ticker ?? second.name)
             : sort.key === "name"
-              ? assetNames[second.ticker ?? ""] ?? second.name
+              ? investmentAssetName(second.ticker, second.name)
             : sort.key === "type"
               ? assetType(second.assetClass, second.ticker)
               : sort.key === "averagePrice"
@@ -197,7 +178,7 @@ export function PortfolioPositionTable({
                     {row.ticker ?? "—"}
                   </td>
                   <td className="truncate px-3 py-3 text-slate-400">
-                    {assetNames[row.ticker ?? ""] ?? row.name}
+                    {investmentAssetName(row.ticker, row.name)}
                   </td>
                   <td className="px-3 py-3 text-slate-400">
                     {assetType(row.assetClass, row.ticker)}

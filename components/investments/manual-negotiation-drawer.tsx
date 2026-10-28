@@ -10,6 +10,7 @@ import {
 import { CurrencyInput } from "@/components/financial/currency-input";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
+import { investmentAssetName } from "@/lib/investments/asset-catalog";
 
 type Institution = { id: string; name: string };
 
@@ -447,7 +448,9 @@ export function ManualNegotiationDrawer({
                           key={`${asset.assetClass}:${asset.ticker}`}
                           onClick={() => {
                             setTicker(asset.ticker);
-                            setAssetName(asset.name);
+                            setAssetName(
+                              investmentAssetName(asset.ticker, asset.name),
+                            );
                             setTickerQuery("");
                             setPicker(null);
                           }}
