@@ -145,74 +145,90 @@ export function PortfolioPositionTable({
   );
 
   return (
-    <div className="max-h-[32rem] overflow-auto">
-      <table className="w-full min-w-[1020px] table-fixed text-left text-sm">
-        <colgroup>
-          <col className="w-[12%]" />
-          <col className="w-[24%]" />
-          <col className="w-[10%]" />
-          <col className="w-[20%]" />
-          <col className="w-[11%]" />
-          <col className="w-[11%]" />
-          <col className="w-[12%]" />
-          <col className="w-[11%]" />
-        </colgroup>
-        <thead className="sticky top-0 z-10 border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
-          <tr>
-            {header("Código", "product")}
-            {header("Nome", "name")}
-            {header("Tipo", "type")}
-            {header("Instituição", "institution")}
-            {header("Quantidade", "quantity", "right")}
-            {header("Preço médio", "averagePrice", "right")}
-            {header("Valor investido", "investedAmount", "right")}
-            <th aria-label="Detalhes" className="px-3 py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-white/6">
-          {sortedRows.map((row, index) => (
-            <tr
-              className={
-                index % 2 === 0 ? "bg-white/[0.025]" : "bg-transparent"
-              }
-              key={`${row.assetClass}:${row.ticker ?? row.name}`}
-            >
-              <td className="truncate px-3 py-3 font-medium text-white">
-                {row.ticker ?? "—"}
-              </td>
-              <td className="truncate px-3 py-3 text-slate-400">
-                {assetNames[row.ticker ?? ""] ?? row.name}
-              </td>
-              <td className="px-3 py-3 text-slate-400">
-                {assetType(row.assetClass, row.ticker)}
-              </td>
-              <td className="truncate px-3 py-3 text-slate-400">
-                {row.institution}
-              </td>
-              <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                {formatQuantity(row.quantity)}
-              </td>
-              <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                {formatCurrency(row.investedAmount / row.quantity)}
-              </td>
-              <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                {formatCurrency(row.investedAmount)}
-              </td>
-              <td className="px-3 py-3 text-right">
-                <button
-                  aria-disabled="true"
-                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-400/45 hover:bg-emerald-400/15"
-                  title="Detalhes do ativo em breve"
-                  type="button"
-                >
-                  Detalhes
-                  <span aria-hidden="true">→</span>
-                </button>
-              </td>
+    <div className="overflow-x-auto">
+      <div className="min-w-[1020px]">
+        <table className="w-full table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[12%]" />
+            <col className="w-[24%]" />
+            <col className="w-[10%]" />
+            <col className="w-[20%]" />
+            <col className="w-[11%]" />
+            <col className="w-[11%]" />
+            <col className="w-[12%]" />
+            <col className="w-[11%]" />
+          </colgroup>
+          <thead className="border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
+            <tr>
+              {header("Código", "product")}
+              {header("Nome", "name")}
+              {header("Tipo", "type")}
+              {header("Instituição", "institution")}
+              {header("Quantidade", "quantity", "right")}
+              {header("Preço médio", "averagePrice", "right")}
+              {header("Valor investido", "investedAmount", "right")}
+              <th aria-label="Detalhes" className="px-3 py-3" />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+        </table>
+        <div className="max-h-[29rem] overflow-y-auto">
+          <table className="w-full table-fixed text-left text-sm">
+            <colgroup>
+              <col className="w-[12%]" />
+              <col className="w-[24%]" />
+              <col className="w-[10%]" />
+              <col className="w-[20%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[11%]" />
+            </colgroup>
+            <tbody className="divide-y divide-white/6">
+              {sortedRows.map((row, index) => (
+                <tr
+                  className={
+                    index % 2 === 0 ? "bg-white/[0.025]" : "bg-transparent"
+                  }
+                  key={`${row.assetClass}:${row.ticker ?? row.name}`}
+                >
+                  <td className="truncate px-3 py-3 font-medium text-white">
+                    {row.ticker ?? "—"}
+                  </td>
+                  <td className="truncate px-3 py-3 text-slate-400">
+                    {assetNames[row.ticker ?? ""] ?? row.name}
+                  </td>
+                  <td className="px-3 py-3 text-slate-400">
+                    {assetType(row.assetClass, row.ticker)}
+                  </td>
+                  <td className="truncate px-3 py-3 text-slate-400">
+                    {row.institution}
+                  </td>
+                  <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                    {formatQuantity(row.quantity)}
+                  </td>
+                  <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                    {formatCurrency(row.investedAmount / row.quantity)}
+                  </td>
+                  <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                    {formatCurrency(row.investedAmount)}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <button
+                      aria-disabled="true"
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-400/45 hover:bg-emerald-400/15"
+                      title="Detalhes do ativo em breve"
+                      type="button"
+                    >
+                      Detalhes
+                      <span aria-hidden="true">→</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
