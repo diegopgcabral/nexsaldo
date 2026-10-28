@@ -49,20 +49,48 @@ export function AccountDivisionManager({
   const [paymentStatusOverrides, setPaymentStatusOverrides] = useState<
     Record<string, boolean>
   >({});
-  const [showFinalized, setShowFinalized] = useState(false);
-  const finalizedCount = summaries.filter(
-    (summary) => summary.isFinalized,
+  const [finalizedOverrides, setFinalizedOverrides] = useState<
+    Record<string, boolean>
+  >({});
+  const [draggedParticipantId, setDraggedParticipantId] = useState<
+    string | null
+  >(null);
+  const visibleSummaries = summaries.map((summary) => ({
+    ...summary,
+    isFinalized:
+      finalizedOverrides[summary.participant.id] ?? summary.isFinalized,
+  }));
+  const openCount = visibleSummaries.filter(
+    (summary) => !summary.isFinalized,
   ).length;
-  const visibleSummaries = summaries.filter(
-    (summary) => summary.isFinalized === showFinalized,
-  );
+  const finalizedCount = visibleSummaries.length - openCount;
+
+  function moveStatement(participantId: string, isFinalized: boolean) {
+    const current = visibleSummaries.find(
+      (summary) => summary.participant.id === participantId,
+    );
+    if (!current || current.isFinalized === isFinalized) return;
+    setFinalizedOverrides((values) => ({ ...values, [participantId]: isFinalized }));
+    startTransition(async () => {
+      const result = isFinalized
+        ? await finalizeStatement({ participantId, month })
+        : await reopenStatement({ participantId, month });
+      if (result.error) {
+        setFinalizedOverrides((values) => {
+          const next = { ...values };
+          delete next[participantId];
+          return next;
+        });
+        notify("error", result.error);
+        return;
+      }
+      notify("success", isFinalized ? "Divisão finalizada." : "Divisão reaberta.");
+      router.refresh();
+    });
+  }
   return (
     <div className="space-y-6">
-      <header
-        className={`space-y-3 ${
-          showFinalized ? "max-w-[1100px]" : "max-w-[1200px]"
-        }`}
-      >
+      <header className="space-y-3">
         <p className="text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
           Pessoas / Divisão de contas
         </p>
@@ -72,33 +100,32 @@ export function AccountDivisionManager({
               Divisão de contas
             </h1>
             <p className="mt-2 text-sm text-slate-400">
-              {showFinalized
-                ? "Demonstrativos finalizados nesta competência."
-                : "Escolha uma pessoa para conferir as compras do mês e gerar seu demonstrativo."}
+              Arraste um card entre as colunas para finalizar ou reabrir uma divisão.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <CycleMonthNavigator month={month} pathname="/account-division" />
-            <button
-              type="button"
-              onClick={() => setShowFinalized((current) => !current)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/5"
-            >
-              <Icon name="check" className="size-4 text-emerald-300" />
-              {showFinalized
-                ? "Ver divisões em aberto"
-                : `Divisões finalizadas${finalizedCount ? ` (${finalizedCount})` : ""}`}
-            </button>
+            <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300">
+              {openCount} em aberto · {finalizedCount} finalizada{finalizedCount === 1 ? "" : "s"}
+            </span>
           </div>
         </div>
       </header>
-      <section
-        className={`grid gap-3 sm:grid-cols-2 ${
-          showFinalized
-            ? "max-w-[1100px] xl:grid-cols-2"
-            : "max-w-[1200px] xl:grid-cols-3"
-        }`}
-      >
+      <section className="grid grid-flow-row-dense gap-4 lg:grid-cols-2">
+        <BoardColumn
+          count={openCount}
+          draggedParticipantId={draggedParticipantId}
+          onDrop={(participantId) => moveStatement(participantId, false)}
+          title="Em aberto"
+          tone="amber"
+        />
+        <BoardColumn
+          count={finalizedCount}
+          draggedParticipantId={draggedParticipantId}
+          onDrop={(participantId) => moveStatement(participantId, true)}
+          title="Finalizadas"
+          tone="emerald"
+        />
         {visibleSummaries.map(
           ({
             participant,
@@ -113,7 +140,14 @@ export function AccountDivisionManager({
             return (
               <article
                 key={participant.id}
-                className="rounded-2xl border border-white/5 bg-[#1d2026] p-4"
+                className={`rounded-2xl border border-white/5 bg-[#1d2026] p-4 transition hover:border-white/12 ${isFinalized ? "lg:col-start-2" : "lg:col-start-1"}`}
+                draggable
+                onDragEnd={() => setDraggedParticipantId(null)}
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", participant.id);
+                  setDraggedParticipantId(participant.id);
+                }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -171,24 +205,21 @@ export function AccountDivisionManager({
                       <button
                         type="button"
                         onClick={() => {
-                          startTransition(async () => {
-                            const result = await reopenStatement({
-                              participantId: participant.id,
-                              month,
-                            });
-                            if (result.error) {
-                              notify("error", result.error);
-                              return;
-                            }
-                            notify("success", "Divisão reaberta.");
-                            router.refresh();
-                          });
+                          moveStatement(participant.id, false);
                         }}
                         className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-amber-300/40 px-2.5 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
                       >
                         Reabrir
                       </button>
-                    ) : null}
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => moveStatement(participant.id, true)}
+                        className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-400/40 px-2.5 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10"
+                      >
+                        Finalizar
+                      </button>
+                    )}
                     {paymentConfirmed ? (
                       <button
                         type="button"
@@ -283,13 +314,59 @@ export function AccountDivisionManager({
           },
         )}
       </section>
-      {visibleSummaries.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-400">
-          {showFinalized
-            ? "Nenhuma divisão foi finalizada nesta competência."
-            : "Cadastre um participante para montar os demonstrativos."}
-        </p>
-      ) : null}
+      {visibleSummaries.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-400">Cadastre um participante para montar os demonstrativos.</p> : null}
+    </div>
+  );
+}
+
+function BoardColumn({
+  count,
+  draggedParticipantId,
+  onDrop,
+  title,
+  tone,
+}: {
+  count: number;
+  draggedParticipantId: string | null;
+  onDrop: (participantId: string) => void;
+  title: string;
+  tone: "amber" | "emerald";
+}) {
+  const isFinalized = tone === "emerald";
+  return (
+    <div
+      className={`min-h-20 rounded-2xl border border-dashed p-4 transition lg:row-start-1 ${
+        isFinalized
+          ? "border-emerald-400/25 bg-emerald-400/[0.035]"
+          : "border-amber-300/25 bg-amber-300/[0.025]"
+      } ${draggedParticipantId ? "ring-1 ring-emerald-400/25" : ""}`}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        const participantId =
+          draggedParticipantId || event.dataTransfer.getData("text/plain");
+        if (participantId) onDrop(participantId);
+      }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-semibold text-white">{title}</h2>
+        <span
+          className={`rounded-md px-2 py-1 text-xs font-semibold ${
+            isFinalized
+              ? "bg-emerald-400/10 text-emerald-300"
+              : "bg-amber-300/10 text-amber-200"
+          }`}
+        >
+          {count}
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-slate-500">
+        {draggedParticipantId
+          ? "Solte o card aqui"
+          : isFinalized
+            ? "Divisões encerradas nesta competência"
+            : "Divisões que ainda precisam de conferência"}
+      </p>
     </div>
   );
 }
