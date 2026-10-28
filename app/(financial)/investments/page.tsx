@@ -7,6 +7,11 @@ const labels = {
   STOCK: "Ações",
   FII: "FIIs",
   US_ETF: "ETFs americanos",
+  BRAZILIAN_ETF: "ETFs brasileiros",
+  BDR: "BDRs",
+  FUND: "Fundos de investimento",
+  PENSION: "Previdência",
+  CASH_BOX: "Caixinhas",
   CRYPTO: "Cripto",
 } as const;
 

@@ -10,7 +10,18 @@ import {
 } from "@/lib/investments/b3-movements";
 import { createClient } from "@/lib/supabase/server";
 
-const classes = ["FIXED_INCOME", "STOCK", "FII", "US_ETF", "CRYPTO"] as const;
+const classes = [
+  "FIXED_INCOME",
+  "STOCK",
+  "FII",
+  "US_ETF",
+  "BRAZILIAN_ETF",
+  "BDR",
+  "FUND",
+  "PENSION",
+  "CASH_BOX",
+  "CRYPTO",
+] as const;
 
 export type B3ImportPreviewState =
   | { error: null; preview: null }
@@ -496,6 +507,21 @@ function revalidateInvestmentProductPaths() {
   revalidatePath("/investments");
   revalidatePath("/investments/products");
   revalidatePath("/investments/portfolio");
+}
+
+export async function addInvestmentProductType(assetClass: string) {
+  const parsedClass = z.enum(classes).safeParse(assetClass);
+  const auth = await session();
+  if (!parsedClass.success || !auth) return { error: "Tipo de produto inválido." };
+  const { error } = await auth.supabase
+    .from("investment_product_types")
+    .upsert(
+      { user_id: auth.userId, asset_class: parsedClass.data },
+      { onConflict: "user_id,asset_class", ignoreDuplicates: true },
+    );
+  if (error) return { error: "Não foi possível adicionar o tipo de produto." };
+  revalidateInvestmentProductPaths();
+  return { success: "Tipo de produto adicionado." };
 }
 
 export async function createFixedIncomePosition(formData: FormData) {

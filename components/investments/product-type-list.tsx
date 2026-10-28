@@ -1,14 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
+import { addInvestmentProductType } from "@/app/(financial)/investments/actions";
 import { Icon } from "@/components/financial/icons";
+import { useToast } from "@/components/financial/toast-provider";
 
-type ProductType = "FIXED_INCOME" | "STOCK" | "FII" | "US_ETF" | "CRYPTO";
+type ProductType =
+  | "FIXED_INCOME"
+  | "STOCK"
+  | "FII"
+  | "US_ETF"
+  | "BRAZILIAN_ETF"
+  | "BDR"
+  | "FUND"
+  | "PENSION"
+  | "CASH_BOX"
+  | "CRYPTO";
 
 const productTypes: Array<{
   className: string;
-  icon: "briefcase" | "money" | "wallet" | "category" | "dashboard";
+  icon:
+    | "briefcase"
+    | "money"
+    | "wallet"
+    | "category"
+    | "dashboard"
+    | "shield";
   label: string;
   value: ProductType;
 }> = [
@@ -37,6 +56,36 @@ const productTypes: Array<{
     value: "US_ETF",
   },
   {
+    className: "bg-cyan-400/10 text-cyan-300",
+    icon: "wallet",
+    label: "ETFs brasileiros",
+    value: "BRAZILIAN_ETF",
+  },
+  {
+    className: "bg-indigo-400/10 text-indigo-300",
+    icon: "dashboard",
+    label: "BDRs",
+    value: "BDR",
+  },
+  {
+    className: "bg-fuchsia-400/10 text-fuchsia-300",
+    icon: "briefcase",
+    label: "Fundos de investimento",
+    value: "FUND",
+  },
+  {
+    className: "bg-rose-400/10 text-rose-300",
+    icon: "shield",
+    label: "Previdência",
+    value: "PENSION",
+  },
+  {
+    className: "bg-teal-400/10 text-teal-300",
+    icon: "money",
+    label: "Caixinhas",
+    value: "CASH_BOX",
+  },
+  {
     className: "bg-amber-400/10 text-amber-300",
     icon: "category",
     label: "Cripto",
@@ -45,6 +94,9 @@ const productTypes: Array<{
 ];
 
 export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
+  const router = useRouter();
+  const { notify } = useToast();
+  const [isPending, startTransition] = useTransition();
   const [filter, setFilter] = useState("");
   const registered = useMemo(() => {
     const types = new Set<ProductType>(["FIXED_INCOME", "STOCK", "FII"]);
@@ -63,6 +115,14 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
         type.label.toLocaleLowerCase("pt-BR").includes(normalized),
     );
   }, [filter, registered]);
+  const addType = (type: ProductType) => {
+    startTransition(async () => {
+      const result = await addInvestmentProductType(type);
+      if (result?.error) return notify("error", result.error);
+      notify("success", result?.success ?? "Tipo de produto adicionado.");
+      router.refresh();
+    });
+  };
 
   return (
     <section className="mx-auto w-full max-w-5xl space-y-6">
@@ -74,6 +134,30 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
         <p className="mt-2 text-sm text-slate-400">
           Tipos de investimentos disponíveis na sua carteira.
         </p>
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-white">Adicionar produto</p>
+        <p className="mt-1 text-sm text-slate-400">Selecione um tipo para adicioná-lo à sua carteira.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {productTypes.filter((type) => !registered.has(type.value)).map((type) => (
+            <button
+              className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-[#191c21] px-3 py-2 text-sm text-slate-300 transition hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-emerald-200 disabled:opacity-50"
+              disabled={isPending}
+              key={type.value}
+              onClick={() => addType(type.value)}
+              type="button"
+            >
+              <span className={`flex size-6 items-center justify-center rounded-md ${type.className}`}>
+                <Icon className="size-3.5" name={type.icon} />
+              </span>
+              {type.label}
+            </button>
+          ))}
+          {!productTypes.some((type) => !registered.has(type.value)) ? (
+            <span className="text-sm text-slate-500">Todos os tipos estão adicionados.</span>
+          ) : null}
+        </div>
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-white/6 bg-[#191c21]">

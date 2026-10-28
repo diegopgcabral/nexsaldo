@@ -5,17 +5,26 @@ export default async function InvestmentProductsPage() {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
-  const { data: assets } =
+  const [assetsResult, productTypesResult] =
     typeof userId === "string"
-      ? await supabase
-          .from("investment_assets")
-          .select("asset_class")
-          .eq("user_id", userId)
-      : { data: [] };
+      ? await Promise.all([
+          supabase
+            .from("investment_assets")
+            .select("asset_class")
+            .eq("user_id", userId),
+          supabase
+            .from("investment_product_types")
+            .select("asset_class")
+            .eq("user_id", userId),
+        ])
+      : [{ data: [] }, { data: [] }];
 
   return (
     <ProductTypeList
-      assetClasses={(assets ?? []).map((asset) => asset.asset_class)}
+      assetClasses={[
+        ...(assetsResult.data ?? []).map((asset) => asset.asset_class),
+        ...(productTypesResult.data ?? []).map((type) => type.asset_class),
+      ]}
     />
   );
 }
