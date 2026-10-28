@@ -120,12 +120,14 @@ export function ProductManager({
 
       <form className="rounded-2xl border border-white/6 bg-[#191c21] p-5" onSubmit={submitNew} ref={formRef}>
         <label className="text-sm font-semibold text-white">Tipo do produto</label>
-        <div className="relative mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {productTypes.slice(0, 3).map((type) => (
             <button className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${selectedType === type.value ? "border-emerald-400/45 bg-emerald-400/10 text-emerald-200" : "border-white/8 bg-[#111319] text-slate-400 hover:text-white"}`} key={type.value} onClick={() => setSelectedType(type.value)} type="button"><Icon className="size-4" name={type.icon} />{type.label}</button>
           ))}
-          <button className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-[#111319] px-3 py-2 text-sm text-slate-400 transition hover:text-white" onClick={() => setOtherTypesOpen((open) => !open)} type="button"><Icon className="size-4" name="category" />Outros tipos<Icon className="size-3.5" name="chevronDown" /></button>
-          {isOtherTypesOpen ? <div className="absolute z-20 mt-11 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#191c21] p-1 shadow-2xl">{productTypes.slice(3).map((type) => <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white" key={type.value} onClick={() => { setSelectedType(type.value); setOtherTypesOpen(false); }} type="button"><span className={`flex size-7 items-center justify-center rounded-md ${iconStyle(type.value)}`}><Icon className="size-3.5" name={type.icon} /></span>{type.label}</button>)}</div> : null}
+          <div className="relative">
+            <button className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-[#111319] px-3 py-2 text-sm text-slate-400 transition hover:text-white" onClick={() => setOtherTypesOpen((open) => !open)} type="button"><Icon className="size-4" name="category" />Outros tipos<Icon className="size-3.5" name="chevronDown" /></button>
+            {isOtherTypesOpen ? <div className="absolute top-full left-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#191c21] p-1 shadow-2xl">{productTypes.slice(3).map((type) => <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white" key={type.value} onClick={() => { setSelectedType(type.value); setOtherTypesOpen(false); }} type="button"><span className={`flex size-7 items-center justify-center rounded-md ${iconStyle(type.value)}`}><Icon className="size-3.5" name={type.icon} /></span>{type.label}</button>)}</div> : null}
+          </div>
         </div>
         <input name="assetClass" type="hidden" value={selectedType} />
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
