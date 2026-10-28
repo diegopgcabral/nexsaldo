@@ -53,6 +53,12 @@ function formatDate(date: string) {
     new Date(`${date}T12:00:00`),
   );
 }
+
+function todayReference() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
 function cents(value: string | number) {
   return amountToCents(String(value));
 }
@@ -113,7 +119,10 @@ function ExpenseForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const [status, setStatus] = useState(expense?.status ?? "PENDING");
   const [description, setDescription] = useState(expense?.description ?? "");
-  const [dueDate, setDueDate] = useState(expense?.dueDate ?? `${month}-01`);
+  const [dueDate, setDueDate] = useState(
+    expense?.dueDate ??
+      (expense?.isRecurring ? `${month}-01` : todayReference()),
+  );
   const [category, setCategory] = useState(expense?.category ?? "");
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(!expense);
   const [categoryOptions, setCategoryOptions] = useState(categories);
