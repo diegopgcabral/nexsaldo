@@ -150,7 +150,7 @@ export function PortfolioPositionTable({
           <col className="w-[11%]" />
           <col className="w-[12%]" />
         </colgroup>
-        <thead className="border-b border-white/8 text-[13px] font-semibold tracking-wide text-slate-400 uppercase">
+        <thead className="sticky top-8 z-10 border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
           <tr>
             {header("Produto", "product")}
             {header("Tipo", "type")}
@@ -161,12 +161,22 @@ export function PortfolioPositionTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-white/6">
-          {sortedRows.map((row) => (
-            <tr key={`${row.assetClass}:${row.ticker ?? row.name}`}>
+          {sortedRows.map((row, index) => (
+            <tr
+              className={
+                index % 2 === 0 ? "bg-white/[0.025]" : "bg-transparent"
+              }
+              key={`${row.assetClass}:${row.ticker ?? row.name}`}
+            >
               <td className="px-3 py-3 font-medium text-white">
-                <span className="block truncate">{row.ticker ?? row.name}</span>
-                <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">
-                  {row.ticker ? (assetNames[row.ticker] ?? row.name) : row.name}
+                <span className="block truncate">
+                  <span>{row.ticker ?? row.name}</span>
+                  {row.ticker ? (
+                    <span className="font-normal text-slate-500">
+                      {" "}
+                      · {assetNames[row.ticker] ?? row.name}
+                    </span>
+                  ) : null}
                 </span>
               </td>
               <td className="px-3 py-3 text-slate-400">
