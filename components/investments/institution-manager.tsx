@@ -95,7 +95,7 @@ export function InstitutionManager({
         onSubmit={submitNewInstitution}
       >
         <label className="text-sm font-semibold text-white" htmlFor="institution-name">
-          Cadastrar nova instituição
+          Nome da Instituição
         </label>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <input
