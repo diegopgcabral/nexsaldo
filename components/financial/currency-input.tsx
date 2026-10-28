@@ -37,7 +37,7 @@ export function CurrencyInput({
         R$
       </span>
       <input
-        className="income-input font-semibold"
+        className="income-input font-semibold placeholder:text-xs"
         inputMode="numeric"
         name={name}
         onChange={(event) => {

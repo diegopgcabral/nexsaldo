@@ -310,7 +310,7 @@ export function ManualNegotiationDrawer({
               <div className="relative space-y-1.5">
                 <span className="income-label">Ticker / código</span>
                 <input
-                  className="income-input uppercase"
+                  className="income-input placeholder:text-xs"
                   name="ticker"
                   onChange={(event) => {
                     setTicker(event.target.value.toUpperCase());
@@ -387,7 +387,7 @@ export function ManualNegotiationDrawer({
                 Nome do ativo <span className="font-normal text-slate-500">(opcional)</span>
               </span>
               <input
-                className="income-input"
+                className="income-input placeholder:text-xs"
                 name="name"
                 onChange={(event) => setAssetName(event.target.value)}
                 placeholder="Usaremos o ticker se não informar"
@@ -398,7 +398,7 @@ export function ManualNegotiationDrawer({
               <label className="space-y-1.5">
                 <span className="income-label">Quantidade</span>
                 <input
-                  className="income-input"
+                  className="income-input placeholder:text-xs"
                   inputMode="decimal"
                   name="quantity"
                   onChange={(event) => {
