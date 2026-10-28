@@ -154,7 +154,7 @@ export function InstitutionManager({
               <thead className="border-b border-white/7 bg-[#12151a] text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
                 <tr>
                   <th className="px-5 py-3">Instituição</th>
-                  <th className="px-5 py-3 text-right">Ações</th>
+                  <th className="w-[108px] px-3 py-3 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/6">
@@ -177,11 +177,11 @@ export function InstitutionManager({
                       <p className="font-medium text-white">{institution.name}</p>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex justify-end gap-1">
+                  <td className="px-3 py-3.5">
+                    <div className="flex justify-center gap-0.5">
                     <button
                       aria-label={`Editar ${institution.name}`}
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-white/6 hover:text-emerald-300"
+                      className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/6 hover:text-emerald-300"
                       disabled={isPending}
                       onClick={() => setEditing(institution)}
                       type="button"
@@ -190,7 +190,7 @@ export function InstitutionManager({
                     </button>
                     <button
                       aria-label={`Excluir ${institution.name}`}
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-red-400/10 hover:text-red-300"
+                      className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-400/10 hover:text-red-300"
                       disabled={isPending}
                       onClick={() => removeInstitution(institution)}
                       type="button"
