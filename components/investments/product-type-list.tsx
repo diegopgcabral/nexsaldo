@@ -120,10 +120,18 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
 
   return (
     <section className="mx-auto w-full max-w-5xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold text-white">Produtos</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-sm font-medium text-slate-400">Adicionar tipo</span>
+      <div>
+        <p className="text-xs font-semibold tracking-[.16em] text-emerald-300 uppercase">
+          Investimentos
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold text-white">Produtos</h1>
+        <p className="mt-2 text-sm text-slate-400">
+          Tipos de investimentos disponíveis na sua carteira.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-sm font-medium text-slate-400">Adicionar tipo</span>
           {productTypes.filter((type) => !registered.has(type.value)).map((type) => (
             <button
               className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-[#191c21] px-3 py-2 text-sm text-slate-300 transition hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-emerald-200 disabled:opacity-50"
@@ -141,7 +149,6 @@ export function ProductTypeList({ assetClasses }: { assetClasses: string[] }) {
           {!productTypes.some((type) => !registered.has(type.value)) ? (
             <span className="text-sm text-slate-500">Todos os tipos estão adicionados.</span>
           ) : null}
-        </div>
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-white/6 bg-[#191c21]">
