@@ -274,7 +274,7 @@ export function ManualNegotiationDrawer({
                     <span className="flex-1 font-medium text-slate-100">{selectedInstitution.name}</span>
                   </>
                 ) : (
-                  <span className="flex-1 text-slate-500">Selecione a instituição</span>
+                  <span className="flex-1 text-xs text-slate-500">Selecione a instituição</span>
                 )}
                 <Icon className="size-4 text-slate-400" name={picker === "institution" ? "chevronUp" : "chevronDown"} />
               </button>
@@ -324,22 +324,16 @@ export function ManualNegotiationDrawer({
                   required
                   value={ticker}
                 />
-                <button
-                  aria-label={
-                    isTickerMenuOpen
-                      ? "Fechar sugestões de ticker"
-                      : "Abrir sugestões de ticker"
-                  }
-                  className="absolute top-[29px] right-2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
-                  disabled={!assetClass}
-                  onClick={() => setTickerMenuOpen((isOpen) => !isOpen)}
-                  type="button"
-                >
-                  <Icon
-                    className="size-4"
-                    name={isTickerMenuOpen ? "chevronUp" : "chevronDown"}
-                  />
-                </button>
+                {isTickerMenuOpen ? (
+                  <button
+                    aria-label="Fechar sugestões de ticker"
+                    className="absolute top-[29px] right-2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
+                    onClick={() => setTickerMenuOpen(false)}
+                    type="button"
+                  >
+                    <Icon className="size-4" name="close" />
+                  </button>
+                ) : null}
                 {isTickerMenuOpen && assetClass ? (
                   <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-white/8 bg-[#0b0e13] p-2 shadow-2xl">
                     <div className="max-h-52 overflow-y-auto">
