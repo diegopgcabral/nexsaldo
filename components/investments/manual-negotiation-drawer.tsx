@@ -36,6 +36,8 @@ const fixedIncomeOptions = [
   { label: "Outro", value: "OTHER" },
 ] as const;
 
+const fieldLabelClass = "block text-sm font-medium text-slate-200";
+
 const brandStyles = [
   { match: ["nubank", "nu invest"], className: "bg-[#820ad1]/20 text-[#c58cff]", label: "Nu" },
   { match: ["xp"], className: "bg-[#00a889]/15 text-[#4ce3c0]", label: "XP" },
@@ -177,7 +179,9 @@ export function ManualNegotiationDrawer({
         <form action={formAction} className="flex min-h-0 flex-1 flex-col">
           <div className="space-y-6 overflow-y-auto p-6">
             <fieldset>
-              <legend className="income-label mb-2">Operação</legend>
+              <legend className="mb-3 text-sm font-medium text-slate-200">
+                Operação
+              </legend>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   ["BUY", "Compra"],
@@ -200,11 +204,11 @@ export function ManualNegotiationDrawer({
                 ))}
               </div>
             </fieldset>
-            <div className="relative space-y-1.5">
-              <span className="income-label">Tipo de produto</span>
+            <div className="relative space-y-2.5">
+              <span className={fieldLabelClass}>Tipo de produto</span>
               <input name="assetClass" type="hidden" value={assetClass} />
               <button
-                className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
+                className="income-input flex min-h-[46px] w-full items-center gap-3 text-left text-sm"
                 onClick={() => setPicker((current) => current === "asset" ? null : "asset")}
                 type="button"
               >
@@ -247,11 +251,11 @@ export function ManualNegotiationDrawer({
               ) : null}
             </div>
             {assetClass === "FIXED_INCOME" ? (
-              <div className="relative space-y-1.5">
-                <span className="income-label">Tipo de renda fixa</span>
+              <div className="relative space-y-2.5">
+                <span className={fieldLabelClass}>Tipo de renda fixa</span>
                 <input name="fixedIncomeSubtype" type="hidden" value={fixedIncomeSubtype} />
                 <button
-                  className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
+                  className="income-input flex min-h-[46px] w-full items-center gap-3 text-left text-sm"
                   onClick={() =>
                     setPicker((current) =>
                       current === "fixedIncome" ? null : "fixedIncome",
@@ -309,11 +313,11 @@ export function ManualNegotiationDrawer({
                 ) : null}
               </div>
             ) : null}
-            <div className="relative space-y-1.5">
-              <span className="income-label">Instituição</span>
+            <div className="relative space-y-2.5">
+              <span className={fieldLabelClass}>Instituição</span>
               <input name="institutionId" type="hidden" value={institutionId} />
               <button
-                className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
+                className="income-input flex min-h-[46px] w-full items-center gap-3 text-left text-sm"
                 onClick={() => setPicker((current) => current === "institution" ? null : "institution")}
                 type="button"
               >
@@ -358,11 +362,11 @@ export function ManualNegotiationDrawer({
                 </span>
               ) : null}
             </div>
-            <div className="relative space-y-1.5">
-                <span className="income-label">Ticker / código</span>
+            <div className="relative space-y-2.5">
+                <span className={fieldLabelClass}>Ticker / código</span>
                 <input name="ticker" type="hidden" value={ticker} />
                 <button
-                  className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
+                  className="income-input flex min-h-[46px] w-full items-center gap-3 text-left text-sm"
                   disabled={!assetClass}
                   onClick={() =>
                     setPicker((current) =>
@@ -466,22 +470,22 @@ export function ManualNegotiationDrawer({
                   </div>
                 ) : null}
             </div>
-            <label className="block space-y-1.5">
-              <span className="income-label">Data da negociação</span>
+            <label className="block space-y-2.5">
+              <span className={fieldLabelClass}>Data da negociação</span>
               <input
-                className="income-input [color-scheme:dark]"
+                className="income-input text-sm [color-scheme:dark]"
                 defaultValue={todayReference()}
                 name="transactionDate"
                 required
                 type="date"
               />
             </label>
-            <label className="block space-y-1.5 pb-2">
-              <span className="income-label">
+            <label className="block space-y-2.5 pb-2">
+              <span className={fieldLabelClass}>
                 Nome do ativo <span className="font-normal text-slate-500">(opcional)</span>
               </span>
               <input
-                className="income-input placeholder:text-xs"
+                className="income-input text-sm placeholder:text-xs"
                 name="name"
                 onChange={(event) => setAssetName(event.target.value)}
                 placeholder="Usaremos o ticker se não informar"
@@ -489,10 +493,10 @@ export function ManualNegotiationDrawer({
               />
             </label>
             <div className="grid gap-5 sm:grid-cols-2">
-              <label className="space-y-1.5">
-                <span className="income-label">Quantidade</span>
+              <label className="space-y-2.5">
+                <span className={fieldLabelClass}>Quantidade</span>
                 <input
-                  className="income-input placeholder:text-xs"
+                  className="income-input text-sm placeholder:text-xs"
                   inputMode="decimal"
                   name="quantity"
                   onChange={(event) => {
@@ -511,8 +515,8 @@ export function ManualNegotiationDrawer({
                   value={quantity}
                 />
               </label>
-              <label className="space-y-1.5">
-                <span className="income-label">Preço unitário</span>
+              <label className="space-y-2.5">
+                <span className={fieldLabelClass}>Preço unitário</span>
                 <CurrencyInput
                   name="unitPrice"
                   onAmountChange={setUnitPrice}
@@ -520,10 +524,10 @@ export function ManualNegotiationDrawer({
                 />
               </label>
             </div>
-            <label className="space-y-1.5">
-              <span className="income-label">Valor total calculado</span>
+            <label className="space-y-2.5">
+              <span className={fieldLabelClass}>Valor total calculado</span>
               <input
-                className="income-input cursor-not-allowed font-semibold text-slate-300"
+                className="income-input cursor-not-allowed text-sm font-semibold text-slate-300"
                 disabled
                 value={`R$ ${formatCurrency(totalAmount)}`}
               />
