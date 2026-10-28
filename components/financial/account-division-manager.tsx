@@ -111,7 +111,7 @@ export function AccountDivisionManager({
           </div>
         </div>
       </header>
-      <section className="grid grid-flow-row-dense gap-4 lg:grid-cols-2">
+      <section className="relative grid grid-flow-row-dense gap-4 lg:grid-cols-2">
         <BoardColumn
           count={openCount}
           draggedParticipantId={draggedParticipantId}
@@ -313,6 +313,26 @@ export function AccountDivisionManager({
             );
           },
         )}
+        {draggedParticipantId ? (
+          <>
+            <BoardDropOverlay
+              onDrop={() => {
+                moveStatement(draggedParticipantId, false);
+                setDraggedParticipantId(null);
+              }}
+              title="Solte para reabrir"
+              tone="amber"
+            />
+            <BoardDropOverlay
+              onDrop={() => {
+                moveStatement(draggedParticipantId, true);
+                setDraggedParticipantId(null);
+              }}
+              title="Solte para finalizar"
+              tone="emerald"
+            />
+          </>
+        ) : null}
       </section>
       {visibleSummaries.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-400">Cadastre um participante para montar os demonstrativos.</p> : null}
     </div>
@@ -367,6 +387,40 @@ function BoardColumn({
             ? "Divisões encerradas nesta competência"
             : "Divisões que ainda precisam de conferência"}
       </p>
+    </div>
+  );
+}
+
+function BoardDropOverlay({
+  onDrop,
+  title,
+  tone,
+}: {
+  onDrop: () => void;
+  title: string;
+  tone: "amber" | "emerald";
+}) {
+  const isFinalized = tone === "emerald";
+  return (
+    <div
+      className={`absolute inset-y-0 z-20 hidden w-[calc(50%-0.5rem)] p-2 lg:flex lg:items-center lg:justify-center ${
+        isFinalized ? "right-0" : "left-0"
+      }`}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDrop();
+      }}
+    >
+      <div
+        className={`flex h-full w-full items-center justify-center rounded-2xl border-2 border-dashed text-sm font-semibold backdrop-blur-[1px] ${
+          isFinalized
+            ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-200"
+            : "border-amber-300/60 bg-amber-300/10 text-amber-100"
+        }`}
+      >
+        {title}
+      </div>
     </div>
   );
 }
