@@ -369,7 +369,8 @@ export async function createManualInvestment(formData: FormData) {
       maturityDate: formData.get("maturityDate"),
     });
   const auth = await session();
-  if (!input.success || !auth) return;
+  if (!input.success || !auth)
+    return { error: "Revise os campos obrigatórios do produto." };
 
   const ticker =
     input.data.ticker ||
@@ -391,9 +392,11 @@ export async function createManualInvestment(formData: FormData) {
     )
     .select("id")
     .single();
-  if (!asset) return;
+  if (!asset) return { error: "Não foi possível salvar o produto." };
 
-  await auth.supabase.from("investment_positions").upsert(
+  const { error: positionError } = await auth.supabase
+    .from("investment_positions")
+    .upsert(
     {
       user_id: auth.userId,
       asset_id: asset.id,
@@ -404,7 +407,92 @@ export async function createManualInvestment(formData: FormData) {
       as_of_date: new Date().toISOString().slice(0, 10),
     },
     { onConflict: "user_id,asset_id" },
-  );
+    );
+  if (positionError) return { error: "Não foi possível salvar a posição." };
+  revalidatePath("/investments");
+  revalidatePath("/investments/products");
+  revalidatePath("/investments/portfolio");
+  return { success: "Produto adicionado à carteira." };
+}
+
+export async function updateManualInvestment(formData: FormData) {
+  const input = z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().trim().min(1).max(160),
+      ticker: z.string().trim().max(30),
+      assetClass: z.enum(classes),
+      institutionId: z.string().uuid(),
+      quantity: z.coerce.number().positive(),
+      investedAmount: z.coerce.number().min(0),
+      currentAmount: z.coerce.number().min(0),
+      maturityDate: z.union([z.iso.date(), z.literal("")]),
+    })
+    .safeParse({
+      id: formData.get("id"),
+      name: formData.get("name"),
+      ticker: formData.get("ticker"),
+      assetClass: formData.get("assetClass"),
+      institutionId: formData.get("institutionId"),
+      quantity: formData.get("quantity"),
+      investedAmount: formData.get("investedAmount"),
+      currentAmount: formData.get("currentAmount"),
+      maturityDate: formData.get("maturityDate"),
+    });
+  const auth = await session();
+  if (!input.success || !auth)
+    return { error: "Revise os campos obrigatórios do produto." };
+  const ticker =
+    input.data.ticker ||
+    `manual-${createHash("sha256")
+      .update(`${auth.userId}:${input.data.assetClass}:${input.data.name}`)
+      .digest("hex")
+      .slice(0, 20)}`;
+  const { error: assetError } = await auth.supabase
+    .from("investment_assets")
+    .update({
+      asset_class: input.data.assetClass,
+      institution_id: input.data.institutionId,
+      name: input.data.name,
+      ticker,
+    })
+    .eq("id", input.data.id)
+    .eq("user_id", auth.userId);
+  if (assetError) return { error: "Não foi possível editar o produto." };
+  const { error: positionError } = await auth.supabase
+    .from("investment_positions")
+    .upsert(
+      {
+        user_id: auth.userId,
+        asset_id: input.data.id,
+        quantity: input.data.quantity,
+        invested_amount: input.data.investedAmount,
+        current_amount: input.data.currentAmount,
+        maturity_date: input.data.maturityDate || null,
+        as_of_date: new Date().toISOString().slice(0, 10),
+      },
+      { onConflict: "user_id,asset_id" },
+    );
+  if (positionError) return { error: "Não foi possível atualizar a posição." };
+  revalidateInvestmentProductPaths();
+  return { success: "Produto atualizado." };
+}
+
+export async function deleteManualInvestment(id: string) {
+  const parsedId = z.string().uuid().safeParse(id);
+  const auth = await session();
+  if (!parsedId.success || !auth) return { error: "Produto inválido." };
+  const { error } = await auth.supabase
+    .from("investment_assets")
+    .delete()
+    .eq("id", parsedId.data)
+    .eq("user_id", auth.userId);
+  if (error) return { error: "Não foi possível excluir o produto." };
+  revalidateInvestmentProductPaths();
+  return { success: "Produto excluído." };
+}
+
+function revalidateInvestmentProductPaths() {
   revalidatePath("/investments");
   revalidatePath("/investments/products");
   revalidatePath("/investments/portfolio");
