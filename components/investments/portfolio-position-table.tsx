@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import { AssetMark } from "@/components/investments/asset-mark";
-
 export type PortfolioPosition = {
   assetClass: string;
   institution: string;
@@ -145,10 +143,7 @@ export function PortfolioPositionTable({
           {sortedRows.map((row) => (
             <tr key={`${row.assetClass}:${row.ticker ?? row.name}`}>
               <td className="px-3 py-3 font-medium text-white">
-                <span className="flex min-w-0 items-center gap-3">
-                  <AssetMark ticker={row.ticker} />
-                  <span className="truncate">{row.ticker ?? row.name}</span>
-                </span>
+                <span className="truncate">{row.ticker ?? row.name}</span>
               </td>
               <td className="px-3 py-3 text-slate-400">
                 {assetType(row.assetClass, row.ticker)}
