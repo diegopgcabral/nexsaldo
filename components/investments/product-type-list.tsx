@@ -80,12 +80,6 @@ const productTypes: Array<{
     value: "PENSION",
   },
   {
-    className: "bg-teal-400/10 text-teal-300",
-    icon: "money",
-    label: "Caixinhas",
-    value: "CASH_BOX",
-  },
-  {
     className: "bg-amber-400/10 text-amber-300",
     icon: "category",
     label: "Cripto",
