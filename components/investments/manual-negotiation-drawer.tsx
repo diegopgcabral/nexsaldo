@@ -413,9 +413,22 @@ export function ManualNegotiationDrawer({
                           if (event.key === "Escape") setPicker(null);
                         }}
                         placeholder="Buscar ou adicionar código"
-                        style={{ paddingLeft: "2.25rem", paddingRight: "0.75rem" }}
+                        style={{
+                          paddingLeft: "2.25rem",
+                          paddingRight: tickerQuery ? "2.25rem" : "0.75rem",
+                        }}
                         value={tickerQuery}
                       />
+                      {tickerQuery ? (
+                        <button
+                          aria-label="Limpar busca de ticker"
+                          className="absolute top-1/2 right-1.5 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/7 hover:text-white"
+                          onClick={() => setTickerQuery("")}
+                          type="button"
+                        >
+                          <Icon className="size-3.5" name="close" />
+                        </button>
+                      ) : null}
                     </div>
                     <div className="max-h-52 overflow-y-auto">
                       {matchingAssets.map((asset) => (
