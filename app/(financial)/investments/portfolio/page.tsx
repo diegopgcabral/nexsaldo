@@ -23,7 +23,7 @@ export default async function InvestmentPortfolioPage({ searchParams }: Props) {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
-  const [positionResult, assetResult, institutionResult] =
+  const [positionResult, assetResult, institutionResult, transactionResult] =
     typeof userId === "string"
       ? await Promise.all([
           supabase
@@ -38,8 +38,13 @@ export default async function InvestmentPortfolioPage({ searchParams }: Props) {
             .from("investment_institutions")
             .select("id, name")
             .eq("user_id", userId),
+          supabase
+            .from("investment_transactions")
+            .select("asset_id, institution_id, transaction_date")
+            .eq("user_id", userId)
+            .order("transaction_date", { ascending: false }),
         ])
-      : [{ data: [] }, { data: [] }, { data: [] }];
+      : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
   const assetsById = new Map(
     (assetResult.data ?? []).map((asset) => [asset.id, asset]),
@@ -50,14 +55,28 @@ export default async function InvestmentPortfolioPage({ searchParams }: Props) {
       institution.name,
     ]),
   );
+  const institutionIdByAssetId = new Map<string, string>();
+  for (const transaction of transactionResult.data ?? []) {
+    if (
+      transaction.institution_id &&
+      !institutionIdByAssetId.has(transaction.asset_id)
+    ) {
+      institutionIdByAssetId.set(
+        transaction.asset_id,
+        transaction.institution_id,
+      );
+    }
+  }
   const positions = (positionResult.data ?? []).flatMap((position) => {
     const asset = assetsById.get(position.asset_id);
     if (!asset) return [];
+    const institutionId =
+      asset.institution_id ?? institutionIdByAssetId.get(asset.id);
     return [
       {
         assetClass: asset.asset_class,
-        institution: asset.institution_id
-          ? (institutionsById.get(asset.institution_id) ?? "—")
+        institution: institutionId
+          ? (institutionsById.get(institutionId) ?? "—")
           : "—",
         investedAmount: Number(position.invested_amount),
         name: asset.name,
