@@ -542,7 +542,9 @@ export function ManualNegotiationDrawer({
                   placeholder={isUsdAsset ? "0.00" : "0"}
                   required
                   type="text"
-                  value={quantity}
+                  value={
+                    isUsdAsset ? quantity.replaceAll(",", ".") : quantity
+                  }
                 />
               </label>
               <label className="space-y-2.5">
