@@ -60,9 +60,20 @@ export function PortfolioView({
 
   return (
     <>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold tracking-[.16em] text-emerald-300 uppercase">
+            Investimentos
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold text-white">
+            Minha carteira
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            Posições atualizadas a partir das negociações importadas.
+          </p>
+        </div>
         <button
-          className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-300 px-5 py-2.5 text-sm font-semibold text-slate-950"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822]"
           onClick={() => setFilterOpen(true)}
           type="button"
         >
@@ -70,7 +81,7 @@ export function PortfolioView({
           Filtrar
         </button>
       </div>
-      <div className="space-y-8">
+      <div className="mt-8 space-y-8">
         {groups.map((group) => {
           const rows = filteredPositions.filter(
             (position) => position.assetClass === group.assetClass,
@@ -107,7 +118,7 @@ export function PortfolioView({
         />
         <aside
           aria-label="Filtros da carteira"
-          className={`absolute inset-y-0 left-0 flex w-full max-w-sm flex-col border-r border-white/10 bg-[#111319] p-6 shadow-2xl transition-transform duration-300 ${isFilterOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`absolute inset-y-0 right-0 flex w-full max-w-sm flex-col border-l border-white/10 bg-[#111319] p-6 shadow-2xl transition-transform duration-300 ${isFilterOpen ? "translate-x-0" : "translate-x-full"}`}
         >
           <div className="flex items-center justify-between">
             <div>

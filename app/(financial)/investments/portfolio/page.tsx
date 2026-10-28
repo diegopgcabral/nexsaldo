@@ -69,21 +69,7 @@ export default async function InvestmentPortfolioPage() {
   });
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold tracking-[.16em] text-emerald-300 uppercase">
-            Investimentos
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">
-            Minha carteira
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Posições atualizadas a partir das negociações importadas.
-          </p>
-        </div>
-      </div>
-
+    <section>
       {positions.length ? (
         <PortfolioView positions={positions} />
       ) : (
