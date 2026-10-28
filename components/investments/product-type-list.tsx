@@ -101,6 +101,9 @@ export function ProductTypeList({
   const { notify } = useToast();
   const [isPending, startTransition] = useTransition();
   const [filter, setFilter] = useState("");
+  const [optimisticTypes, setOptimisticTypes] = useState<
+    Partial<Record<ProductType, boolean>>
+  >({});
   const registered = useMemo(() => {
     const types = new Set<ProductType>(["FIXED_INCOME", "STOCK", "FII"]);
     for (const assetClass of assetClasses) {
@@ -113,8 +116,12 @@ export function ProductTypeList({
       if (type.is_active) types.add(type.asset_class as ProductType);
       else types.delete(type.asset_class as ProductType);
     }
+    for (const [assetClass, isActive] of Object.entries(optimisticTypes)) {
+      if (isActive) types.add(assetClass as ProductType);
+      else types.delete(assetClass as ProductType);
+    }
     return types;
-  }, [assetClasses, savedTypes]);
+  }, [assetClasses, optimisticTypes, savedTypes]);
   const visibleTypes = useMemo(() => {
     const normalized = filter.trim().toLocaleLowerCase("pt-BR");
     return productTypes.filter(
@@ -124,17 +131,33 @@ export function ProductTypeList({
     );
   }, [filter, registered]);
   const addType = (type: ProductType) => {
+    setOptimisticTypes((current) => ({ ...current, [type]: true }));
     startTransition(async () => {
       const result = await addInvestmentProductType(type);
-      if (result?.error) return notify("error", result.error);
+      if (result?.error) {
+        setOptimisticTypes((current) => {
+          const next = { ...current };
+          delete next[type];
+          return next;
+        });
+        return notify("error", result.error);
+      }
       notify("success", result?.success ?? "Tipo de produto adicionado.");
       router.refresh();
     });
   };
   const removeType = (type: ProductType) => {
+    setOptimisticTypes((current) => ({ ...current, [type]: false }));
     startTransition(async () => {
       const result = await removeInvestmentProductType(type);
-      if (result?.error) return notify("error", result.error);
+      if (result?.error) {
+        setOptimisticTypes((current) => {
+          const next = { ...current };
+          delete next[type];
+          return next;
+        });
+        return notify("error", result.error);
+      }
       notify("success", result?.success ?? "Tipo removido da lista.");
       router.refresh();
     });
