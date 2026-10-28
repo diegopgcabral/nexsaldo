@@ -17,8 +17,10 @@ function formatStoredValue(raw: string | number) {
 }
 
 function formatUsdTypingValue(raw: string) {
-  const [whole, ...decimal] = raw.replace(/[^\d.]/g, "").split(".");
-  return decimal.length ? `${whole}.${decimal.join("")}` : whole;
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(raw.replace(/\D/g, "") || "0") / 100);
 }
 
 export function CurrencyInput({
@@ -38,7 +40,10 @@ export function CurrencyInput({
     defaultValue === undefined
       ? ""
       : currency === "USD"
-        ? Number(defaultValue).toFixed(2)
+        ? new Intl.NumberFormat("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(Number(defaultValue))
         : formatStoredValue(defaultValue),
   );
   const isUsd = currency === "USD";
@@ -59,7 +64,7 @@ export function CurrencyInput({
           setValue(next);
           onAmountChange?.(
             isUsd
-              ? Number(next) || 0
+              ? Number(next.replaceAll(",", "")) || 0
               : Number(next.replaceAll(".", "").replace(",", ".")),
           );
         }}
