@@ -37,7 +37,7 @@ export const createIncomeSchema = z.object({
 export const createExpenseSchema = z
   .object({
     description: descriptionSchema,
-    referenceAmount: positiveAmountSchema,
+    referenceAmount: decimalAmountSchema.default("0"),
     paidAmount: decimalAmountSchema.default("0"),
     dueDate: dateSchema,
     category: categorySchema,
@@ -46,7 +46,24 @@ export const createExpenseSchema = z
     isRecurring: z.boolean().default(false),
   })
   .superRefine((expense, context) => {
+    const referenceAmount = amountToCents(expense.referenceAmount);
     const paidAmount = amountToCents(expense.paidAmount);
+
+    if (expense.isRecurring && referenceAmount <= 0n) {
+      context.addIssue({
+        code: "custom",
+        message: "Informe o valor previsto da despesa recorrente.",
+        path: ["referenceAmount"],
+      });
+    }
+
+    if (!expense.isRecurring && paidAmount <= 0n) {
+      context.addIssue({
+        code: "custom",
+        message: "Informe o valor pago da despesa.",
+        path: ["paidAmount"],
+      });
+    }
 
     if (expense.status === "CANCELLED" && paidAmount !== 0n) {
       context.addIssue({

@@ -284,25 +284,51 @@ function ExpenseForm({
           <span className="block text-xs text-red-300">{categoryError}</span>
         ) : null}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1.5">
-          <span className="income-label">Valor previsto</span>
-          <CurrencyInput
-            defaultValue={expense?.referenceAmount}
-            name="referenceAmount"
-            required
-          />
-        </label>
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-[#111319] p-4 transition hover:border-emerald-400/35">
+        <input
+          checked={isRecurring}
+          className="mt-0.5 size-4 accent-emerald-400"
+          name="isRecurring"
+          onChange={(event) => {
+            const nextValue = event.target.checked;
+            setIsRecurring(nextValue);
+            if (!nextValue) setStatus("PAID");
+          }}
+          type="checkbox"
+        />
+        <span>
+          <span className="block text-sm font-semibold text-slate-100">
+            Repetir mensalmente
+          </span>
+          <span className="mt-0.5 block text-xs leading-5 text-slate-400">
+            Ao salvar, a despesa deste ciclo e a do próximo ciclo serão criadas.
+          </span>
+        </span>
+      </label>
+      <div className={isRecurring ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
+        {isRecurring ? (
+          <label className="space-y-1.5">
+            <span className="income-label">Valor previsto</span>
+            <CurrencyInput
+              defaultValue={expense?.referenceAmount}
+              name="referenceAmount"
+              required
+            />
+          </label>
+        ) : null}
         <label className="space-y-1.5">
           <span className="income-label">Valor pago</span>
           <CurrencyInput
             defaultValue={expense?.paidAmount ?? "0"}
             name="paidAmount"
+            required={!isRecurring}
           />
         </label>
       </div>
       <label className="space-y-1.5">
-        <span className="income-label">Data de vencimento</span>
+        <span className="income-label">
+          {isRecurring ? "Data de vencimento" : "Data do pagamento"}
+        </span>
         <input
           className="income-input [color-scheme:dark]"
           name="dueDate"
@@ -312,6 +338,7 @@ function ExpenseForm({
           value={dueDate}
         />
       </label>
+      {isRecurring ? (
       <fieldset>
         <legend className="income-label mb-2">Status do pagamento</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -333,23 +360,9 @@ function ExpenseForm({
           ))}
         </div>
       </fieldset>
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-[#111319] p-4 transition hover:border-emerald-400/35">
-        <input
-          checked={isRecurring}
-          className="mt-0.5 size-4 accent-emerald-400"
-          name="isRecurring"
-          onChange={(event) => setIsRecurring(event.target.checked)}
-          type="checkbox"
-        />
-        <span>
-          <span className="block text-sm font-semibold text-slate-100">
-            Repetir mensalmente
-          </span>
-          <span className="mt-0.5 block text-xs leading-5 text-slate-400">
-            Ao salvar, a despesa deste ciclo e a do próximo ciclo serão criadas.
-          </span>
-        </span>
-      </label>
+      ) : (
+        <input name="status" type="hidden" value="PAID" />
+      )}
       <label className="space-y-1.5">
         <span className="income-label">
           Observações{" "}
@@ -658,7 +671,9 @@ export function ExpenseManager({
                     {formatDate(item.dueDate)}
                   </td>
                   <td className="px-4 py-4 font-medium text-white">
-                    {formatCents(cents(item.referenceAmount))}
+                    {item.isRecurring
+                      ? formatCents(cents(item.referenceAmount))
+                      : "—"}
                   </td>
                   <td className="px-4 py-4">
                     <PaymentComparison expense={item} />

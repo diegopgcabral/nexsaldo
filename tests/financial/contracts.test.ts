@@ -83,6 +83,34 @@ test("accepts a paid expense even when its value differs from the planned amount
   assert.equal(result.success, true);
 });
 
+test("requires only the paid amount for a one-time expense", () => {
+  const result = createExpenseSchema.safeParse({
+    description: "Café",
+    referenceAmount: "0",
+    paidAmount: "15.00",
+    dueDate: "2026-10-10",
+    category: "Alimentação",
+    status: "PAID",
+    isRecurring: false,
+  });
+
+  assert.equal(result.success, true);
+});
+
+test("requires a forecast amount for recurring expenses", () => {
+  const result = createExpenseSchema.safeParse({
+    description: "Internet",
+    referenceAmount: "0",
+    paidAmount: "0",
+    dueDate: "2026-10-10",
+    category: "Moradia",
+    status: "PENDING",
+    isRecurring: true,
+  });
+
+  assert.equal(result.success, false);
+});
+
 test("calculates monthly balances in cents", () => {
   const summary = calculateMonthlySummary({
     incomeCents: 2_000_000n,

@@ -16,13 +16,18 @@ const value = (formData: FormData, name: string) =>
   typeof formData.get(name) === "string" ? String(formData.get(name)) : "";
 
 function payload(formData: FormData) {
-  const requestedStatus = value(formData, "status") || "PENDING";
+  const isRecurring = value(formData, "isRecurring") === "on";
+  const requestedStatus = isRecurring
+    ? value(formData, "status") || "PENDING"
+    : "PAID";
   const normalizedPaidAmount = normalizeCurrencyInput(
     value(formData, "paidAmount") || "0",
   );
   const parsed = createExpenseSchema.safeParse({
     description: value(formData, "description"),
-    referenceAmount: normalizeCurrencyInput(value(formData, "referenceAmount")),
+    referenceAmount: isRecurring
+      ? normalizeCurrencyInput(value(formData, "referenceAmount") || "0")
+      : normalizedPaidAmount,
     paidAmount:
       requestedStatus === "PENDING" || requestedStatus === "CANCELLED"
         ? "0"
@@ -31,7 +36,7 @@ function payload(formData: FormData) {
     category: value(formData, "category"),
     status: requestedStatus,
     notes: value(formData, "notes") || undefined,
-    isRecurring: value(formData, "isRecurring") === "on",
+    isRecurring,
   });
   if (!parsed.success) return parsed;
 

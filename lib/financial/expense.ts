@@ -22,14 +22,18 @@ export function calculateExpenseTotals(expenses: ExpenseListItem[]) {
     (totals, expense) => {
       if (expense.status === "CANCELLED") return totals;
 
-      const plannedCents = toCents(expense.referenceAmount);
+      const plannedCents = expense.isRecurring
+        ? toCents(expense.referenceAmount)
+        : 0n;
       const paidCents = toCents(expense.paidAmount);
       return {
         plannedCents: totals.plannedCents + plannedCents,
         paidCents: totals.paidCents + paidCents,
         openCents:
           totals.openCents +
-          (expense.status === "PENDING" ? plannedCents - paidCents : 0n),
+          (expense.isRecurring && expense.status === "PENDING"
+            ? plannedCents - paidCents
+            : 0n),
       };
     },
     { plannedCents: 0n, paidCents: 0n, openCents: 0n },
