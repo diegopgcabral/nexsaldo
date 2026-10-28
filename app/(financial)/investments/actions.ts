@@ -250,13 +250,66 @@ export async function createInvestmentInstitution(formData: FormData) {
     .max(100)
     .safeParse(formData.get("name"));
   const auth = await session();
-  if (!name.success || !auth) return;
-  await auth.supabase
+  if (!name.success || !auth)
+    return { error: "Informe um nome válido para a instituição." };
+  const { error } = await auth.supabase
     .from("investment_institutions")
     .insert({ user_id: auth.userId, name: name.data });
+  if (error) {
+    return {
+      error:
+        error.code === "23505"
+          ? "Esta instituição já está cadastrada."
+          : "Não foi possível cadastrar a instituição.",
+    };
+  }
+  revalidateInvestmentInstitutionPaths();
+  return { success: "Instituição adicionada." };
+}
+
+export async function updateInvestmentInstitution(formData: FormData) {
+  const id = z.string().uuid().safeParse(formData.get("id"));
+  const name = z.string().trim().min(1).max(100).safeParse(formData.get("name"));
+  const auth = await session();
+  if (!id.success || !name.success || !auth)
+    return { error: "Não foi possível validar a instituição." };
+  const { error } = await auth.supabase
+    .from("investment_institutions")
+    .update({ name: name.data })
+    .eq("id", id.data)
+    .eq("user_id", auth.userId);
+  if (error) {
+    return {
+      error:
+        error.code === "23505"
+          ? "Já existe uma instituição com este nome."
+          : "Não foi possível editar a instituição.",
+    };
+  }
+  revalidateInvestmentInstitutionPaths();
+  return { success: "Instituição atualizada." };
+}
+
+export async function deleteInvestmentInstitution(id: string) {
+  const parsedId = z.string().uuid().safeParse(id);
+  const auth = await session();
+  if (!parsedId.success || !auth)
+    return { error: "Não foi possível validar a instituição." };
+  const { error } = await auth.supabase
+    .from("investment_institutions")
+    .delete()
+    .eq("id", parsedId.data)
+    .eq("user_id", auth.userId);
+  if (error) return { error: "Não foi possível excluir a instituição." };
+  revalidateInvestmentInstitutionPaths();
+  return { success: "Instituição excluída." };
+}
+
+function revalidateInvestmentInstitutionPaths() {
   revalidatePath("/investments");
   revalidatePath("/investments/institutions");
   revalidatePath("/investments/products");
+  revalidatePath("/investments/portfolio");
 }
 
 export async function createInvestmentAsset(formData: FormData) {
