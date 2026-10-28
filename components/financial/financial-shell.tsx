@@ -177,7 +177,7 @@ export function FinancialShell({
                     <Icon className="size-4 transition group-open:rotate-180" name="chevronDown" />
                   </summary>
                   <div className="mt-1 space-y-1 pl-7">
-                    <SubmenuLink active={pathname === "/investments"} href="/investments" icon="dashboard" label="Dashboard" />
+                    <SubmenuLink active={pathname === "/investments"} href="/investments" icon="dashboard" label="Visão geral" />
                     <SubmenuLink active={pathname.startsWith("/investments/portfolio")} href="/investments/portfolio" icon="wallet" label="Minha carteira" />
                     <details
                       className="group/cadastros"

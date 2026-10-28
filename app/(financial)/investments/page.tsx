@@ -50,7 +50,7 @@ export default async function InvestmentsPage() {
         <p className="text-xs font-semibold tracking-[.16em] text-emerald-300 uppercase">
           Investimentos
         </p>
-        <h1 className="mt-2 text-3xl font-semibold text-white">Dashboard</h1>
+        <h1 className="mt-2 text-3xl font-semibold text-white">Visão geral</h1>
         <p className="mt-2 text-sm text-slate-400">
           Acompanhe sua carteira e mantenha seus produtos organizados.
         </p>
