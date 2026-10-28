@@ -95,7 +95,7 @@ export function ManualNegotiationDrawer({
   const [assetClass, setAssetClass] = useState("");
   const [institutionId, setInstitutionId] = useState("");
   const [picker, setPicker] = useState<
-    "asset" | "institution" | "ticker" | null
+    "asset" | "fixedIncome" | "institution" | "ticker" | null
   >(null);
   const [fixedIncomeSubtype, setFixedIncomeSubtype] = useState("");
   const [ticker, setTicker] = useState("");
@@ -204,19 +204,19 @@ export function ManualNegotiationDrawer({
               <span className="income-label">Tipo de produto</span>
               <input name="assetClass" type="hidden" value={assetClass} />
               <button
-                className="income-input flex w-full items-center gap-3 text-left"
+                className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
                 onClick={() => setPicker((current) => current === "asset" ? null : "asset")}
                 type="button"
               >
                 {selectedProduct ? (
                   <>
-                    <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${selectedProduct.className}`}>
+                    <span className={`flex size-6 shrink-0 items-center justify-center rounded-lg ${selectedProduct.className}`}>
                       <Icon className="size-4" name={selectedProduct.icon} />
                     </span>
                     <span className="flex-1 font-medium text-slate-100">{selectedProduct.label}</span>
                   </>
                 ) : (
-                  <span className="flex-1 text-slate-500">Selecione o tipo</span>
+                  <span className="flex-1 text-xs text-slate-500">Selecione o tipo</span>
                 )}
                 <Icon className="size-4 text-slate-400" name={picker === "asset" ? "chevronUp" : "chevronDown"} />
               </button>
@@ -247,28 +247,73 @@ export function ManualNegotiationDrawer({
               ) : null}
             </div>
             {assetClass === "FIXED_INCOME" ? (
-              <fieldset>
-                <legend className="income-label mb-2">Tipo de renda fixa</legend>
+              <div className="relative space-y-1.5">
+                <span className="income-label">Tipo de renda fixa</span>
                 <input name="fixedIncomeSubtype" type="hidden" value={fixedIncomeSubtype} />
-                <div className="grid grid-cols-2 gap-2">
+                <button
+                  className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
+                  onClick={() =>
+                    setPicker((current) =>
+                      current === "fixedIncome" ? null : "fixedIncome",
+                    )
+                  }
+                  type="button"
+                >
+                  {fixedIncomeSubtype ? (
+                    <>
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-sky-400/10 text-sky-300">
+                        <Icon className="size-4" name="money" />
+                      </span>
+                      <span className="flex-1 font-medium text-slate-100">
+                        {fixedIncomeOptions.find(
+                          (option) => option.value === fixedIncomeSubtype,
+                        )?.label}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex-1 text-xs text-slate-500">
+                      Selecione o subtipo
+                    </span>
+                  )}
+                  <Icon
+                    className="size-4 text-slate-400"
+                    name={
+                      picker === "fixedIncome" ? "chevronUp" : "chevronDown"
+                    }
+                  />
+                </button>
+                {picker === "fixedIncome" ? (
+                  <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-white/8 bg-[#0b0e13] p-2 shadow-2xl">
                   {fixedIncomeOptions.map((option) => (
                     <button
-                      className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${fixedIncomeSubtype === option.value ? "border-sky-400/60 bg-sky-400/10 text-sky-200" : "border-white/8 bg-[#191c21] text-slate-400 hover:border-sky-400/30"}`}
+                      className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-[#1d2025]"
                       key={option.value}
-                      onClick={() => setFixedIncomeSubtype(option.value)}
+                      onClick={() => {
+                        setFixedIncomeSubtype(option.value);
+                        setPicker(null);
+                      }}
                       type="button"
                     >
-                      {option.label}
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-400/10 text-sky-300">
+                        <Icon className="size-4" name="money" />
+                      </span>
+                      <span className="flex-1 text-sm font-medium text-slate-100">
+                        {option.label}
+                      </span>
+                      {fixedIncomeSubtype === option.value ? (
+                        <Icon className="size-4 text-emerald-300" name="check" />
+                      ) : null}
                     </button>
                   ))}
-                </div>
-              </fieldset>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
             <div className="relative space-y-1.5">
               <span className="income-label">Instituição</span>
               <input name="institutionId" type="hidden" value={institutionId} />
               <button
-                className="income-input flex w-full items-center gap-3 text-left"
+                className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
                 onClick={() => setPicker((current) => current === "institution" ? null : "institution")}
                 type="button"
               >
@@ -276,7 +321,7 @@ export function ManualNegotiationDrawer({
                   <>
                     {(() => {
                       const brand = institutionBrand(selectedInstitution.name);
-                      return <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${brand.className}`}>{brand.label}</span>;
+                      return <span className={`flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold ${brand.className}`}>{brand.label}</span>;
                     })()}
                     <span className="flex-1 font-medium text-slate-100">{selectedInstitution.name}</span>
                   </>
@@ -313,12 +358,11 @@ export function ManualNegotiationDrawer({
                 </span>
               ) : null}
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="relative space-y-1.5">
+            <div className="relative space-y-1.5">
                 <span className="income-label">Ticker / código</span>
                 <input name="ticker" type="hidden" value={ticker} />
                 <button
-                  className="income-input flex w-full items-center gap-3 text-left"
+                  className="income-input flex min-h-[46px] w-full items-center gap-3 text-left"
                   disabled={!assetClass}
                   onClick={() =>
                     setPicker((current) =>
@@ -421,18 +465,17 @@ export function ManualNegotiationDrawer({
                     </div>
                   </div>
                 ) : null}
-              </div>
-              <label className="space-y-1.5">
-                <span className="income-label">Data da negociação</span>
-                <input
-                  className="income-input [color-scheme:dark]"
-                  defaultValue={todayReference()}
-                  name="transactionDate"
-                  required
-                  type="date"
-                />
-              </label>
             </div>
+            <label className="block space-y-1.5">
+              <span className="income-label">Data da negociação</span>
+              <input
+                className="income-input [color-scheme:dark]"
+                defaultValue={todayReference()}
+                name="transactionDate"
+                required
+                type="date"
+              />
+            </label>
             <label className="block space-y-1.5 pb-2">
               <span className="income-label">
                 Nome do ativo <span className="font-normal text-slate-500">(opcional)</span>
