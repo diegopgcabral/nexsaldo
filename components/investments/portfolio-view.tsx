@@ -12,6 +12,12 @@ const groups = [
   { assetClass: "STOCK", label: "Ações" },
   { assetClass: "FII", label: "FII · Fundo de Investimento Imobiliário" },
   { assetClass: "FIXED_INCOME", label: "Renda fixa" },
+  { assetClass: "US_ETF", label: "ETFs americanos" },
+  { assetClass: "BRAZILIAN_ETF", label: "ETFs brasileiros" },
+  { assetClass: "BDR", label: "BDRs" },
+  { assetClass: "FUND", label: "Fundos de investimento" },
+  { assetClass: "PENSION", label: "Previdência" },
+  { assetClass: "CRYPTO", label: "Cripto" },
 ] as const;
 
 function formatCurrency(value: number) {
@@ -23,8 +29,10 @@ function formatCurrency(value: number) {
 
 export function PortfolioView({
   positions,
+  productTypes,
 }: {
   positions: PortfolioPosition[];
+  productTypes: string[];
 }) {
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [assetClasses, setAssetClasses] = useState<string[]>([]);
@@ -46,6 +54,9 @@ export function PortfolioView({
         assetClasses.includes(position.assetClass)) &&
       (institutions.length === 0 ||
         institutions.includes(position.institution)),
+  );
+  const activeGroups = groups.filter((group) =>
+    productTypes.includes(group.assetClass),
   );
   const toggle = (
     value: string,
@@ -82,11 +93,10 @@ export function PortfolioView({
         </button>
       </div>
       <div className="mt-8 space-y-8">
-        {groups.map((group) => {
+        {activeGroups.map((group) => {
           const rows = filteredPositions.filter(
             (position) => position.assetClass === group.assetClass,
           );
-          if (!rows.length) return null;
           const total = rows.reduce((sum, row) => sum + row.investedAmount, 0);
           return (
             <section key={group.assetClass}>
@@ -101,7 +111,13 @@ export function PortfolioView({
                   TOTAL: {formatCurrency(total)}
                 </span>
               </div>
-              <PortfolioPositionTable rows={rows} />
+              {rows.length ? (
+                <PortfolioPositionTable rows={rows} />
+              ) : (
+                <p className="px-3 py-4 text-sm text-slate-500">
+                  Nenhum ativo adicionado neste produto.
+                </p>
+              )}
             </section>
           );
         })}
@@ -147,7 +163,7 @@ export function PortfolioView({
                 Tipo de ativo
               </legend>
               <div className="mt-3 space-y-3">
-                {groups.map((group) => (
+                {activeGroups.map((group) => (
                   <label
                     className="flex cursor-pointer items-center gap-3 text-sm text-slate-300"
                     key={group.assetClass}

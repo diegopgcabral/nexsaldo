@@ -5,7 +5,13 @@ export default async function InvestmentPortfolioPage() {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
-  const [positionResult, assetResult, institutionResult, transactionResult] =
+  const [
+    positionResult,
+    assetResult,
+    institutionResult,
+    transactionResult,
+    productTypesResult,
+  ] =
     typeof userId === "string"
       ? await Promise.all([
           supabase
@@ -25,8 +31,12 @@ export default async function InvestmentPortfolioPage() {
             .select("asset_id, institution_id, transaction_date")
             .eq("user_id", userId)
             .order("transaction_date", { ascending: false }),
+          supabase
+            .from("investment_product_types")
+            .select("asset_class, is_active")
+            .eq("user_id", userId),
         ])
-      : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
+      : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
   const assetsById = new Map(
     (assetResult.data ?? []).map((asset) => [asset.id, asset]),
@@ -68,10 +78,19 @@ export default async function InvestmentPortfolioPage() {
     ];
   });
 
+  const productTypes = new Set<string>(["FIXED_INCOME", "STOCK", "FII"]);
+  for (const productType of productTypesResult.data ?? []) {
+    if (productType.is_active) productTypes.add(productType.asset_class);
+    else productTypes.delete(productType.asset_class);
+  }
+
   return (
     <section>
-      {positions.length ? (
-        <PortfolioView positions={positions} />
+      {positions.length || productTypes.size ? (
+        <PortfolioView
+          positions={positions}
+          productTypes={[...productTypes]}
+        />
       ) : (
         <section className="rounded-2xl bg-[#191c21] p-6">
           <h2 className="font-semibold text-white">
