@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function formatTypingValue(raw: string) {
   return new Intl.NumberFormat("pt-BR", {
@@ -47,17 +47,24 @@ export function CurrencyInput({
         : formatStoredValue(defaultValue),
   );
   const isUsd = currency === "USD";
+  const amountFromValue = (formattedValue: string) =>
+    isUsd
+      ? Number(formattedValue.replaceAll(",", "")) || 0
+      : Number(formattedValue.replaceAll(".", "").replace(",", "."));
   const updateValue = (raw: string) => {
     const next = isUsd
       ? formatUsdTypingValue(raw)
       : formatTypingValue(raw);
     setValue(next);
-    onAmountChange?.(
-      isUsd
-        ? Number(next.replaceAll(",", "")) || 0
-        : Number(next.replaceAll(".", "").replace(",", ".")),
-    );
+    onAmountChange?.(amountFromValue(next));
   };
+
+  useEffect(() => {
+    const amount = isUsd
+      ? Number(value.replaceAll(",", "")) || 0
+      : Number(value.replaceAll(".", "").replace(",", "."));
+    onAmountChange?.(amount);
+  }, [isUsd, onAmountChange, value]);
 
   return (
     <span className="relative block">
@@ -68,7 +75,7 @@ export function CurrencyInput({
         className="income-input text-sm font-semibold placeholder:text-xs"
         inputMode={isUsd ? "decimal" : "numeric"}
         name={name}
-        onInput={(event) => updateValue(event.currentTarget.value)}
+        onChange={(event) => updateValue(event.target.value)}
         placeholder={isUsd ? "0.00" : "0,00"}
         required={required}
         style={{ paddingLeft: "3rem" }}

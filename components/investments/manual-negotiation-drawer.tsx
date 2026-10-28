@@ -63,7 +63,7 @@ function todayReference() {
 }
 
 function parseQuantity(value: string, isUsdAsset: boolean) {
-  if (isUsdAsset) return Number(value) || 0;
+  if (isUsdAsset) return Number(value.replace(",", ".")) || 0;
   const normalized = value.includes(",")
     ? value.replaceAll(".", "").replace(",", ".")
     : value;
@@ -72,8 +72,8 @@ function parseQuantity(value: string, isUsdAsset: boolean) {
 
 function formatAmount(value: number, isUsdAsset: boolean) {
   return new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
-    currency: isUsdAsset ? "USD" : "BRL",
-    style: "currency",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -517,9 +517,10 @@ export function ManualNegotiationDrawer({
                   className="income-input text-sm placeholder:text-xs"
                   inputMode="decimal"
                   name="quantity"
-                  onInput={(event) => {
+                  onChange={(event) => {
                     if (isUsdAsset) {
-                      const [whole, ...decimal] = event.currentTarget.value
+                      const [whole, ...decimal] = event.target.value
+                        .replace(",", ".")
                         .replace(/[^\d.]/g, "")
                         .split(".");
                       setQuantity(
@@ -527,7 +528,7 @@ export function ManualNegotiationDrawer({
                       );
                       return;
                     }
-                    const [whole, ...decimal] = event.currentTarget.value
+                    const [whole, ...decimal] = event.target.value
                       .replaceAll(".", ",")
                       .replace(/[^\d,]/g, "")
                       .split(",");
@@ -559,11 +560,17 @@ export function ManualNegotiationDrawer({
               <span className={fieldLabelClass}>
                 {isUsdAsset ? "Valor total em USD" : "Valor total calculado"}
               </span>
-              <input
-                className="income-input cursor-not-allowed text-sm font-semibold text-slate-300"
-                readOnly
-                value={formatAmount(totalAmount, isUsdAsset)}
-              />
+              <span className="relative block">
+                <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-semibold text-emerald-300">
+                  {isUsdAsset ? "$" : "R$"}
+                </span>
+                <input
+                  className="income-input cursor-not-allowed text-sm font-semibold text-slate-300"
+                  readOnly
+                  style={{ paddingLeft: "3rem" }}
+                  value={formatAmount(totalAmount, isUsdAsset)}
+                />
+              </span>
               <input
                 name="totalAmount"
                 type="hidden"
