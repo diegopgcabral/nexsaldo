@@ -88,6 +88,10 @@ export default async function InvestmentPortfolioPage() {
     <section>
       {positions.length || productTypes.size ? (
         <PortfolioView
+          institutions={(institutionResult.data ?? []).map((institution) => ({
+            id: institution.id,
+            name: institution.name,
+          }))}
           positions={positions}
           productTypes={[...productTypes]}
         />

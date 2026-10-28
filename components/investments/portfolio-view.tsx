@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/financial/icons";
+import { ManualNegotiationDrawer } from "@/components/investments/manual-negotiation-drawer";
 import {
   PortfolioPositionTable,
   type PortfolioPosition,
@@ -28,15 +29,18 @@ function formatCurrency(value: number) {
 }
 
 export function PortfolioView({
+  institutions,
   positions,
   productTypes,
 }: {
+  institutions: Array<{ id: string; name: string }>;
   positions: PortfolioPosition[];
   productTypes: string[];
 }) {
   const [isFilterOpen, setFilterOpen] = useState(false);
+  const [isNegotiationOpen, setNegotiationOpen] = useState(false);
   const [assetClasses, setAssetClasses] = useState<string[]>([]);
-  const [institutions, setInstitutions] = useState<string[]>([]);
+  const [institutionFilters, setInstitutionFilters] = useState<string[]>([]);
   const availableInstitutions = useMemo(
     () =>
       [
@@ -52,8 +56,8 @@ export function PortfolioView({
     (position) =>
       (assetClasses.length === 0 ||
         assetClasses.includes(position.assetClass)) &&
-      (institutions.length === 0 ||
-        institutions.includes(position.institution)),
+      (institutionFilters.length === 0 ||
+        institutionFilters.includes(position.institution)),
   );
   const activeGroups = groups.filter((group) =>
     productTypes.includes(group.assetClass),
@@ -83,14 +87,24 @@ export function PortfolioView({
             Posições atualizadas a partir das negociações importadas.
           </p>
         </div>
-        <button
-          className="inline-flex items-center gap-2 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822]"
-          onClick={() => setFilterOpen(true)}
-          type="button"
-        >
-          <Icon className="size-4" name="filter" />
-          Filtrar
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            className="inline-flex items-center gap-2 rounded-xl border border-white/12 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-emerald-400/40 hover:bg-emerald-400/8 hover:text-emerald-200"
+            onClick={() => setFilterOpen(true)}
+            type="button"
+          >
+            <Icon className="size-4" name="filter" />
+            Filtrar
+          </button>
+          <button
+            className="inline-flex items-center gap-2 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822] transition hover:bg-[#20ebb0]"
+            onClick={() => setNegotiationOpen(true)}
+            type="button"
+          >
+            <Icon className="size-4" name="plus" />
+            Adicionar negociação
+          </button>
+        </div>
       </div>
       <div className="mt-8 space-y-8">
         {activeGroups.map((group) => {
@@ -192,10 +206,14 @@ export function PortfolioView({
                     key={institution}
                   >
                     <input
-                      checked={institutions.includes(institution)}
+                      checked={institutionFilters.includes(institution)}
                       className="size-4 accent-emerald-400"
                       onChange={() =>
-                        toggle(institution, institutions, setInstitutions)
+                        toggle(
+                          institution,
+                          institutionFilters,
+                          setInstitutionFilters,
+                        )
                       }
                       type="checkbox"
                     />
@@ -210,7 +228,7 @@ export function PortfolioView({
               className="flex-1 rounded-xl border border-white/12 px-4 py-2.5 text-sm font-semibold text-slate-300"
               onClick={() => {
                 setAssetClasses([]);
-                setInstitutions([]);
+                setInstitutionFilters([]);
               }}
               type="button"
             >
@@ -226,6 +244,12 @@ export function PortfolioView({
           </div>
         </aside>
       </div>
+      <ManualNegotiationDrawer
+        institutions={institutions}
+        isOpen={isNegotiationOpen}
+        onClose={() => setNegotiationOpen(false)}
+        productTypes={activeGroups.map((group) => group.assetClass)}
+      />
     </>
   );
 }

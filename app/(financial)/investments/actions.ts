@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import {
@@ -28,12 +28,70 @@ export type B3ImportPreviewState =
   | { error: string; preview: null }
   | { error: null; preview: B3ImportPreview };
 
+export type ManualInvestmentTransactionState = {
+  error?: string;
+  success?: string;
+};
+
 async function session() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   return typeof data?.claims.sub === "string"
     ? { supabase, userId: data.claims.sub }
     : null;
+}
+
+async function refreshInvestmentPosition(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  assetId: string,
+) {
+  const { data: transactions, error } = await supabase
+    .from("investment_transactions")
+    .select("quantity, total_amount, transaction_type")
+    .eq("user_id", userId)
+    .eq("asset_id", assetId)
+    .order("transaction_date");
+  if (error || !transactions) return false;
+
+  const balance = { investedAmount: 0, quantity: 0 };
+  for (const transaction of transactions) {
+    const quantity = Number(transaction.quantity);
+    const amount = Number(transaction.total_amount);
+    if (transaction.transaction_type === "BUY") {
+      balance.quantity += quantity;
+      balance.investedAmount += amount;
+    } else if (balance.quantity > 0) {
+      balance.investedAmount -=
+        (balance.investedAmount / balance.quantity) * quantity;
+      balance.quantity -= quantity;
+    }
+  }
+
+  if (balance.quantity <= 0) {
+    const { error: deleteError } = await supabase
+      .from("investment_positions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("asset_id", assetId);
+    return !deleteError;
+  }
+
+  const amount = Number(balance.investedAmount.toFixed(2));
+  const { error: positionError } = await supabase
+    .from("investment_positions")
+    .upsert(
+      {
+        user_id: userId,
+        asset_id: assetId,
+        quantity: balance.quantity,
+        invested_amount: amount,
+        current_amount: amount,
+        as_of_date: new Date().toISOString().slice(0, 10),
+      },
+      { onConflict: "user_id,asset_id" },
+    );
+  return !positionError;
 }
 
 export async function previewB3Negotiations(
@@ -355,6 +413,127 @@ export async function createInvestmentAsset(formData: FormData) {
   revalidatePath("/investments");
   revalidatePath("/investments/products");
   revalidatePath("/investments/portfolio");
+}
+
+export async function createManualInvestmentTransaction(
+  _previousState: ManualInvestmentTransactionState,
+  formData: FormData,
+): Promise<ManualInvestmentTransactionState> {
+  const input = z
+    .object({
+      assetClass: z.enum(classes),
+      institutionId: z.string().uuid(),
+      name: z.string().trim().max(160),
+      quantity: z.coerce.number().positive(),
+      ticker: z.string().trim().min(1).max(30),
+      totalAmount: z.coerce.number().positive(),
+      transactionDate: z.iso.date(),
+      transactionType: z.enum(["BUY", "SELL"]),
+      unitPrice: z.coerce.number().positive(),
+    })
+    .safeParse({
+      assetClass: formData.get("assetClass"),
+      institutionId: formData.get("institutionId"),
+      name: formData.get("name"),
+      quantity: formData.get("quantity"),
+      ticker: formData.get("ticker"),
+      totalAmount: formData.get("totalAmount"),
+      transactionDate: formData.get("transactionDate"),
+      transactionType: formData.get("transactionType"),
+      unitPrice: formData.get("unitPrice"),
+    });
+  const auth = await session();
+  if (!input.success || !auth)
+    return { error: "Revise os campos obrigatórios da negociação." };
+
+  const { data: institution, error: institutionError } = await auth.supabase
+    .from("investment_institutions")
+    .select("id")
+    .eq("id", input.data.institutionId)
+    .eq("user_id", auth.userId)
+    .maybeSingle();
+  if (institutionError || !institution)
+    return { error: "Selecione uma instituição cadastrada." };
+
+  const ticker = input.data.ticker.toUpperCase();
+  const { data: existingAsset, error: existingAssetError } = await auth.supabase
+    .from("investment_assets")
+    .select("id")
+    .eq("user_id", auth.userId)
+    .eq("asset_class", input.data.assetClass)
+    .eq("ticker", ticker)
+    .maybeSingle();
+  if (existingAssetError)
+    return { error: "Não foi possível localizar o ativo da negociação." };
+
+  const { data: asset, error: assetError } = existingAsset
+    ? { data: existingAsset, error: null }
+    : await auth.supabase
+        .from("investment_assets")
+        .insert({
+          user_id: auth.userId,
+          institution_id: input.data.institutionId,
+          asset_class: input.data.assetClass,
+          name: input.data.name || ticker,
+          ticker,
+        })
+        .select("id")
+        .single();
+  if (assetError || !asset)
+    return { error: "Não foi possível salvar o ativo da negociação." };
+
+  const { data: existingTransactions, error: historyError } = await auth.supabase
+    .from("investment_transactions")
+    .select("quantity, transaction_type")
+    .eq("user_id", auth.userId)
+    .eq("asset_id", asset.id);
+  if (historyError || !existingTransactions)
+    return { error: "Não foi possível conferir a posição atual do ativo." };
+
+  const heldQuantity = existingTransactions.reduce(
+    (total, transaction) =>
+      total +
+      (transaction.transaction_type === "BUY"
+        ? Number(transaction.quantity)
+        : -Number(transaction.quantity)),
+    0,
+  );
+  if (
+    input.data.transactionType === "SELL" &&
+    input.data.quantity > heldQuantity
+  ) {
+    return { error: "A quantidade vendida não pode ser maior que a posição atual." };
+  }
+
+  const { error: transactionError } = await auth.supabase
+    .from("investment_transactions")
+    .insert({
+      user_id: auth.userId,
+      asset_id: asset.id,
+      institution_id: input.data.institutionId,
+      transaction_date: input.data.transactionDate,
+      transaction_type: input.data.transactionType,
+      trade_code: ticker,
+      quantity: input.data.quantity,
+      unit_price: input.data.unitPrice,
+      total_amount: input.data.totalAmount,
+      source_hash: createHash("sha256")
+        .update(`${auth.userId}:${randomUUID()}`)
+        .digest("hex"),
+    });
+  if (transactionError)
+    return { error: "Não foi possível salvar a negociação." };
+
+  if (!(await refreshInvestmentPosition(auth.supabase, auth.userId, asset.id))) {
+    return {
+      error:
+        "A negociação foi salva, mas não foi possível atualizar a posição.",
+    };
+  }
+
+  revalidatePath("/investments");
+  revalidatePath("/investments/portfolio");
+  return { success: "Negociação adicionada à carteira." };
 }
 
 export async function createManualInvestment(formData: FormData) {

@@ -126,7 +126,7 @@ export function PortfolioPositionTable({
             : "descending"
           : "none"
       }
-      className={`px-3 py-3 ${align === "right" ? "text-right" : "text-left"}`}
+      className={`whitespace-nowrap px-3 py-3 ${align === "right" ? "text-right" : "text-left"}`}
     >
       <button
         className="inline-flex items-center gap-1 hover:text-emerald-300"
