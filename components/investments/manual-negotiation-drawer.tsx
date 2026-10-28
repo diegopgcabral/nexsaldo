@@ -94,11 +94,13 @@ export function ManualNegotiationDrawer({
   const [transactionType, setTransactionType] = useState("BUY");
   const [assetClass, setAssetClass] = useState("");
   const [institutionId, setInstitutionId] = useState("");
-  const [picker, setPicker] = useState<"asset" | "institution" | null>(null);
+  const [picker, setPicker] = useState<
+    "asset" | "institution" | "ticker" | null
+  >(null);
   const [fixedIncomeSubtype, setFixedIncomeSubtype] = useState("");
   const [ticker, setTicker] = useState("");
+  const [tickerQuery, setTickerQuery] = useState("");
   const [assetName, setAssetName] = useState("");
-  const [isTickerMenuOpen, setTickerMenuOpen] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [unitPrice, setUnitPrice] = useState(0);
   const { notify } = useToast();
@@ -128,10 +130,12 @@ export function ManualNegotiationDrawer({
       asset.assetClass === assetClass &&
       `${asset.ticker} ${asset.name}`
         .toLocaleLowerCase("pt-BR")
-        .includes(ticker.toLocaleLowerCase("pt-BR")),
+        .includes(tickerQuery.toLocaleLowerCase("pt-BR")),
   );
   const tickerExists = matchingAssets.some(
-    (asset) => asset.ticker.toLocaleUpperCase("pt-BR") === ticker.toLocaleUpperCase("pt-BR"),
+    (asset) =>
+      asset.ticker.toLocaleUpperCase("pt-BR") ===
+      tickerQuery.toLocaleUpperCase("pt-BR"),
   );
 
   return (
@@ -225,6 +229,9 @@ export function ManualNegotiationDrawer({
                       onClick={() => {
                         setAssetClass(product.value);
                         setFixedIncomeSubtype("");
+                        setTicker("");
+                        setTickerQuery("");
+                        setAssetName("");
                         setPicker(null);
                       }}
                       type="button"
@@ -309,33 +316,58 @@ export function ManualNegotiationDrawer({
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="relative space-y-1.5">
                 <span className="income-label">Ticker / código</span>
-                <input
-                  className="income-input pr-10 placeholder:text-xs"
-                  name="ticker"
-                  onChange={(event) => {
-                    setTicker(event.target.value.toUpperCase());
-                    setTickerMenuOpen(true);
-                  }}
-                  onFocus={() => setTickerMenuOpen(true)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") setTickerMenuOpen(false);
-                  }}
-                  placeholder={assetClass ? "Buscar ou adicionar código" : "Selecione o tipo primeiro"}
-                  required
-                  value={ticker}
-                />
-                {isTickerMenuOpen ? (
-                  <button
-                    aria-label="Fechar sugestões de ticker"
-                    className="absolute top-[29px] right-2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
-                    onClick={() => setTickerMenuOpen(false)}
-                    type="button"
-                  >
-                    <Icon className="size-4" name="close" />
-                  </button>
-                ) : null}
-                {isTickerMenuOpen && assetClass ? (
+                <input name="ticker" type="hidden" value={ticker} />
+                <button
+                  className="income-input flex w-full items-center gap-3 text-left"
+                  disabled={!assetClass}
+                  onClick={() =>
+                    setPicker((current) =>
+                      current === "ticker" ? null : "ticker",
+                    )
+                  }
+                  type="button"
+                >
+                  {ticker ? (
+                    <>
+                      <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-xs font-semibold text-emerald-200">
+                        {ticker}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-slate-300">
+                        {assetName || "Ativo selecionado"}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex-1 text-xs text-slate-500">
+                      {assetClass
+                        ? "Selecione ou adicione o código"
+                        : "Selecione o tipo primeiro"}
+                    </span>
+                  )}
+                  <Icon
+                    className="size-4 text-slate-400"
+                    name={picker === "ticker" ? "chevronUp" : "chevronDown"}
+                  />
+                </button>
+                {picker === "ticker" && assetClass ? (
                   <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-white/8 bg-[#0b0e13] p-2 shadow-2xl">
+                    <div className="relative border-b border-white/6 px-1 pb-2">
+                      <Icon
+                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-[60%] text-slate-500"
+                        name="search"
+                      />
+                      <input
+                        autoFocus
+                        className="income-input h-10 py-2 pr-3 pl-9 text-sm placeholder:text-xs"
+                        onChange={(event) =>
+                          setTickerQuery(event.target.value.toUpperCase())
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === "Escape") setPicker(null);
+                        }}
+                        placeholder="Buscar ou adicionar código"
+                        value={tickerQuery}
+                      />
+                    </div>
                     <div className="max-h-52 overflow-y-auto">
                       {matchingAssets.map((asset) => (
                         <button
@@ -344,7 +376,8 @@ export function ManualNegotiationDrawer({
                           onClick={() => {
                             setTicker(asset.ticker);
                             setAssetName(asset.name);
-                            setTickerMenuOpen(false);
+                            setTickerQuery("");
+                            setPicker(null);
                           }}
                           type="button"
                         >
@@ -356,10 +389,15 @@ export function ManualNegotiationDrawer({
                           </span>
                         </button>
                       ))}
-                      {ticker.trim() && !tickerExists ? (
+                      {tickerQuery.trim() && !tickerExists ? (
                         <button
                           className="flex w-full items-center gap-3 rounded-xl border border-emerald-400/25 bg-emerald-400/8 p-2.5 text-left transition hover:bg-emerald-400/12"
-                          onClick={() => setTickerMenuOpen(false)}
+                          onClick={() => {
+                            setTicker(tickerQuery);
+                            setAssetName("");
+                            setTickerQuery("");
+                            setPicker(null);
+                          }}
                           type="button"
                         >
                           <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-300">
@@ -367,7 +405,7 @@ export function ManualNegotiationDrawer({
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-semibold text-emerald-200">
-                              Usar “{ticker}” como novo ativo
+                              Usar “{tickerQuery}” como novo ativo
                             </span>
                             <span className="block text-xs text-emerald-300/80">
                               Você poderá informar o nome abaixo.
@@ -375,7 +413,7 @@ export function ManualNegotiationDrawer({
                           </span>
                         </button>
                       ) : null}
-                      {!matchingAssets.length && !ticker.trim() ? (
+                      {!matchingAssets.length && !tickerQuery.trim() ? (
                         <p className="px-3 py-4 text-center text-xs text-slate-500">
                           Nenhum ticker cadastrado para este produto.
                         </p>
