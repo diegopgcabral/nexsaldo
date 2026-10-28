@@ -255,6 +255,8 @@ export async function createInvestmentInstitution(formData: FormData) {
     .from("investment_institutions")
     .insert({ user_id: auth.userId, name: name.data });
   revalidatePath("/investments");
+  revalidatePath("/investments/institutions");
+  revalidatePath("/investments/products");
 }
 
 export async function createInvestmentAsset(formData: FormData) {
@@ -273,14 +275,86 @@ export async function createInvestmentAsset(formData: FormData) {
     });
   const auth = await session();
   if (!input.success || !auth) return;
-  await auth.supabase.from("investment_assets").insert({
+  const ticker =
+    input.data.ticker ||
+    `manual-${createHash("sha256")
+      .update(`${auth.userId}:${input.data.assetClass}:${input.data.name}`)
+      .digest("hex")
+      .slice(0, 20)}`;
+  await auth.supabase.from("investment_assets").upsert({
     user_id: auth.userId,
     name: input.data.name,
-    ticker: input.data.ticker || null,
+    ticker,
     asset_class: input.data.assetClass,
     institution_id: input.data.institutionId ?? null,
-  });
+  }, { onConflict: "user_id,asset_class,ticker" });
   revalidatePath("/investments");
+  revalidatePath("/investments/products");
+  revalidatePath("/investments/portfolio");
+}
+
+export async function createManualInvestment(formData: FormData) {
+  const input = z
+    .object({
+      name: z.string().trim().min(1).max(160),
+      ticker: z.string().trim().max(30),
+      assetClass: z.enum(classes),
+      institutionId: z.string().uuid(),
+      quantity: z.coerce.number().positive(),
+      investedAmount: z.coerce.number().min(0),
+      currentAmount: z.coerce.number().min(0),
+      maturityDate: z.union([z.iso.date(), z.literal("")]),
+    })
+    .safeParse({
+      name: formData.get("name"),
+      ticker: formData.get("ticker"),
+      assetClass: formData.get("assetClass"),
+      institutionId: formData.get("institutionId"),
+      quantity: formData.get("quantity"),
+      investedAmount: formData.get("investedAmount"),
+      currentAmount: formData.get("currentAmount"),
+      maturityDate: formData.get("maturityDate"),
+    });
+  const auth = await session();
+  if (!input.success || !auth) return;
+
+  const ticker =
+    input.data.ticker ||
+    `manual-${createHash("sha256")
+      .update(`${auth.userId}:${input.data.assetClass}:${input.data.name}`)
+      .digest("hex")
+      .slice(0, 20)}`;
+  const { data: asset } = await auth.supabase
+    .from("investment_assets")
+    .upsert(
+      {
+        user_id: auth.userId,
+        institution_id: input.data.institutionId,
+        asset_class: input.data.assetClass,
+        name: input.data.name,
+        ticker,
+      },
+      { onConflict: "user_id,asset_class,ticker" },
+    )
+    .select("id")
+    .single();
+  if (!asset) return;
+
+  await auth.supabase.from("investment_positions").upsert(
+    {
+      user_id: auth.userId,
+      asset_id: asset.id,
+      quantity: input.data.quantity,
+      invested_amount: input.data.investedAmount,
+      current_amount: input.data.currentAmount,
+      maturity_date: input.data.maturityDate || null,
+      as_of_date: new Date().toISOString().slice(0, 10),
+    },
+    { onConflict: "user_id,asset_id" },
+  );
+  revalidatePath("/investments");
+  revalidatePath("/investments/products");
+  revalidatePath("/investments/portfolio");
 }
 
 export async function createFixedIncomePosition(formData: FormData) {

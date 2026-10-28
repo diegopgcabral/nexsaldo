@@ -63,7 +63,7 @@ export default async function InvestmentPortfolioPage() {
         investedAmount: Number(position.invested_amount),
         name: asset.name,
         quantity: Number(position.quantity),
-        ticker: asset.ticker,
+        ticker: asset.ticker?.startsWith("manual-") ? null : asset.ticker,
       },
     ];
   });
