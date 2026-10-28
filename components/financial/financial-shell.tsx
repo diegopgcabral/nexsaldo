@@ -179,8 +179,23 @@ export function FinancialShell({
                   <div className="mt-1 space-y-1 pl-7">
                     <SubmenuLink active={pathname === "/investments"} href="/investments" icon="dashboard" label="Dashboard" />
                     <SubmenuLink active={pathname.startsWith("/investments/portfolio")} href="/investments/portfolio" icon="wallet" label="Minha carteira" />
-                    <SubmenuLink active={pathname.startsWith("/investments/institutions")} href="/investments/institutions" icon="briefcase" label="Instituições" />
-                    <SubmenuLink active={pathname.startsWith("/investments/products")} href="/investments/products" icon="category" label="Produtos" />
+                    <details
+                      className="group/cadastros"
+                      open={
+                        pathname.startsWith("/investments/institutions") ||
+                        pathname.startsWith("/investments/products")
+                      }
+                    >
+                      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white [&::-webkit-details-marker]:hidden">
+                        <Icon className="size-4" name="category" />
+                        <span className="flex-1">Cadastros</span>
+                        <Icon className="size-3.5 transition group-open/cadastros:rotate-180" name="chevronDown" />
+                      </summary>
+                      <div className="mt-1 space-y-1 border-l border-white/8 pl-3">
+                        <SubmenuLink active={pathname.startsWith("/investments/institutions")} href="/investments/institutions" icon="briefcase" label="Instituições" />
+                        <SubmenuLink active={pathname.startsWith("/investments/products")} href="/investments/products" icon="category" label="Produtos" />
+                      </div>
+                    </details>
                     <SubmenuLink active={pathname.startsWith("/investments/provents")} href="/investments/provents" icon="money" label="Proventos" />
                     <SubmenuLink active={pathname.startsWith("/investments/import")} href="/investments/import" icon="archive" label="Importação" />
                   </div>
