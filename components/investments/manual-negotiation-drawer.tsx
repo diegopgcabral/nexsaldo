@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -106,12 +106,18 @@ export function ManualNegotiationDrawer({
   const [assetName, setAssetName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unitPrice, setUnitPrice] = useState(0);
+  const handledSuccess = useRef(false);
   const { notify } = useToast();
   const router = useRouter();
 
   useEffect(() => {
+    if (isOpen) handledSuccess.current = false;
+  }, [isOpen]);
+
+  useEffect(() => {
     if (state.error) notify("error", state.error);
-    if (state.success) {
+    if (state.success && !handledSuccess.current) {
+      handledSuccess.current = true;
       notify("success", state.success);
       router.refresh();
       onClose();
