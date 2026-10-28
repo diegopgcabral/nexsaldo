@@ -1,20 +1,5 @@
-import Link from "next/link";
-
-import { PortfolioPositionTable } from "@/components/investments/portfolio-position-table";
+import { PortfolioView } from "@/components/investments/portfolio-view";
 import { createClient } from "@/lib/supabase/server";
-
-const groups = [
-  { assetClass: "STOCK", label: "Ações" },
-  { assetClass: "FII", label: "FII · Fundo de Investimento Imobiliário" },
-  { assetClass: "FIXED_INCOME", label: "Renda fixa" },
-] as const;
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    currency: "BRL",
-    style: "currency",
-  }).format(value);
-}
 
 export default async function InvestmentPortfolioPage() {
   const supabase = await createClient();
@@ -97,38 +82,10 @@ export default async function InvestmentPortfolioPage() {
             Posições atualizadas a partir das negociações importadas.
           </p>
         </div>
-        <Link
-          className="inline-flex rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822]"
-          href="/investments/import?type=trades"
-        >
-          Importar negociações
-        </Link>
       </div>
 
       {positions.length ? (
-        <div className="space-y-8">
-          {groups.map((group) => {
-            const rows = positions.filter(
-              (position) => position.assetClass === group.assetClass,
-            );
-            if (!rows.length) return null;
-            const total = rows.reduce(
-              (sum, row) => sum + row.investedAmount,
-              0,
-            );
-            return (
-              <section key={group.assetClass}>
-                <div className="flex items-center justify-between gap-4 border-b border-emerald-400/45 pb-2 text-sm font-bold text-slate-100">
-                  <h2>{group.label}</h2>
-                  <span className="whitespace-nowrap">
-                    TOTAL: {formatCurrency(total)}
-                  </span>
-                </div>
-                <PortfolioPositionTable rows={rows} />
-              </section>
-            );
-          })}
-        </div>
+        <PortfolioView positions={positions} />
       ) : (
         <section className="rounded-2xl bg-[#191c21] p-6">
           <h2 className="font-semibold text-white">
