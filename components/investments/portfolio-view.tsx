@@ -93,7 +93,7 @@ export function PortfolioView({
               <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-emerald-400/45 bg-[#111319] py-2 text-sm font-bold text-slate-100">
                 <div className="flex items-center gap-2">
                   <h2>{group.label}</h2>
-                  <span className="rounded-md bg-white/8 px-2 py-0.5 text-xs font-medium text-slate-400">
+                  <span className="rounded-md bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
                     {rows.length} {rows.length === 1 ? "ativo" : "ativos"}
                   </span>
                 </div>
