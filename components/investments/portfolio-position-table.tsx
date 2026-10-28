@@ -145,7 +145,7 @@ export function PortfolioPositionTable({
   );
 
   return (
-    <div className="overflow-x-auto">
+    <div className="max-h-[32rem] overflow-auto">
       <table className="w-full min-w-[1020px] table-fixed text-left text-sm">
         <colgroup>
           <col className="w-[12%]" />
@@ -157,7 +157,7 @@ export function PortfolioPositionTable({
           <col className="w-[12%]" />
           <col className="w-[11%]" />
         </colgroup>
-        <thead className="sticky top-8 z-10 border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
+        <thead className="sticky top-0 z-10 border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
           <tr>
             {header("Código", "product")}
             {header("Nome", "name")}

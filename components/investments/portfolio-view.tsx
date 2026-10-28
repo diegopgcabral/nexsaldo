@@ -100,7 +100,7 @@ export function PortfolioView({
           const total = rows.reduce((sum, row) => sum + row.investedAmount, 0);
           return (
             <section key={group.assetClass}>
-              <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-emerald-400/45 bg-[#111319] py-2 text-sm font-bold text-slate-100">
+              <div className="sticky top-16 z-10 flex items-center justify-between gap-4 border-b border-emerald-400/45 bg-[#111319] py-2 text-sm font-bold text-slate-100">
                 <div className="flex items-center gap-2">
                   <h2>{group.label}</h2>
                   <span className="rounded-md bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
