@@ -517,9 +517,9 @@ export function ManualNegotiationDrawer({
                   className="income-input text-sm placeholder:text-xs"
                   inputMode="decimal"
                   name="quantity"
-                  onChange={(event) => {
+                  onInput={(event) => {
                     if (isUsdAsset) {
-                      const [whole, ...decimal] = event.target.value
+                      const [whole, ...decimal] = event.currentTarget.value
                         .replace(/[^\d.]/g, "")
                         .split(".");
                       setQuantity(
@@ -527,7 +527,7 @@ export function ManualNegotiationDrawer({
                       );
                       return;
                     }
-                    const [whole, ...decimal] = event.target.value
+                    const [whole, ...decimal] = event.currentTarget.value
                       .replaceAll(".", ",")
                       .replace(/[^\d,]/g, "")
                       .split(",");
@@ -561,7 +561,7 @@ export function ManualNegotiationDrawer({
               </span>
               <input
                 className="income-input cursor-not-allowed text-sm font-semibold text-slate-300"
-                disabled
+                readOnly
                 value={formatAmount(totalAmount, isUsdAsset)}
               />
               <input

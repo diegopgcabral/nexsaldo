@@ -47,6 +47,17 @@ export function CurrencyInput({
         : formatStoredValue(defaultValue),
   );
   const isUsd = currency === "USD";
+  const updateValue = (raw: string) => {
+    const next = isUsd
+      ? formatUsdTypingValue(raw)
+      : formatTypingValue(raw);
+    setValue(next);
+    onAmountChange?.(
+      isUsd
+        ? Number(next.replaceAll(",", "")) || 0
+        : Number(next.replaceAll(".", "").replace(",", ".")),
+    );
+  };
 
   return (
     <span className="relative block">
@@ -57,17 +68,7 @@ export function CurrencyInput({
         className="income-input text-sm font-semibold placeholder:text-xs"
         inputMode={isUsd ? "decimal" : "numeric"}
         name={name}
-        onChange={(event) => {
-          const next = isUsd
-            ? formatUsdTypingValue(event.target.value)
-            : formatTypingValue(event.target.value);
-          setValue(next);
-          onAmountChange?.(
-            isUsd
-              ? Number(next.replaceAll(",", "")) || 0
-              : Number(next.replaceAll(".", "").replace(",", ".")),
-          );
-        }}
+        onInput={(event) => updateValue(event.currentTarget.value)}
         placeholder={isUsd ? "0.00" : "0,00"}
         required={required}
         style={{ paddingLeft: "3rem" }}
