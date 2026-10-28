@@ -172,8 +172,12 @@ export default async function InvestmentAssetPage({
                       {dateTransactions.map((transaction, index) => (
                         <tr className={index % 2 === 0 ? "bg-white/[0.025]" : ""} key={transaction.id}>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide ${transaction.transaction_type === "BUY" ? "bg-emerald-400/12 text-emerald-300" : "bg-rose-400/12 text-rose-300"}`}>
-                              {transaction.transaction_type === "BUY" ? "COMPRA" : "VENDA"}
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide ${transaction.transaction_type === "BUY" ? "bg-emerald-400/12 text-emerald-300" : transaction.transaction_type === "SELL" ? "bg-rose-400/12 text-rose-300" : "bg-amber-400/12 text-amber-200"}`}>
+                              {transaction.transaction_type === "BUY"
+                                ? "COMPRA"
+                                : transaction.transaction_type === "SELL"
+                                  ? "VENDA"
+                                  : "AJUSTE AVENUE"}
                             </span>
                           </td>
                           <td className="px-4 py-3 font-medium text-white">{transaction.trade_code}</td>

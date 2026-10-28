@@ -78,7 +78,11 @@ async function refreshInvestmentPosition(
     if (transaction.transaction_type === "BUY") {
       balance.quantity += quantity;
       balance.investedAmount += amount;
-    } else if (balance.quantity > 0) {
+    } else if (
+      (transaction.transaction_type === "SELL" ||
+        transaction.transaction_type === "CUSTODY_ADJUSTMENT_DECREASE") &&
+      balance.quantity > 0
+    ) {
       balance.investedAmount -=
         (balance.investedAmount / balance.quantity) * quantity;
       balance.quantity -= quantity;
