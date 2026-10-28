@@ -21,7 +21,7 @@ export default async function InvestmentPortfolioPage() {
             .eq("user_id", userId),
           supabase
             .from("investment_assets")
-            .select("id, name, ticker, asset_class, institution_id")
+            .select("id, name, display_name, ticker, asset_class, institution_id")
             .eq("user_id", userId),
           supabase
             .from("investment_institutions")
@@ -67,7 +67,9 @@ export default async function InvestmentPortfolioPage() {
       asset.institution_id ?? institutionIdByAssetId.get(asset.id);
     return [
       {
+        assetId: asset.id,
         assetClass: asset.asset_class,
+        displayName: asset.display_name,
         institution: institutionId
           ? (institutionsById.get(institutionId) ?? "—")
           : "—",
@@ -94,7 +96,11 @@ export default async function InvestmentPortfolioPage() {
               ? [
                   {
                     assetClass: asset.asset_class,
-                    name: investmentAssetName(asset.ticker, asset.name),
+                    name: investmentAssetName(
+                      asset.ticker,
+                      asset.name,
+                      asset.display_name,
+                    ),
                     ticker: asset.ticker,
                   },
                 ]

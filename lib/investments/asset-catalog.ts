@@ -20,6 +20,12 @@ export const investmentAssetNames: Record<string, string> = {
   WEGE3: "WEG S.A.",
 };
 
-export function investmentAssetName(ticker: string | null, name: string) {
+export function investmentAssetName(
+  ticker: string | null,
+  name: string,
+  displayName?: string | null,
+) {
+  const customName = displayName?.trim();
+  if (customName) return customName;
   return ticker ? (investmentAssetNames[ticker] ?? name) : name;
 }

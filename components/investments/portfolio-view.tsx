@@ -23,10 +23,11 @@ const groups = [
 
 function formatCurrency(value: number, assetClass: string) {
   const isUsdAsset = assetClass === "US_ETF";
-  return new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
+  const formatted = new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
     currency: isUsdAsset ? "USD" : "BRL",
     style: "currency",
   }).format(value);
+  return isUsdAsset ? formatted.replace(/^\$/, "US$ ") : formatted;
 }
 
 export function PortfolioView({

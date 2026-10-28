@@ -573,12 +573,12 @@ export function ManualNegotiationDrawer({
               </span>
               <span className="relative block">
                 <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-semibold text-emerald-300">
-                  {isUsdAsset ? "$" : "R$"}
+                  {isUsdAsset ? "US$" : "R$"}
                 </span>
                 <input
                   className="income-input cursor-not-allowed text-sm font-semibold text-slate-300"
                   readOnly
-                  style={{ paddingLeft: "3rem" }}
+                  style={{ paddingLeft: isUsdAsset ? "4.25rem" : "3rem" }}
                   value={formatAmount(totalAmount, isUsdAsset)}
                 />
               </span>

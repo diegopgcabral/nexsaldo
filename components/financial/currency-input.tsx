@@ -69,7 +69,7 @@ export function CurrencyInput({
   return (
     <span className="relative block">
       <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-semibold text-emerald-300">
-        {isUsd ? "$" : "R$"}
+        {isUsd ? "US$" : "R$"}
       </span>
       <input
         className="income-input text-sm font-semibold placeholder:text-xs"
@@ -78,7 +78,7 @@ export function CurrencyInput({
         onChange={(event) => updateValue(event.target.value)}
         placeholder={isUsd ? "0.00" : "0,00"}
         required={required}
-        style={{ paddingLeft: "3rem" }}
+        style={{ paddingLeft: isUsd ? "4.25rem" : "3rem" }}
         value={value}
       />
     </span>

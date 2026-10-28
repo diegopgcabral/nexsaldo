@@ -45,6 +45,11 @@ export type ManualInvestmentTransactionState = {
   success?: string;
 };
 
+export type UpdateInvestmentAssetState = {
+  error?: string;
+  success?: string;
+};
+
 async function session() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
@@ -104,6 +109,31 @@ async function refreshInvestmentPosition(
       { onConflict: "user_id,asset_id" },
     );
   return !positionError;
+}
+
+export async function updateInvestmentAssetName(
+  assetId: string,
+  _previousState: UpdateInvestmentAssetState,
+  formData: FormData,
+): Promise<UpdateInvestmentAssetState> {
+  const input = z
+    .object({ displayName: z.string().trim().min(1).max(160) })
+    .safeParse({ displayName: formData.get("displayName") });
+  if (!input.success) return { error: "Informe um nome entre 1 e 160 caracteres." };
+
+  const auth = await session();
+  if (!auth) return { error: "Faça login novamente para continuar." };
+
+  const { error } = await auth.supabase
+    .from("investment_assets")
+    .update({ display_name: input.data.displayName })
+    .eq("id", assetId)
+    .eq("user_id", auth.userId);
+  if (error) return { error: "Não foi possível atualizar o nome do ativo." };
+
+  revalidatePath("/investments/portfolio");
+  revalidatePath(`/investments/portfolio/${assetId}`);
+  return { success: "Nome atualizado." };
 }
 
 export async function previewB3Negotiations(

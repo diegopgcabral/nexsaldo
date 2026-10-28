@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { investmentAssetName } from "@/lib/investments/asset-catalog";
 
 export type PortfolioPosition = {
+  assetId: string;
   assetClass: string;
+  displayName?: string | null;
   institution: string;
   investedAmount: number;
   name: string;
@@ -25,10 +28,11 @@ type SortDirection = "asc" | "desc";
 
 function formatCurrency(value: number, assetClass: string) {
   const isUsdAsset = assetClass === "US_ETF";
-  return new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
+  const formatted = new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
     currency: isUsdAsset ? "USD" : "BRL",
     style: "currency",
   }).format(value);
+  return isUsdAsset ? formatted.replace(/^\$/, "US$ ") : formatted;
 }
 
 function formatQuantity(value: number, assetClass: string) {
@@ -70,7 +74,7 @@ export function PortfolioPositionTable({
           sort.key === "product"
             ? (first.ticker ?? first.name)
             : sort.key === "name"
-              ? investmentAssetName(first.ticker, first.name)
+              ? investmentAssetName(first.ticker, first.name, first.displayName)
             : sort.key === "type"
               ? assetType(first.assetClass, first.ticker)
               : sort.key === "averagePrice"
@@ -80,7 +84,7 @@ export function PortfolioPositionTable({
           sort.key === "product"
             ? (second.ticker ?? second.name)
             : sort.key === "name"
-              ? investmentAssetName(second.ticker, second.name)
+              ? investmentAssetName(second.ticker, second.name, second.displayName)
             : sort.key === "type"
               ? assetType(second.assetClass, second.ticker)
               : sort.key === "averagePrice"
@@ -172,13 +176,13 @@ export function PortfolioPositionTable({
                   className={
                     index % 2 === 0 ? "bg-white/[0.025]" : "bg-transparent"
                   }
-                  key={`${row.assetClass}:${row.ticker ?? row.name}`}
+                  key={row.assetId}
                 >
                   <td className="truncate px-3 py-3 font-medium text-white">
                     {row.ticker ?? "—"}
                   </td>
                   <td className="truncate px-3 py-3 text-slate-400">
-                    {investmentAssetName(row.ticker, row.name)}
+                    {investmentAssetName(row.ticker, row.name, row.displayName)}
                   </td>
                   <td className="px-3 py-3 text-slate-400">
                     {assetType(row.assetClass, row.ticker)}
@@ -199,15 +203,13 @@ export function PortfolioPositionTable({
                     {formatCurrency(row.investedAmount, row.assetClass)}
                   </td>
                   <td className="px-3 py-3 text-right">
-                    <button
-                      aria-disabled="true"
+                    <Link
                       className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-400/45 hover:bg-emerald-400/15"
-                      title="Detalhes do ativo em breve"
-                      type="button"
+                      href={`/investments/portfolio/${row.assetId}`}
                     >
                       Detalhes
                       <span aria-hidden="true">→</span>
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))}
