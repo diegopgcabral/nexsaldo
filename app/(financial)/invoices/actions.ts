@@ -147,6 +147,7 @@ export async function savePurchase(
       ),
     };
   revalidatePath("/invoices");
+  revalidatePath(`/invoices/${purchase.cardId}`);
   return { success: true };
 }
 

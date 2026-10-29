@@ -108,7 +108,6 @@ function PurchaseForm({
     PurchaseActionState,
     FormData
   >(savePurchase, {});
-  const router = useRouter();
   const { notify } = useToast();
   const { total, allocated, difference } = calculateSplitBalance(
     amount,
@@ -118,10 +117,9 @@ function PurchaseForm({
   useEffect(() => {
     if (state.success) {
       notify("success", purchase ? "Compra atualizada." : "Compra cadastrada.");
-      router.refresh();
       onClose();
     }
-  }, [state.success, purchase, notify, router, onClose]);
+  }, [state.success, purchase, notify, onClose]);
 
   function updateSplit(index: number, changes: Partial<PurchaseSplit>) {
     setSplits((current) =>
