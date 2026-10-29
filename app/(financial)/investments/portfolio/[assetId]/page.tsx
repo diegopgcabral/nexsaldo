@@ -24,7 +24,7 @@ function formatCurrency(value: number, assetClass: string) {
     currency: isUsd ? "USD" : "BRL",
     style: "currency",
   }).format(value);
-  return isUsd ? formatted.replace(/^\$/, "US$ ") : formatted;
+  return isUsd ? formatted.replace("$", "US$ ") : formatted;
 }
 
 function formatQuantity(value: number, assetClass: string) {
@@ -50,7 +50,7 @@ export default async function InvestmentAssetPage({
   const userId = claims?.claims.sub;
   if (typeof userId !== "string") notFound();
 
-  const [assetResult, positionResult, transactionsResult, institutionsResult] =
+  const [assetResult, positionResult, transactionsResult, institutionsResult, quoteResult] =
     await Promise.all([
       supabase
         .from("investment_assets")
@@ -75,6 +75,12 @@ export default async function InvestmentAssetPage({
         .from("investment_institutions")
         .select("id, name")
         .eq("user_id", userId),
+      supabase
+        .from("investment_market_quotes")
+        .select("currency, price, provider, quoted_at")
+        .eq("asset_id", assetId)
+        .eq("user_id", userId)
+        .maybeSingle(),
     ]);
 
   const asset = assetResult.data;
@@ -86,6 +92,11 @@ export default async function InvestmentAssetPage({
   const position = positionResult.data;
   const quantity = Number(position?.quantity ?? 0);
   const investedAmount = Number(position?.invested_amount ?? 0);
+  const quote = quoteResult.data;
+  const quotePrice = quote ? Number(quote.price) : null;
+  const currentAmount = quotePrice === null ? null : quotePrice * quantity;
+  const profit = currentAmount === null ? null : currentAmount - investedAmount;
+  const returnPercent = profit === null || !investedAmount ? null : (profit / investedAmount) * 100;
   const displayName = investmentAssetName(
     asset.ticker,
     asset.name,
@@ -116,16 +127,29 @@ export default async function InvestmentAssetPage({
             ? (institutions.get(transactions[0].institution_id) ?? "Instituição não informada")
             : "Instituição não informada")
         }
+        quoteDetail={quote ? `Atualizado às ${new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(quote.quoted_at))}` : "Buscando cotação..."}
+        quoteValue={asset.asset_class === "US_ETF" ? (quotePrice === null ? "—" : formatCurrency(quotePrice, asset.asset_class)) : undefined}
         type={labels[asset.asset_class] ?? "Investimento"}
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <Kpi label="Quantidade" value={formatQuantity(quantity, asset.asset_class)} />
         <Kpi
           label="Preço médio"
           value={quantity ? formatCurrency(investedAmount / quantity, asset.asset_class) : "—"}
         />
         <Kpi label="Valor investido" value={formatCurrency(investedAmount, asset.asset_class)} />
+        <Kpi label="Valor atual" value={currentAmount === null ? "—" : formatCurrency(currentAmount, asset.asset_class)} />
+        <Kpi
+          label="Lucro / prejuízo"
+          tone={profit === null ? undefined : profit >= 0 ? "positive" : "negative"}
+          value={profit === null ? "—" : formatCurrency(profit, asset.asset_class)}
+        />
+        <Kpi
+          label="Rentabilidade"
+          tone={returnPercent === null ? undefined : returnPercent >= 0 ? "positive" : "negative"}
+          value={returnPercent === null ? "—" : `${returnPercent >= 0 ? "+" : ""}${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(returnPercent)}%`}
+        />
         <Kpi label="Negociações" value={String(transactions.length)} />
       </section>
 
@@ -199,11 +223,19 @@ export default async function InvestmentAssetPage({
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone?: "positive" | "negative";
+  value: string;
+}) {
   return (
-    <section className="rounded-xl border border-white/7 bg-[#191c21] px-5 py-4">
-      <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
-      <p className="mt-2 text-xl font-semibold tabular-nums text-white">{value}</p>
+    <section className="min-w-0 rounded-xl border border-white/7 bg-[#191c21] px-4 py-3">
+      <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+      <p className={`mt-1.5 truncate text-lg font-semibold tabular-nums ${tone === "positive" ? "text-emerald-300" : tone === "negative" ? "text-rose-300" : "text-white"}`} title={value}>{value}</p>
     </section>
   );
 }

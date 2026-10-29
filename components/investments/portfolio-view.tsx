@@ -27,7 +27,7 @@ function formatCurrency(value: number, assetClass: string) {
     currency: isUsdAsset ? "USD" : "BRL",
     style: "currency",
   }).format(value);
-  return isUsdAsset ? formatted.replace(/^\$/, "US$ ") : formatted;
+  return isUsdAsset ? formatted.replace("$", "US$ ") : formatted;
 }
 
 export function PortfolioView({

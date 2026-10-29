@@ -9,6 +9,7 @@ import {
   type B3ImportPreview,
 } from "@/lib/investments/b3-movements";
 import { normalizeCurrencyInput } from "@/lib/financial/contracts";
+import { fetchTwelveDataQuote } from "@/lib/investments/twelve-data";
 import { createClient } from "@/lib/supabase/server";
 
 const classes = [
@@ -46,6 +47,11 @@ export type ManualInvestmentTransactionState = {
 };
 
 export type UpdateInvestmentAssetState = {
+  error?: string;
+  success?: string;
+};
+
+export type InvestmentQuoteState = {
   error?: string;
   success?: string;
 };
@@ -138,6 +144,72 @@ export async function updateInvestmentAssetName(
   revalidatePath("/investments/portfolio");
   revalidatePath(`/investments/portfolio/${assetId}`);
   return { success: "Nome atualizado." };
+}
+
+export async function refreshInvestmentQuote(
+  _previousState: InvestmentQuoteState,
+  formData: FormData,
+): Promise<InvestmentQuoteState> {
+  const assetId = z.string().uuid().safeParse(formData.get("assetId"));
+  if (!assetId.success) return { error: "Ativo inválido." };
+
+  const auth = await session();
+  if (!auth) return { error: "Faça login novamente para continuar." };
+  const { data: asset, error: assetError } = await auth.supabase
+    .from("investment_assets")
+    .select("id, ticker, asset_class")
+    .eq("id", assetId.data)
+    .eq("user_id", auth.userId)
+    .maybeSingle();
+  if (assetError || !asset || asset.asset_class !== "US_ETF" || !asset.ticker)
+    return { error: "A cotação está disponível apenas para ETFs americanos." };
+
+  try {
+    const quote = await fetchTwelveDataQuote(asset.ticker);
+    const { data: position, error: positionError } = await auth.supabase
+      .from("investment_positions")
+      .select("quantity")
+      .eq("asset_id", asset.id)
+      .eq("user_id", auth.userId)
+      .maybeSingle();
+    if (positionError || !position)
+      return { error: "Não foi possível localizar a posição do ativo." };
+
+    const { error: quoteError } = await auth.supabase
+      .from("investment_market_quotes")
+      .upsert(
+        {
+          asset_id: asset.id,
+          currency: quote.currency,
+          price: quote.price,
+          provider: "Twelve Data",
+          quoted_at: quote.quotedAt,
+          user_id: auth.userId,
+        },
+        { onConflict: "asset_id" },
+      );
+    if (quoteError) return { error: "Não foi possível salvar a cotação." };
+
+    const { error: positionUpdateError } = await auth.supabase
+      .from("investment_positions")
+      .update({
+        as_of_date: quote.quotedAt.slice(0, 10),
+        current_amount: Number((quote.price * Number(position.quantity)).toFixed(8)),
+      })
+      .eq("asset_id", asset.id)
+      .eq("user_id", auth.userId);
+    if (positionUpdateError)
+      return { error: "A cotação foi salva, mas a posição não foi atualizada." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Não foi possível consultar a cotação.",
+    };
+  }
+
+  revalidatePath("/investments/portfolio");
+  revalidatePath(`/investments/portfolio/${assetId.data}`);
+  return { success: "Cotação atualizada." };
 }
 
 export async function previewB3Negotiations(
