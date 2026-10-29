@@ -98,7 +98,7 @@ async function refreshInvestmentPosition(
     return !deleteError;
   }
 
-  const amount = Number(balance.investedAmount.toFixed(2));
+  const amount = Number(balance.investedAmount.toFixed(8));
   const { error: positionError } = await supabase
     .from("investment_positions")
     .upsert(

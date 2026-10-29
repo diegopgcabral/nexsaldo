@@ -533,7 +533,9 @@ export function ManualNegotiationDrawer({
                         .replace(/[^\d.]/g, "")
                         .split(".");
                       setQuantity(
-                        decimal.length ? `${whole}.${decimal.join("")}` : whole,
+                        decimal.length
+                          ? `${whole}.${decimal.join("").slice(0, 5)}`
+                          : whole,
                       );
                       return;
                     }
@@ -542,11 +544,15 @@ export function ManualNegotiationDrawer({
                       .replace(/[^\d,]/g, "")
                       .split(",");
                     setQuantity(
-                      decimal.length ? `${whole},${decimal.join("")}` : whole,
+                      decimal.length
+                        ? `${whole},${decimal.join("").slice(0, 5)}`
+                        : whole,
                     );
                   }}
                   pattern={
-                    isUsdAsset ? "[0-9]+([.][0-9]+)?" : "[0-9]+([,][0-9]+)?"
+                    isUsdAsset
+                      ? "[0-9]+([.][0-9]{1,5})?"
+                      : "[0-9]+([,][0-9]{1,5})?"
                   }
                   placeholder={isUsdAsset ? "0.00" : "0"}
                   required

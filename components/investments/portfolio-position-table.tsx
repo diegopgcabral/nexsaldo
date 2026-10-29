@@ -38,7 +38,7 @@ function formatCurrency(value: number, assetClass: string) {
 function formatQuantity(value: number, assetClass: string) {
   return new Intl.NumberFormat(
     assetClass === "US_ETF" ? "en-US" : "pt-BR",
-    { maximumFractionDigits: 8 },
+    { maximumFractionDigits: 5 },
   ).format(value);
 }
 
