@@ -11,7 +11,9 @@ type IconName =
   | "group"
   | "edit"
   | "expense"
+  | "filter"
   | "income"
+  | "money"
   | "logout"
   | "plus"
   | "archive"
@@ -25,6 +27,7 @@ type IconName =
   | "pause"
   | "person"
   | "receipt"
+  | "refresh"
   | "search"
   | "settings";
 
@@ -75,7 +78,11 @@ export function Icon({ name, className = "size-5" }: IconProps) {
       <path d="m4 20 4.3-1 10.5-10.5a2.1 2.1 0 0 0-3-3L5.3 16 4 20Z M13.5 7.7l3 3" />
     ),
     expense: <path d="M4 7h16M4 12h12M4 17h8" />,
+    filter: <path d="M4 6h16M7 12h10M10 18h4" />,
     income: <path d="m5 15 5-5 3 3 6-7M15 6h4v4" />,
+    money: (
+      <path d="M12 3v18m4-14.5c-.8-.7-2.1-1.1-4-1.1-2.4 0-4 1.2-4 3s1.7 2.7 4 3.2c2.3.5 4 1.4 4 3.2s-1.6 3-4 3c-1.9 0-3.4-.5-4.3-1.3" />
+    ),
     plus: <path d="M12 5v14M5 12h14" />,
     archive: (
       <>
@@ -120,6 +127,14 @@ export function Icon({ name, className = "size-5" }: IconProps) {
       <>
         <path d="M6 3h12v18l-2.5-1.5L12 21l-3.5-1.5L6 21V3Z" />
         <path d="M9 8h6M9 12h6M9 16h4" />
+      </>
+    ),
+    refresh: (
+      <>
+        <path d="M20 11a8 8 0 0 0-14.5-4.7L3 9" />
+        <path d="M3 4v5h5" />
+        <path d="M4 13a8 8 0 0 0 14.5 4.7L21 15" />
+        <path d="M21 20v-5h-5" />
       </>
     ),
     search: (

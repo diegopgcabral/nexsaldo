@@ -16,6 +16,7 @@ import {
   updateExpense,
 } from "@/app/(financial)/expenses/actions";
 import { createExpenseCategory } from "@/app/(financial)/settings/actions";
+import { CurrencyInput } from "@/components/financial/currency-input";
 import { ExpenseCategoryIcon } from "@/components/financial/expense-category-icon";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
@@ -53,49 +54,14 @@ function formatDate(date: string) {
     new Date(`${date}T12:00:00`),
   );
 }
-function cents(value: string | number) {
-  return amountToCents(String(value));
+
+function todayReference() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 }
 
-function CurrencyInput({
-  name,
-  defaultValue,
-  required = false,
-}: {
-  name: string;
-  defaultValue?: string | number;
-  required?: boolean;
-}) {
-  const formatTypingValue = (raw: string) =>
-    new Intl.NumberFormat("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(raw.replace(/\D/g, "") || "0") / 100);
-  const formatStoredValue = (raw: string | number) =>
-    new Intl.NumberFormat("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(raw));
-  const [value, setValue] = useState(() =>
-    defaultValue === undefined ? "" : formatStoredValue(defaultValue),
-  );
-  return (
-    <span className="relative block">
-      <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-semibold text-emerald-300">
-        R$
-      </span>
-      <input
-        className="income-input font-semibold"
-        inputMode="numeric"
-        name={name}
-        onChange={(event) => setValue(formatTypingValue(event.target.value))}
-        placeholder="0,00"
-        required={required}
-        style={{ paddingLeft: "3rem" }}
-        value={value}
-      />
-    </span>
-  );
+function cents(value: string | number) {
+  return amountToCents(String(value));
 }
 
 function ExpenseForm({
@@ -113,7 +79,10 @@ function ExpenseForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const [status, setStatus] = useState(expense?.status ?? "PENDING");
   const [description, setDescription] = useState(expense?.description ?? "");
-  const [dueDate, setDueDate] = useState(expense?.dueDate ?? `${month}-01`);
+  const [dueDate, setDueDate] = useState(
+    expense?.dueDate ??
+      (expense?.isRecurring ? `${month}-01` : todayReference()),
+  );
   const [category, setCategory] = useState(expense?.category ?? "");
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(!expense);
   const [categoryOptions, setCategoryOptions] = useState(categories);
@@ -284,25 +253,51 @@ function ExpenseForm({
           <span className="block text-xs text-red-300">{categoryError}</span>
         ) : null}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1.5">
-          <span className="income-label">Valor previsto</span>
-          <CurrencyInput
-            defaultValue={expense?.referenceAmount}
-            name="referenceAmount"
-            required
-          />
-        </label>
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-[#111319] p-4 transition hover:border-emerald-400/35">
+        <input
+          checked={isRecurring}
+          className="mt-0.5 size-4 accent-emerald-400"
+          name="isRecurring"
+          onChange={(event) => {
+            const nextValue = event.target.checked;
+            setIsRecurring(nextValue);
+            if (!nextValue) setStatus("PAID");
+          }}
+          type="checkbox"
+        />
+        <span>
+          <span className="block text-sm font-semibold text-slate-100">
+            Repetir mensalmente
+          </span>
+          <span className="mt-0.5 block text-xs leading-5 text-slate-400">
+            Ao salvar, a despesa deste ciclo e a do próximo ciclo serão criadas.
+          </span>
+        </span>
+      </label>
+      <div className={isRecurring ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
+        {isRecurring ? (
+          <label className="space-y-1.5">
+            <span className="income-label">Valor previsto</span>
+            <CurrencyInput
+              defaultValue={expense?.referenceAmount}
+              name="referenceAmount"
+              required
+            />
+          </label>
+        ) : null}
         <label className="space-y-1.5">
           <span className="income-label">Valor pago</span>
           <CurrencyInput
             defaultValue={expense?.paidAmount ?? "0"}
             name="paidAmount"
+            required={!isRecurring}
           />
         </label>
       </div>
       <label className="space-y-1.5">
-        <span className="income-label">Data de vencimento</span>
+        <span className="income-label">
+          {isRecurring ? "Data de vencimento" : "Data do pagamento"}
+        </span>
         <input
           className="income-input [color-scheme:dark]"
           name="dueDate"
@@ -312,6 +307,7 @@ function ExpenseForm({
           value={dueDate}
         />
       </label>
+      {isRecurring ? (
       <fieldset>
         <legend className="income-label mb-2">Status do pagamento</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -333,23 +329,9 @@ function ExpenseForm({
           ))}
         </div>
       </fieldset>
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-[#111319] p-4 transition hover:border-emerald-400/35">
-        <input
-          checked={isRecurring}
-          className="mt-0.5 size-4 accent-emerald-400"
-          name="isRecurring"
-          onChange={(event) => setIsRecurring(event.target.checked)}
-          type="checkbox"
-        />
-        <span>
-          <span className="block text-sm font-semibold text-slate-100">
-            Repetir mensalmente
-          </span>
-          <span className="mt-0.5 block text-xs leading-5 text-slate-400">
-            Ao salvar, a despesa deste ciclo e a do próximo ciclo serão criadas.
-          </span>
-        </span>
-      </label>
+      ) : (
+        <input name="status" type="hidden" value="PAID" />
+      )}
       <label className="space-y-1.5">
         <span className="income-label">
           Observações{" "}
@@ -658,7 +640,9 @@ export function ExpenseManager({
                     {formatDate(item.dueDate)}
                   </td>
                   <td className="px-4 py-4 font-medium text-white">
-                    {formatCents(cents(item.referenceAmount))}
+                    {item.isRecurring
+                      ? formatCents(cents(item.referenceAmount))
+                      : "—"}
                   </td>
                   <td className="px-4 py-4">
                     <PaymentComparison expense={item} />

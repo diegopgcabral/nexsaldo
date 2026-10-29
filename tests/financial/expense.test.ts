@@ -12,13 +12,14 @@ function expense(
   paidAmount: string,
   status: ExpenseListItem["status"],
   category = "Teste",
+  isRecurring = true,
 ): ExpenseListItem {
   return {
     category,
     description: "Despesa teste",
     dueDate: "2026-10-01",
     id: crypto.randomUUID(),
-    isRecurring: false,
+    isRecurring,
     notes: null,
     paidAt: null,
     paidAmount,
@@ -41,6 +42,19 @@ test("calculates only pending expenses as open", () => {
     openCents: 40_899n,
     paidCents: 363_148n,
     plannedCents: 240_899n,
+  });
+});
+
+test("keeps one-time paid expenses out of the forecast", () => {
+  const totals = calculateExpenseTotals([
+    expense("80", "80", "PAID", "Alimentação", false),
+    expense("200", "0", "PENDING", "Moradia", true),
+  ]);
+
+  assert.deepEqual(totals, {
+    openCents: 20_000n,
+    paidCents: 8_000n,
+    plannedCents: 20_000n,
   });
 });
 

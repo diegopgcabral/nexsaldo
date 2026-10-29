@@ -171,13 +171,35 @@ export function FinancialShell({
                 </details>
               ) : null}
               {navigationModules.investments ? (
-                <Link
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${pathname === "/investments" ? "bg-emerald-400 text-[#003822] shadow-[0_0_20px_rgba(0,229,153,0.18)]" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
-                  href="/investments"
-                >
-                  <Icon className="size-5" name="briefcase" />
-                  Investimentos
-                </Link>
+                <details open={pathname.startsWith("/investments")}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-slate-100">
+                    <span className="flex items-center gap-3"><Icon className="size-5" name="briefcase" />Investimentos</span>
+                    <Icon className="size-4 transition group-open:rotate-180" name="chevronDown" />
+                  </summary>
+                  <div className="mt-1 space-y-1 pl-7">
+                    <SubmenuLink active={pathname === "/investments"} href="/investments" icon="dashboard" label="Visão geral" />
+                    <SubmenuLink active={pathname.startsWith("/investments/portfolio")} href="/investments/portfolio" icon="wallet" label="Minha carteira" />
+                    <details
+                      className="group/cadastros"
+                      open={
+                        pathname.startsWith("/investments/institutions") ||
+                        pathname.startsWith("/investments/products")
+                      }
+                    >
+                      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white [&::-webkit-details-marker]:hidden">
+                        <Icon className="size-4" name="category" />
+                        <span className="flex-1">Cadastros</span>
+                        <Icon className="size-3.5 transition group-open/cadastros:rotate-180" name="chevronDown" />
+                      </summary>
+                      <div className="mt-1 space-y-1 border-l border-white/8 pl-3">
+                        <SubmenuLink active={pathname.startsWith("/investments/institutions")} href="/investments/institutions" icon="briefcase" label="Instituições" />
+                        <SubmenuLink active={pathname.startsWith("/investments/products")} href="/investments/products" icon="category" label="Produtos" />
+                      </div>
+                    </details>
+                    <SubmenuLink active={pathname.startsWith("/investments/provents")} href="/investments/provents" icon="money" label="Proventos" />
+                    <SubmenuLink active={pathname.startsWith("/investments/import")} href="/investments/import" icon="archive" label="Importação" />
+                  </div>
+                </details>
               ) : null}
               <Link
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
@@ -312,13 +334,19 @@ function SubmenuLink({
   active: boolean;
   href: string;
   icon:
+    | "archive"
     | "calculator"
     | "check"
     | "creditCard"
+    | "dashboard"
     | "expense"
     | "income"
+    | "money"
     | "person"
-    | "receipt";
+    | "receipt"
+    | "briefcase"
+    | "category"
+    | "wallet";
   label: string;
 }) {
   return (

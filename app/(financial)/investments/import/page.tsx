@@ -1,0 +1,109 @@
+import Link from "next/link";
+
+import { Icon } from "@/components/financial/icons";
+import { B3NegotiationImport } from "@/components/investments/b3-negotiation-import";
+
+type Props = { searchParams: Promise<{ type?: string }> };
+
+const types = [
+  {
+    key: "trades",
+    title: "Negociação",
+    description: "Compras, vendas, ativos, quantidades e instituições.",
+    icon: "briefcase" as const,
+  },
+  {
+    key: "provents",
+    title: "Proventos",
+    description: "Dividendos, rendimentos, JCP e juros.",
+    icon: "money" as const,
+  },
+];
+
+export default async function InvestmentImportPage({ searchParams }: Props) {
+  const { type } = await searchParams;
+  const selected = types.find((item) => item.key === type);
+
+  return (
+    <section
+      className={`mx-auto space-y-6 py-4 ${selected?.key === "trades" ? "max-w-[1400px]" : "max-w-2xl"}`}
+    >
+      <div className="text-center">
+        <p className="text-xs font-semibold tracking-[.16em] text-emerald-300 uppercase">
+          Investimentos
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold text-white">Importação</h1>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+          Escolha o tipo de relatório B3. Você poderá revisar as informações
+          antes de confirmar.
+        </p>
+      </div>
+
+      {!selected ? (
+        <div className="rounded-2xl bg-[#191c21] p-3">
+          <p className="px-3 pt-2 pb-3 text-sm font-semibold text-white">
+            Qual relatório deseja importar?
+          </p>
+          <div className="space-y-2">
+            {types.map((item) => (
+              <Link
+                className="flex items-center gap-4 rounded-xl border border-transparent p-4 transition hover:border-emerald-400/35 hover:bg-emerald-400/5"
+                href={`/investments/import?type=${item.key}`}
+                key={item.key}
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
+                  <Icon className="size-5" name={item.icon} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-white">
+                    {item.title}
+                  </span>
+                  <span className="mt-1 block text-sm text-slate-400">
+                    {item.description}
+                  </span>
+                </span>
+                <Icon
+                  className="size-5 shrink-0 text-emerald-300"
+                  name="chevronRight"
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : selected.key === "trades" ? (
+        <div className="space-y-4">
+          <B3NegotiationImport />
+          <Link
+            className="mx-auto flex w-fit items-center gap-1 text-sm font-semibold text-emerald-300 hover:text-emerald-200"
+            href="/investments/import"
+          >
+            <Icon className="size-4" name="chevronLeft" />
+            Escolher outro tipo
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-dashed border-emerald-400/35 bg-[#191c21] p-10 text-center">
+            <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
+              <Icon className="size-6" name={selected.icon} />
+            </span>
+            <h2 className="mt-4 font-semibold text-white">{selected.title}</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
+              {selected.description}
+            </p>
+            <button className="mt-5 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822]">
+              Selecionar arquivo Excel
+            </button>
+          </div>
+          <Link
+            className="mx-auto flex w-fit items-center gap-1 text-sm font-semibold text-emerald-300 hover:text-emerald-200"
+            href="/investments/import"
+          >
+            <Icon className="size-4" name="chevronLeft" />
+            Escolher outro tipo
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}

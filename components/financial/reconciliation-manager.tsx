@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { settleParticipantBalance } from "@/app/(financial)/reconciliation/actions";
+import { CycleMonthNavigator } from "@/components/financial/cycle-month-navigator";
 import { Icon } from "@/components/financial/icons";
 import { useToast } from "@/components/financial/toast-provider";
 import { getBankAppearance, type CreditCardListItem } from "@/lib/financial/credit-card";
@@ -119,7 +120,10 @@ export function ReconciliationManager({
           <h1 className="mt-1 text-3xl font-bold text-white">Conciliação de faturas</h1>
           <p className="mt-2 text-sm text-slate-400">Acompanhe a cobertura das faturas fechadas e os valores ainda a receber.</p>
         </div>
-        <span className="rounded-xl bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300">{cards.length} fatura{cards.length === 1 ? "" : "s"} fechada{cards.length === 1 ? "" : "s"}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <CycleMonthNavigator month={month} pathname="/reconciliation" />
+          <span className="rounded-xl bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300">{cards.length} fatura{cards.length === 1 ? "" : "s"} fechada{cards.length === 1 ? "" : "s"}</span>
+        </div>
       </header>
       <div className="grid gap-4 md:grid-cols-3">
         <Metric label="Total das faturas fechadas" value={totalInvoices} tone="text-white" />
