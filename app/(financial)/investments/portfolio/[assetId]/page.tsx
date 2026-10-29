@@ -95,6 +95,7 @@ export default async function InvestmentAssetPage({
   const investedAmount = Number(position?.invested_amount ?? 0);
   const quote = quoteResult.data;
   const quotePrice = quote ? Number(quote.price) : null;
+  const supportsQuote = ["US_ETF", "STOCK", "FII"].includes(asset.asset_class);
   const currentAmount = quotePrice === null ? null : quotePrice * quantity;
   const profit = currentAmount === null ? null : currentAmount - investedAmount;
   const returnPercent = profit === null || !investedAmount ? null : (profit / investedAmount) * 100;
@@ -131,8 +132,8 @@ export default async function InvestmentAssetPage({
         type={labels[asset.asset_class] ?? "Investimento"}
       />
 
-      <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-        {asset.asset_class === "US_ETF" ? (
+      <section className={`grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${supportsQuote ? "xl:grid-cols-8" : "xl:grid-cols-7"}`}>
+        {supportsQuote ? (
           <Kpi
             action={<AssetQuoteRefresh assetId={asset.id} />}
             highlight

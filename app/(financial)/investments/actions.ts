@@ -8,6 +8,7 @@ import {
   parseB3Negotiations,
   type B3ImportPreview,
 } from "@/lib/investments/b3-movements";
+import { fetchBrapiQuote } from "@/lib/investments/brapi";
 import { normalizeCurrencyInput } from "@/lib/financial/contracts";
 import { fetchTwelveDataQuote } from "@/lib/investments/twelve-data";
 import { createClient } from "@/lib/supabase/server";
@@ -162,11 +163,23 @@ export async function refreshInvestmentQuote(
     .eq("id", assetId.data)
     .eq("user_id", auth.userId)
     .maybeSingle();
-  if (assetError || !asset || asset.asset_class !== "US_ETF" || !asset.ticker)
-    return { error: "A cotação está disponível apenas para ETFs americanos." };
+  if (assetError || !asset || !asset.ticker)
+    return { error: "Não foi possível localizar o ativo para atualizar a cotação." };
+
+  const provider =
+    asset.asset_class === "US_ETF"
+      ? "Twelve Data"
+      : asset.asset_class === "STOCK" || asset.asset_class === "FII"
+        ? "BRAPI"
+        : null;
+  if (!provider)
+    return { error: "A cotação ainda não está disponível para este tipo de ativo." };
 
   try {
-    const quote = await fetchTwelveDataQuote(asset.ticker);
+    const quote =
+      provider === "Twelve Data"
+        ? await fetchTwelveDataQuote(asset.ticker)
+        : await fetchBrapiQuote(asset.ticker);
     const { data: position, error: positionError } = await auth.supabase
       .from("investment_positions")
       .select("quantity")
@@ -183,7 +196,7 @@ export async function refreshInvestmentQuote(
           asset_id: asset.id,
           currency: quote.currency,
           price: quote.price,
-          provider: "Twelve Data",
+          provider,
           quoted_at: quote.quotedAt,
           user_id: auth.userId,
         },
@@ -206,7 +219,7 @@ export async function refreshInvestmentQuote(
       assetClass: asset.asset_class,
       assetId: asset.id,
       message: error instanceof Error ? error.message : "Unknown quote provider error",
-      provider: "Twelve Data",
+      provider,
     });
     return {
       attemptedAt: Date.now(),
