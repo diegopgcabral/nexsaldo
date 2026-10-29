@@ -379,7 +379,7 @@ export function ExpenseManager({
   const [filter, setFilter] = useState<"ALL" | ExpenseListItem["status"]>(
     "ALL",
   );
-  const [sortKey, setSortKey] = useState<ExpenseSortKey>("dueDate");
+  const [sortKey, setSortKey] = useState<ExpenseSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const visible = useMemo(() => {
     const matchingExpenses = expenses.filter(
@@ -389,6 +389,8 @@ export function ExpenseManager({
           .toLowerCase()
           .includes(query.toLowerCase()),
     );
+
+    if (!sortKey) return matchingExpenses;
 
     return matchingExpenses.sort((left, right) => {
       const value =
