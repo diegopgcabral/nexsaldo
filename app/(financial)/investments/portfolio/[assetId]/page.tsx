@@ -132,20 +132,20 @@ export default async function InvestmentAssetPage({
       />
 
       <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+        {asset.asset_class === "US_ETF" ? (
+          <Kpi
+            action={<AssetQuoteRefresh assetId={asset.id} />}
+            highlight
+            label="Cotação atual"
+            value={quotePrice === null ? "—" : formatCurrency(quotePrice, asset.asset_class)}
+          />
+        ) : null}
         <Kpi label="Quantidade" value={formatQuantity(quantity, asset.asset_class)} />
         <Kpi
           label="Preço médio"
           value={quantity ? formatCurrency(investedAmount / quantity, asset.asset_class) : "—"}
         />
         <Kpi label="Valor investido" value={formatCurrency(investedAmount, asset.asset_class)} />
-        {asset.asset_class === "US_ETF" ? (
-          <Kpi
-            action={<AssetQuoteRefresh assetId={asset.id} />}
-            label="Cotação atual"
-            note={quote ? `Atualizado às ${new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(quote.quoted_at))}` : "Buscando cotação..."}
-            value={quotePrice === null ? "—" : formatCurrency(quotePrice, asset.asset_class)}
-          />
-        ) : null}
         <Kpi label="Valor atual" value={currentAmount === null ? "—" : formatCurrency(currentAmount, asset.asset_class)} />
         <Kpi
           label="Lucro / prejuízo"
@@ -232,25 +232,24 @@ export default async function InvestmentAssetPage({
 
 function Kpi({
   action,
+  highlight,
   label,
-  note,
   tone,
   value,
 }: {
   action?: React.ReactNode;
+  highlight?: boolean;
   label: string;
-  note?: string;
   tone?: "positive" | "negative";
   value: string;
 }) {
   return (
-    <section className="min-w-0 rounded-xl border border-white/7 bg-[#191c21] px-4 py-3">
+    <section className={`min-w-0 rounded-xl border px-4 py-3 ${highlight ? "border-emerald-400/40 bg-emerald-400/[0.07]" : "border-white/7 bg-[#191c21]"}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
         {action}
       </div>
       <p className={`mt-1.5 truncate text-lg font-semibold tabular-nums ${tone === "positive" ? "text-emerald-300" : tone === "negative" ? "text-rose-300" : "text-white"}`} title={value}>{value}</p>
-      {note ? <p className="mt-1 truncate text-[10px] text-slate-400">{note}</p> : null}
     </section>
   );
 }
