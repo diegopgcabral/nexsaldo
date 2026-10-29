@@ -832,7 +832,7 @@ export function InvoiceManager({
                           </p>
                         </button>
                         <div className="flex items-center gap-2">
-                          <strong className="mr-1 inline-flex min-w-24 justify-end rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold tabular-nums text-emerald-200">
+                          <strong className="mr-1 inline-flex justify-center whitespace-nowrap rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold tabular-nums text-emerald-200">
                             {formatCents(centsOrZero(purchase.amount))}
                           </strong>
                           {!isClosed ? (
