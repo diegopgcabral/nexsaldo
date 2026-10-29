@@ -8,6 +8,7 @@ import {
   type InvestmentQuoteState,
 } from "@/app/(financial)/investments/actions";
 import { Icon } from "@/components/financial/icons";
+import { useToast } from "@/components/financial/toast-provider";
 
 const initialState: InvestmentQuoteState = {};
 
@@ -19,6 +20,7 @@ export function AssetQuoteRefresh({ assetId }: { assetId: string }) {
   const [isAutoRefreshing, startTransition] = useTransition();
   const requested = useRef(false);
   const router = useRouter();
+  const { notify } = useToast();
 
   useEffect(() => {
     if (requested.current) return;
@@ -32,6 +34,10 @@ export function AssetQuoteRefresh({ assetId }: { assetId: string }) {
     if (state.success) router.refresh();
   }, [router, state.success]);
 
+  useEffect(() => {
+    if (state.error && state.attemptedAt) notify("error", state.error);
+  }, [notify, state.attemptedAt, state.error]);
+
   return (
     <form action={formAction} className="flex items-center gap-2">
       <input name="assetId" type="hidden" value={assetId} />
@@ -44,7 +50,6 @@ export function AssetQuoteRefresh({ assetId }: { assetId: string }) {
       >
         <Icon className={`size-3.5 ${pending || isAutoRefreshing ? "animate-spin" : ""}`} name="refresh" />
       </button>
-      {state.error ? <p className="text-xs text-rose-300">{state.error}</p> : null}
     </form>
   );
 }

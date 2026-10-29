@@ -52,6 +52,7 @@ export type UpdateInvestmentAssetState = {
 };
 
 export type InvestmentQuoteState = {
+  attemptedAt?: number;
   error?: string;
   success?: string;
 };
@@ -201,9 +202,16 @@ export async function refreshInvestmentQuote(
     if (positionUpdateError)
       return { error: "A cotação foi salva, mas a posição não foi atualizada." };
   } catch (error) {
+    console.error("Investment quote request failed", {
+      assetClass: asset.asset_class,
+      assetId: asset.id,
+      message: error instanceof Error ? error.message : "Unknown quote provider error",
+      provider: "Twelve Data",
+    });
     return {
+      attemptedAt: Date.now(),
       error:
-        error instanceof Error ? error.message : "Não foi possível consultar a cotação.",
+        "Cotação indisponível no momento. A última cotação salva continua exibida.",
     };
   }
 
