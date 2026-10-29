@@ -129,7 +129,14 @@ export function Icon({ name, className = "size-5" }: IconProps) {
         <path d="M9 8h6M9 12h6M9 16h4" />
       </>
     ),
-    refresh: <path d="M20 11a8 8 0 1 0 2 5.5M20 4v7h-7" />,
+    refresh: (
+      <>
+        <path d="M20 11a8 8 0 0 0-14.5-4.7L3 9" />
+        <path d="M3 4v5h5" />
+        <path d="M4 13a8 8 0 0 0 14.5 4.7L21 15" />
+        <path d="M21 20v-5h-5" />
+      </>
+    ),
     search: (
       <>
         <circle cx="11" cy="11" r="6" />

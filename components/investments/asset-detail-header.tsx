@@ -7,7 +7,6 @@ import {
   type UpdateInvestmentAssetState,
 } from "@/app/(financial)/investments/actions";
 import { Icon } from "@/components/financial/icons";
-import { AssetQuoteRefresh } from "@/components/investments/asset-quote-refresh";
 
 const initialState: UpdateInvestmentAssetState = {};
 
@@ -16,16 +15,12 @@ export function AssetDetailHeader({
   code,
   initialName,
   institution,
-  quoteDetail,
-  quoteValue,
   type,
 }: {
   assetId: string;
   code: string;
   initialName: string;
   institution: string;
-  quoteDetail?: string;
-  quoteValue?: string;
   type: string;
 }) {
   const [editing, setEditing] = useState(false);
@@ -87,16 +82,6 @@ export function AssetDetailHeader({
         ) : null}
         <p className="mt-2 text-sm text-slate-400">Custodiado pela {institution}.</p>
       </div>
-      {quoteValue ? (
-        <aside className="mt-7 min-w-56 rounded-xl border border-emerald-400/35 bg-emerald-400/8 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-emerald-200 uppercase">Cotação atual</p>
-          <div className="mt-1 flex items-center justify-between gap-3">
-            <p className="text-xl font-semibold tabular-nums text-emerald-100">{quoteValue}</p>
-            <AssetQuoteRefresh assetId={assetId} />
-          </div>
-          <p className="mt-1 text-xs text-slate-400">{quoteDetail ?? "Atualizando cotação..."}</p>
-        </aside>
-      ) : null}
     </div>
   );
 }

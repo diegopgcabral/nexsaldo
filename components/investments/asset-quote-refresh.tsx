@@ -37,12 +37,12 @@ export function AssetQuoteRefresh({ assetId }: { assetId: string }) {
       <input name="assetId" type="hidden" value={assetId} />
       <button
         aria-label="Atualizar cotação"
-        className="rounded-md p-1.5 text-emerald-200 transition hover:bg-emerald-400/15 disabled:cursor-wait disabled:opacity-60"
+        className="-mr-1 rounded-md p-1 text-slate-400 transition hover:bg-emerald-400/15 hover:text-emerald-200 disabled:cursor-wait disabled:opacity-60"
         disabled={pending || isAutoRefreshing}
         title="Atualizar cotação"
         type="submit"
       >
-        <Icon className={`size-4 ${pending || isAutoRefreshing ? "animate-spin" : ""}`} name="refresh" />
+        <Icon className={`size-3.5 ${pending || isAutoRefreshing ? "animate-spin" : ""}`} name="refresh" />
       </button>
       {state.error ? <p className="text-xs text-rose-300">{state.error}</p> : null}
     </form>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AssetDetailHeader } from "@/components/investments/asset-detail-header";
+import { AssetQuoteRefresh } from "@/components/investments/asset-quote-refresh";
 import { investmentAssetName } from "@/lib/investments/asset-catalog";
 import { createClient } from "@/lib/supabase/server";
 
@@ -127,18 +128,24 @@ export default async function InvestmentAssetPage({
             ? (institutions.get(transactions[0].institution_id) ?? "Instituição não informada")
             : "Instituição não informada")
         }
-        quoteDetail={quote ? `Atualizado às ${new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(quote.quoted_at))}` : "Buscando cotação..."}
-        quoteValue={asset.asset_class === "US_ETF" ? (quotePrice === null ? "—" : formatCurrency(quotePrice, asset.asset_class)) : undefined}
         type={labels[asset.asset_class] ?? "Investimento"}
       />
 
-      <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+      <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
         <Kpi label="Quantidade" value={formatQuantity(quantity, asset.asset_class)} />
         <Kpi
           label="Preço médio"
           value={quantity ? formatCurrency(investedAmount / quantity, asset.asset_class) : "—"}
         />
         <Kpi label="Valor investido" value={formatCurrency(investedAmount, asset.asset_class)} />
+        {asset.asset_class === "US_ETF" ? (
+          <Kpi
+            action={<AssetQuoteRefresh assetId={asset.id} />}
+            label="Cotação atual"
+            note={quote ? `Atualizado às ${new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(quote.quoted_at))}` : "Buscando cotação..."}
+            value={quotePrice === null ? "—" : formatCurrency(quotePrice, asset.asset_class)}
+          />
+        ) : null}
         <Kpi label="Valor atual" value={currentAmount === null ? "—" : formatCurrency(currentAmount, asset.asset_class)} />
         <Kpi
           label="Lucro / prejuízo"
@@ -224,18 +231,26 @@ export default async function InvestmentAssetPage({
 }
 
 function Kpi({
+  action,
   label,
+  note,
   tone,
   value,
 }: {
+  action?: React.ReactNode;
   label: string;
+  note?: string;
   tone?: "positive" | "negative";
   value: string;
 }) {
   return (
     <section className="min-w-0 rounded-xl border border-white/7 bg-[#191c21] px-4 py-3">
-      <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+        {action}
+      </div>
       <p className={`mt-1.5 truncate text-lg font-semibold tabular-nums ${tone === "positive" ? "text-emerald-300" : tone === "negative" ? "text-rose-300" : "text-white"}`} title={value}>{value}</p>
+      {note ? <p className="mt-1 truncate text-[10px] text-slate-400">{note}</p> : null}
     </section>
   );
 }
