@@ -33,7 +33,6 @@ const fixedIncomeOptions = [
   { label: "LCA", value: "LCA" },
   { label: "Debênture", value: "DEBENTURE" },
   { label: "CRI / CRA", value: "CRI_CRA" },
-  { label: "Caixinha", value: "CASH_BOX" },
   { label: "Outro", value: "OTHER" },
 ] as const;
 
@@ -107,13 +106,10 @@ export function ManualNegotiationDrawer({
   const [assetName, setAssetName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unitPrice, setUnitPrice] = useState(0);
+  const [fixedIncomeAmount, setFixedIncomeAmount] = useState(0);
   const handledSuccess = useRef(false);
   const { notify } = useToast();
   const router = useRouter();
-
-  useEffect(() => {
-    if (isOpen) handledSuccess.current = false;
-  }, [isOpen]);
 
   useEffect(() => {
     if (state.error) notify("error", state.error);
@@ -135,7 +131,11 @@ export function ManualNegotiationDrawer({
     (institution) => institution.id === institutionId,
   );
   const isUsdAsset = assetClass === "US_ETF";
-  const totalAmount = parseQuantity(quantity, isUsdAsset) * unitPrice;
+  const isFixedIncome = assetClass === "FIXED_INCOME";
+  const isDirectTreasury = fixedIncomeSubtype === "DIRECT_TREASURY";
+  const totalAmount = isFixedIncome
+    ? fixedIncomeAmount
+    : parseQuantity(quantity, isUsdAsset) * unitPrice;
   const matchingAssets = assets.filter(
     (asset) =>
       asset.assetClass === assetClass &&
@@ -185,7 +185,13 @@ export function ManualNegotiationDrawer({
             <Icon name="close" />
           </button>
         </div>
-        <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+        <form
+          action={formAction}
+          className="flex min-h-0 flex-1 flex-col"
+          onSubmit={() => {
+            handledSuccess.current = false;
+          }}
+        >
           <div className="space-y-6 overflow-y-auto p-6">
             <fieldset>
               <legend className="mb-3 text-sm font-medium text-slate-200">
@@ -247,6 +253,7 @@ export function ManualNegotiationDrawer({
                         setAssetName("");
                         setQuantity("");
                         setUnitPrice(0);
+                        setFixedIncomeAmount(0);
                         setPicker(null);
                       }}
                       type="button"
@@ -305,6 +312,10 @@ export function ManualNegotiationDrawer({
                       key={option.value}
                       onClick={() => {
                         setFixedIncomeSubtype(option.value);
+                        setTicker("");
+                        setTickerQuery("");
+                        setQuantity("");
+                        setFixedIncomeAmount(0);
                         setPicker(null);
                       }}
                       type="button"
@@ -373,6 +384,7 @@ export function ManualNegotiationDrawer({
                 </span>
               ) : null}
             </div>
+            {!isFixedIncome ? (
             <div className="relative space-y-2.5">
                 <span className={fieldLabelClass}>Ticker / código</span>
                 <input name="ticker" type="hidden" value={ticker} />
@@ -497,6 +509,7 @@ export function ManualNegotiationDrawer({
                   </div>
                 ) : null}
             </div>
+            ) : null}
             <label className="block space-y-2.5">
               <span className={fieldLabelClass}>Data da negociação</span>
               <input
@@ -509,18 +522,22 @@ export function ManualNegotiationDrawer({
             </label>
             <label className="block space-y-2.5 pb-2">
               <span className={fieldLabelClass}>
-                Nome do ativo <span className="font-normal text-slate-500">(opcional)</span>
+                {isFixedIncome ? "Nome do título" : <>
+                  Nome do ativo <span className="font-normal text-slate-500">(opcional)</span>
+                </>}
               </span>
               <input
                 className="income-input text-sm placeholder:text-xs"
                 name="name"
                 onChange={(event) => setAssetName(event.target.value)}
-                placeholder="Usaremos o ticker se não informar"
+                placeholder={isFixedIncome ? "Ex.: Tesouro Selic 2029" : "Usaremos o ticker se não informar"}
+                required={isFixedIncome}
                 value={assetName}
               />
             </label>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <label className="space-y-2.5">
+            {!isFixedIncome || isDirectTreasury ? (
+            <div className={isFixedIncome ? "max-w-[calc(50%-0.625rem)]" : "grid gap-5 sm:grid-cols-2"}>
+              <label className="block space-y-2.5">
                 <span className={fieldLabelClass}>Quantidade</span>
                 <input
                   className="income-input text-sm placeholder:text-xs"
@@ -562,7 +579,7 @@ export function ManualNegotiationDrawer({
                   }
                 />
               </label>
-              <label className="space-y-2.5">
+              {!isFixedIncome ? <label className="block space-y-2.5">
                 <span className={fieldLabelClass}>Preço unitário</span>
                 <CurrencyInput
                   currency={isUsdAsset ? "USD" : "BRL"}
@@ -571,13 +588,42 @@ export function ManualNegotiationDrawer({
                   onAmountChange={setUnitPrice}
                   required
                 />
-              </label>
+              </label> : null}
             </div>
-            <label className="space-y-2.5">
+            ) : null}
+            {isDirectTreasury ? (
+              <div className="space-y-6">
+                <label className="block space-y-2.5">
+                  <span className={fieldLabelClass}>Valor aplicado</span>
+                  <CurrencyInput name="investedAmount" required />
+                </label>
+                <label className="block space-y-2.5">
+                  <span className={fieldLabelClass}>Data de vencimento</span>
+                  <input
+                    className="income-input text-sm [color-scheme:dark]"
+                    name="maturityDate"
+                    required
+                    type="date"
+                  />
+                </label>
+              </div>
+            ) : null}
+            <label className="block space-y-2.5">
               <span className={fieldLabelClass}>
-                {isUsdAsset ? "Valor total em USD" : "Valor total calculado"}
+                {isFixedIncome
+                  ? "Saldo total atualizado"
+                  : isUsdAsset
+                    ? "Valor total em USD"
+                    : "Valor total calculado"}
               </span>
-              <span className="relative block">
+              {isFixedIncome ? (
+                <CurrencyInput
+                  key={`fixed-income-${fixedIncomeSubtype}`}
+                  name="totalAmount"
+                  onAmountChange={setFixedIncomeAmount}
+                  required
+                />
+              ) : <><span className="relative block">
                 <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-semibold text-emerald-300">
                   {isUsdAsset ? "US$" : "R$"}
                 </span>
@@ -593,6 +639,7 @@ export function ManualNegotiationDrawer({
                 type="hidden"
                 value={totalAmount.toFixed(2)}
               />
+              </>}
             </label>
           </div>
           <div className="mt-auto flex gap-3 border-t border-white/8 p-6">

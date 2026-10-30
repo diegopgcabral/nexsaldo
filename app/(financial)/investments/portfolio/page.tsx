@@ -17,11 +17,11 @@ export default async function InvestmentPortfolioPage() {
       ? await Promise.all([
           supabase
             .from("investment_positions")
-            .select("asset_id, quantity, invested_amount")
+            .select("asset_id, quantity, invested_amount, current_amount, maturity_date")
             .eq("user_id", userId),
           supabase
             .from("investment_assets")
-            .select("id, name, display_name, ticker, asset_class, institution_id")
+            .select("id, name, display_name, ticker, asset_class, fixed_income_subtype, institution_id")
             .eq("user_id", userId),
           supabase
             .from("investment_institutions")
@@ -70,10 +70,13 @@ export default async function InvestmentPortfolioPage() {
         assetId: asset.id,
         assetClass: asset.asset_class,
         displayName: asset.display_name,
+        fixedIncomeSubtype: asset.fixed_income_subtype,
         institution: institutionId
           ? (institutionsById.get(institutionId) ?? "—")
           : "—",
         investedAmount: Number(position.invested_amount),
+        currentAmount: Number(position.current_amount),
+        maturityDate: position.maturity_date,
         name: asset.name,
         quantity: Number(position.quantity),
         ticker: asset.ticker?.startsWith("manual-") ? null : asset.ticker,

@@ -39,11 +39,11 @@ export function AssetQuoteRefresh({ assetId }: { assetId: string }) {
   }, [notify, state.attemptedAt, state.error]);
 
   return (
-    <form action={formAction} className="flex items-center gap-2">
+    <form action={formAction} className="flex shrink-0 items-center">
       <input name="assetId" type="hidden" value={assetId} />
       <button
         aria-label="Atualizar cotação"
-        className="-mr-1 rounded-md p-1 text-slate-400 transition hover:bg-emerald-400/15 hover:text-emerald-200 disabled:cursor-wait disabled:opacity-60"
+        className="rounded-md p-0.5 text-slate-400 transition hover:bg-emerald-400/15 hover:text-emerald-200 disabled:cursor-wait disabled:opacity-60"
         disabled={pending || isAutoRefreshing}
         title="Atualizar cotação"
         type="submit"

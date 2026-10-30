@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AssetDetailHeader } from "@/components/investments/asset-detail-header";
 import { AssetQuoteRefresh } from "@/components/investments/asset-quote-refresh";
+import { FixedIncomeTransactionAmount } from "@/components/investments/fixed-income-transaction-amount";
 import { investmentAssetName } from "@/lib/investments/asset-catalog";
 import { createClient } from "@/lib/supabase/server";
 
@@ -55,13 +56,13 @@ export default async function InvestmentAssetPage({
     await Promise.all([
       supabase
         .from("investment_assets")
-        .select("id, name, display_name, ticker, asset_class, institution_id")
+        .select("id, name, display_name, ticker, asset_class, fixed_income_subtype, institution_id")
         .eq("id", assetId)
         .eq("user_id", userId)
         .maybeSingle(),
       supabase
         .from("investment_positions")
-        .select("quantity, invested_amount")
+        .select("quantity, invested_amount, current_amount, maturity_date")
         .eq("asset_id", assetId)
         .eq("user_id", userId)
         .maybeSingle(),
@@ -91,8 +92,14 @@ export default async function InvestmentAssetPage({
   );
   const transactions = transactionsResult.data ?? [];
   const position = positionResult.data;
+  const isDirectTreasury = asset?.fixed_income_subtype === "DIRECT_TREASURY";
   const quantity = Number(position?.quantity ?? 0);
   const investedAmount = Number(position?.invested_amount ?? 0);
+  const fixedIncomeCurrentAmount = Number(position?.current_amount ?? 0);
+  const fixedIncomeProfit = fixedIncomeCurrentAmount - investedAmount;
+  const fixedIncomeReturn = investedAmount
+    ? (fixedIncomeProfit / investedAmount) * 100
+    : null;
   const quote = quoteResult.data;
   const quotePrice = quote ? Number(quote.price) : null;
   const supportsQuote = ["US_ETF", "STOCK", "FII"].includes(asset.asset_class);
@@ -121,7 +128,7 @@ export default async function InvestmentAssetPage({
       </Link>
       <AssetDetailHeader
         assetId={asset.id}
-        code={asset.ticker ?? "Ativo"}
+        code={asset.asset_class === "FIXED_INCOME" ? "Renda fixa" : (asset.ticker ?? "Ativo")}
         initialName={displayName}
         institution={
           (asset.institution_id ? institutions.get(asset.institution_id) : null) ??
@@ -131,35 +138,65 @@ export default async function InvestmentAssetPage({
         }
         type={labels[asset.asset_class] ?? "Investimento"}
       />
+      {asset.asset_class === "FIXED_INCOME" && position?.maturity_date ? (
+        <p className="-mt-5 text-sm text-slate-400">
+          Vencimento: {formatDate(position.maturity_date)}
+        </p>
+      ) : null}
+      {asset.asset_class === "FIXED_INCOME" ? (
+        <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Kpi
+            highlight
+            label="Saldo atualizado"
+            value={formatCurrency(fixedIncomeCurrentAmount, asset.asset_class)}
+          />
+          <Kpi
+            label="Valor aplicado"
+            value={formatCurrency(investedAmount, asset.asset_class)}
+          />
+          <Kpi
+            label="Lucro / prejuízo"
+            tone={fixedIncomeProfit >= 0 ? "positive" : "negative"}
+            value={formatCurrency(fixedIncomeProfit, asset.asset_class)}
+          />
+          <Kpi
+            label="Rentabilidade"
+            tone={fixedIncomeReturn === null ? undefined : fixedIncomeReturn >= 0 ? "positive" : "negative"}
+            value={fixedIncomeReturn === null ? "—" : `${fixedIncomeReturn >= 0 ? "+" : ""}${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(fixedIncomeReturn)}%`}
+          />
+        </section>
+      ) : null}
 
-      <section className={`grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${supportsQuote ? "xl:grid-cols-8" : "xl:grid-cols-7"}`}>
-        {supportsQuote ? (
+      {asset.asset_class !== "FIXED_INCOME" ? (
+        <section className={`grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${supportsQuote ? "xl:grid-cols-8" : "xl:grid-cols-7"}`}>
+          {supportsQuote ? (
           <Kpi
             action={<AssetQuoteRefresh assetId={asset.id} />}
             highlight
             label="Cotação atual"
             value={quotePrice === null ? "—" : formatCurrency(quotePrice, asset.asset_class)}
           />
-        ) : null}
-        <Kpi label="Quantidade" value={formatQuantity(quantity, asset.asset_class)} />
-        <Kpi
-          label="Preço médio"
-          value={quantity ? formatCurrency(investedAmount / quantity, asset.asset_class) : "—"}
-        />
-        <Kpi label="Valor investido" value={formatCurrency(investedAmount, asset.asset_class)} />
-        <Kpi label="Valor atual" value={currentAmount === null ? "—" : formatCurrency(currentAmount, asset.asset_class)} />
-        <Kpi
-          label="Lucro / prejuízo"
-          tone={profit === null ? undefined : profit >= 0 ? "positive" : "negative"}
-          value={profit === null ? "—" : formatCurrency(profit, asset.asset_class)}
-        />
-        <Kpi
-          label="Rentabilidade"
-          tone={returnPercent === null ? undefined : returnPercent >= 0 ? "positive" : "negative"}
-          value={returnPercent === null ? "—" : `${returnPercent >= 0 ? "+" : ""}${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(returnPercent)}%`}
-        />
-        <Kpi label="Negociações" value={String(transactions.length)} />
-      </section>
+          ) : null}
+          <Kpi label="Quantidade" value={formatQuantity(quantity, asset.asset_class)} />
+          <Kpi
+            label="Preço médio"
+            value={quantity ? formatCurrency(investedAmount / quantity, asset.asset_class) : "—"}
+          />
+          <Kpi label="Valor investido" value={formatCurrency(investedAmount, asset.asset_class)} />
+          <Kpi label="Valor atual" value={currentAmount === null ? "—" : formatCurrency(currentAmount, asset.asset_class)} />
+          <Kpi
+            label="Lucro / prejuízo"
+            tone={profit === null ? undefined : profit >= 0 ? "positive" : "negative"}
+            value={profit === null ? "—" : formatCurrency(profit, asset.asset_class)}
+          />
+          <Kpi
+            label="Rentabilidade"
+            tone={returnPercent === null ? undefined : returnPercent >= 0 ? "positive" : "negative"}
+            value={returnPercent === null ? "—" : `${returnPercent >= 0 ? "+" : ""}${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(returnPercent)}%`}
+          />
+          <Kpi label="Negociações" value={String(transactions.length)} />
+        </section>
+      ) : null}
 
       <section>
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-emerald-400/45 pb-2">
@@ -189,15 +226,21 @@ export default async function InvestmentAssetPage({
                   </div>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="min-w-[760px] w-full text-left text-sm">
+                  <table className={`${asset.asset_class === "FIXED_INCOME" ? isDirectTreasury ? "min-w-[660px]" : "min-w-[460px]" : "min-w-[760px]"} w-full text-left text-sm`}>
                     <thead className="border-b border-white/6 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                       <tr>
                         <th className="px-4 py-3">Movimentação</th>
-                        <th className="px-4 py-3">Código</th>
                         <th className="px-4 py-3">Instituição</th>
-                        <th className="px-4 py-3 text-right">Quantidade</th>
-                        <th className="px-4 py-3 text-right">Preço unitário</th>
-                        <th className="px-4 py-3 text-right">Valor total</th>
+                        {isDirectTreasury ? <th className="px-4 py-3 text-right">Vencimento</th> : null}
+                        {isDirectTreasury ? <th className="px-4 py-3 text-right">Valor aplicado</th> : null}
+                        {asset.asset_class !== "FIXED_INCOME" ? <>
+                          <th className="px-4 py-3">Código</th>
+                          <th className="px-4 py-3 text-right">Quantidade</th>
+                          <th className="px-4 py-3 text-right">Preço unitário</th>
+                        </> : null}
+                        <th className="px-4 py-3 text-right">
+                          {asset.asset_class === "FIXED_INCOME" ? "Saldo atualizado" : "Valor total"}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/6">
@@ -212,11 +255,34 @@ export default async function InvestmentAssetPage({
                                   : "AJUSTE AVENUE"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 font-medium text-white">{transaction.trade_code}</td>
                           <td className="px-4 py-3 text-slate-400">{transaction.institution_id ? (institutions.get(transaction.institution_id) ?? "—") : "—"}</td>
-                          <td className="px-4 py-3 text-right tabular-nums text-slate-200">{formatQuantity(Number(transaction.quantity), asset.asset_class)}</td>
-                          <td className="px-4 py-3 text-right tabular-nums text-slate-200">{formatCurrency(Number(transaction.unit_price), asset.asset_class)}</td>
-                          <td className="px-4 py-3 text-right font-medium tabular-nums text-white">{formatCurrency(Number(transaction.total_amount), asset.asset_class)}</td>
+                          {isDirectTreasury ? (
+                            <td className="px-4 py-3 text-right tabular-nums text-slate-200">
+                              {position?.maturity_date ? formatDate(position.maturity_date) : "—"}
+                            </td>
+                          ) : null}
+                          {isDirectTreasury ? (
+                            <td className="px-4 py-3 text-right tabular-nums text-slate-200">
+                              {formatCurrency(Number(transaction.total_amount), asset.asset_class)}
+                            </td>
+                          ) : null}
+                          {asset.asset_class !== "FIXED_INCOME" ? <>
+                            <td className="px-4 py-3 font-medium text-white">{transaction.trade_code}</td>
+                            <td className="px-4 py-3 text-right tabular-nums text-slate-200">{formatQuantity(Number(transaction.quantity), asset.asset_class)}</td>
+                            <td className="px-4 py-3 text-right tabular-nums text-slate-200">{formatCurrency(Number(transaction.unit_price), asset.asset_class)}</td>
+                          </> : null}
+                          <td className="px-4 py-3 text-right">
+                            {asset.asset_class === "FIXED_INCOME" ? (
+                              <FixedIncomeTransactionAmount
+                                amount={isDirectTreasury ? Number(position?.current_amount ?? 0) : Number(transaction.total_amount)}
+                                transactionId={transaction.id}
+                              />
+                            ) : (
+                              <span className="font-medium tabular-nums text-white">
+                                {formatCurrency(Number(transaction.total_amount), asset.asset_class)}
+                              </span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -246,11 +312,11 @@ function Kpi({
 }) {
   return (
     <section className={`min-w-0 rounded-xl border px-4 py-3 ${highlight ? "border-emerald-400/40 bg-emerald-400/[0.07]" : "border-white/7 bg-[#191c21]"}`}>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+      <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+      <div className="mt-1.5 flex items-center justify-between gap-1">
+        <p className={`min-w-0 truncate text-lg font-semibold tabular-nums ${tone === "positive" ? "text-emerald-300" : tone === "negative" ? "text-rose-300" : "text-white"}`} title={value}>{value}</p>
         {action}
       </div>
-      <p className={`mt-1.5 truncate text-lg font-semibold tabular-nums ${tone === "positive" ? "text-emerald-300" : tone === "negative" ? "text-rose-300" : "text-white"}`} title={value}>{value}</p>
     </section>
   );
 }

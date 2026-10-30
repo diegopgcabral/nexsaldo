@@ -9,8 +9,11 @@ export type PortfolioPosition = {
   assetId: string;
   assetClass: string;
   displayName?: string | null;
+  fixedIncomeSubtype?: string | null;
   institution: string;
   investedAmount: number;
+  currentAmount: number;
+  maturityDate?: string | null;
   name: string;
   quantity: number;
   ticker: string | null;
@@ -20,6 +23,7 @@ type SortKey =
   | "averagePrice"
   | "institution"
   | "investedAmount"
+  | "currentAmount"
   | "name"
   | "product"
   | "quantity"
@@ -40,6 +44,12 @@ function formatQuantity(value: number, assetClass: string) {
     assetClass === "US_ETF" ? "en-US" : "pt-BR",
     { maximumFractionDigits: 5 },
   ).format(value);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
+    new Date(`${value}T12:00:00Z`),
+  );
 }
 
 function assetType(assetClass: string, ticker: string | null) {
@@ -63,6 +73,7 @@ export function PortfolioPositionTable({
 }: {
   rows: PortfolioPosition[];
 }) {
+  const isFixedIncome = rows.every((row) => row.assetClass === "FIXED_INCOME");
   const [sort, setSort] = useState<{ direction: SortDirection; key: SortKey }>({
     direction: "desc",
     key: "quantity",
@@ -133,27 +144,52 @@ export function PortfolioPositionTable({
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[1020px]">
+      <div className={isFixedIncome ? "min-w-[860px]" : "min-w-[1020px]"}>
         <table className="w-full table-fixed text-left text-sm">
           <colgroup>
-            <col className="w-[12%]" />
-            <col className="w-[24%]" />
-            <col className="w-[10%]" />
-            <col className="w-[20%]" />
-            <col className="w-[11%]" />
-            <col className="w-[11%]" />
-            <col className="w-[12%]" />
-            <col className="w-[11%]" />
+            {isFixedIncome ? (
+              <>
+                <col className="w-[24%]" />
+                <col className="w-[20%]" />
+                <col className="w-[16%]" />
+                <col className="w-[16%]" />
+                <col className="w-[16%]" />
+                <col className="w-[8%]" />
+              </>
+            ) : (
+              <>
+                <col className="w-[12%]" />
+                <col className="w-[24%]" />
+                <col className="w-[10%]" />
+                <col className="w-[20%]" />
+                <col className="w-[11%]" />
+                <col className="w-[11%]" />
+                <col className="w-[12%]" />
+                <col className="w-[11%]" />
+              </>
+            )}
           </colgroup>
           <thead className="border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
             <tr>
-              {header("Código", "product")}
-              {header("Nome", "name")}
-              {header("Tipo", "type")}
-              {header("Instituição", "institution")}
-              {header("Quantidade", "quantity", "right")}
-              {header("Preço médio", "averagePrice", "right")}
-              {header("Valor investido", "investedAmount", "right")}
+              {isFixedIncome ? (
+                <>
+                  {header("Produto", "name")}
+                  {header("Instituição", "institution")}
+                  <th className="whitespace-nowrap px-3 py-3 text-right">Vencimento</th>
+                  {header("Valor aplicado", "investedAmount", "right")}
+                  {header("Saldo total", "currentAmount", "right")}
+                </>
+              ) : (
+                <>
+                  {header("Código", "product")}
+                  {header("Nome", "name")}
+                  {header("Tipo", "type")}
+                  {header("Instituição", "institution")}
+                  {header("Quantidade", "quantity", "right")}
+                  {header("Preço médio", "averagePrice", "right")}
+                  {header("Valor investido", "investedAmount", "right")}
+                </>
+              )}
               <th aria-label="Detalhes" className="px-3 py-3" />
             </tr>
           </thead>
@@ -161,14 +197,27 @@ export function PortfolioPositionTable({
         <div className="max-h-[29rem] overflow-y-auto">
           <table className="w-full table-fixed text-left text-sm">
             <colgroup>
-              <col className="w-[12%]" />
-              <col className="w-[24%]" />
-              <col className="w-[10%]" />
-              <col className="w-[20%]" />
-              <col className="w-[11%]" />
-              <col className="w-[11%]" />
-              <col className="w-[12%]" />
-              <col className="w-[11%]" />
+              {isFixedIncome ? (
+                <>
+                  <col className="w-[24%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[8%]" />
+                </>
+              ) : (
+                <>
+                  <col className="w-[12%]" />
+                  <col className="w-[24%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[11%]" />
+                </>
+              )}
             </colgroup>
             <tbody className="divide-y divide-white/6">
               {sortedRows.map((row, index) => (
@@ -178,30 +227,35 @@ export function PortfolioPositionTable({
                   }
                   key={row.assetId}
                 >
-                  <td className="truncate px-3 py-3 font-medium text-white">
-                    {row.ticker ?? "—"}
-                  </td>
-                  <td className="truncate px-3 py-3 text-slate-400">
-                    {investmentAssetName(row.ticker, row.name, row.displayName)}
-                  </td>
-                  <td className="px-3 py-3 text-slate-400">
-                    {assetType(row.assetClass, row.ticker)}
-                  </td>
-                  <td className="truncate px-3 py-3 text-slate-400">
-                    {row.institution}
-                  </td>
-                  <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                    {formatQuantity(row.quantity, row.assetClass)}
-                  </td>
-                  <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                    {formatCurrency(
-                      row.investedAmount / row.quantity,
-                      row.assetClass,
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
-                    {formatCurrency(row.investedAmount, row.assetClass)}
-                  </td>
+                  {isFixedIncome ? (
+                    <>
+                      <td className="truncate px-3 py-3 font-medium text-white">
+                        {investmentAssetName(row.ticker, row.name, row.displayName)}
+                      </td>
+                      <td className="truncate px-3 py-3 text-slate-400">{row.institution}</td>
+                      <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                        {row.maturityDate ? formatDate(row.maturityDate) : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-right text-slate-200 tabular-nums">
+                        {row.fixedIncomeSubtype === "DIRECT_TREASURY"
+                          ? formatCurrency(row.investedAmount, row.assetClass)
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-right font-medium text-white tabular-nums">
+                        {formatCurrency(row.currentAmount, row.assetClass)}
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="truncate px-3 py-3 font-medium text-white">{row.ticker ?? "—"}</td>
+                      <td className="truncate px-3 py-3 text-slate-400">{investmentAssetName(row.ticker, row.name, row.displayName)}</td>
+                      <td className="px-3 py-3 text-slate-400">{assetType(row.assetClass, row.ticker)}</td>
+                      <td className="truncate px-3 py-3 text-slate-400">{row.institution}</td>
+                      <td className="px-3 py-3 text-right text-slate-200 tabular-nums">{formatQuantity(row.quantity, row.assetClass)}</td>
+                      <td className="px-3 py-3 text-right text-slate-200 tabular-nums">{formatCurrency(row.investedAmount / row.quantity, row.assetClass)}</td>
+                      <td className="px-3 py-3 text-right text-slate-200 tabular-nums">{formatCurrency(row.investedAmount, row.assetClass)}</td>
+                    </>
+                  )}
                   <td className="px-3 py-3 text-right">
                     <Link
                       className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-400/45 hover:bg-emerald-400/15"
