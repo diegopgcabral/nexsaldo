@@ -427,9 +427,6 @@ export function ExpenseManager({
     setDrawer(false);
     setEditing(undefined);
   };
-  const paidPercent = totals.plannedCents
-    ? Number((totals.paidCents * 100n) / totals.plannedCents)
-    : 0;
   const categoryTotals = calculateExpenseCategoryTotals(expenses, [
     ...new Set(expenses.map((expense) => expense.category)),
   ]);
@@ -466,7 +463,6 @@ export function ExpenseManager({
         <Metric
           label="Total pago"
           value={totals.paidCents}
-          note={`${paidPercent}% liquidado`}
           color="text-emerald-300"
         />
         <Metric
@@ -774,7 +770,7 @@ function Metric({
 }: {
   label: string;
   value: bigint;
-  note: string;
+  note?: string;
   color: string;
 }) {
   return (
@@ -783,7 +779,7 @@ function Metric({
       <p className={`mt-2 text-3xl font-bold tracking-tight ${color}`}>
         {formatCents(value)}
       </p>
-      <p className="mt-3 text-xs text-slate-400">{note}</p>
+      {note ? <p className="mt-3 text-xs text-slate-400">{note}</p> : null}
     </div>
   );
 }
