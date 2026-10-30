@@ -453,11 +453,10 @@ export function ExpenseManager({
           Nova despesa
         </button>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <Metric
           label="Total previsto"
           value={totals.plannedCents}
-          note={`${expenses.filter((item) => item.status !== "CANCELLED").length} compromissos mapeados`}
           color="text-white"
         />
         <Metric
@@ -468,7 +467,6 @@ export function ExpenseManager({
         <Metric
           label="Em aberto"
           value={totals.openCents}
-          note={`${expenses.filter((item) => item.status === "PENDING").length} despesas pendentes`}
           color="text-sky-200"
         />
       </div>
@@ -765,21 +763,18 @@ function DeleteExpenseButton({
 function Metric({
   label,
   value,
-  note,
   color,
 }: {
   label: string;
   value: bigint;
-  note?: string;
   color: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#191c21] p-6 shadow-lg shadow-black/20">
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className={`mt-2 text-3xl font-bold tracking-tight ${color}`}>
+    <div className="rounded-2xl bg-[#191c21] px-5 py-4 shadow-lg shadow-black/20">
+      <p className="text-xs font-medium text-slate-400">{label}</p>
+      <p className={`mt-1.5 text-2xl font-bold tracking-tight ${color}`}>
         {formatCents(value)}
       </p>
-      {note ? <p className="mt-3 text-xs text-slate-400">{note}</p> : null}
     </div>
   );
 }
