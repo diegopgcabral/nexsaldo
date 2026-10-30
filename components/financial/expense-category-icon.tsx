@@ -74,6 +74,11 @@ const categoryRules: Array<[string[], ExpenseCategoryIconKey, string]> = [
     "text-orange-300 bg-orange-400/10 border-orange-400/20",
   ],
   [
+    ["vestuario", "roupa", "calcado", "acessorio"],
+    "clothing",
+    "text-pink-300 bg-pink-400/10 border-pink-400/20",
+  ],
+  [
     ["lazer", "cinema", "jogo"],
     "leisure",
     "text-fuchsia-300 bg-fuchsia-400/10 border-fuchsia-400/20",
@@ -110,6 +115,7 @@ const iconColors: Record<ExpenseCategoryIconKey, string> = {
   investment: "text-lime-300 bg-lime-400/10 border-lime-400/20",
   money: "text-emerald-300 bg-emerald-400/10 border-emerald-400/20",
   shopping: "text-orange-300 bg-orange-400/10 border-orange-400/20",
+  clothing: "text-pink-300 bg-pink-400/10 border-pink-400/20",
   leisure: "text-fuchsia-300 bg-fuchsia-400/10 border-fuchsia-400/20",
   domestic: "text-teal-300 bg-teal-400/10 border-teal-400/20",
   pet: "text-orange-300 bg-orange-400/10 border-orange-400/20",
@@ -234,6 +240,8 @@ function CategoryIconPath({ icon }: { icon: ExpenseCategoryIconKey }) {
       );
     case "shopping":
       return <path d="M5 8h14l-1 12H6L5 8Zm3 0a4 4 0 0 1 8 0" />;
+    case "clothing":
+      return <path d="m9 4 3 2 3-2 5 4-3 4-2-1v9H9v-9l-2 1-3-4 5-4Z" />;
     case "leisure":
       return (
         <path d="M7 8h10l2 5-3 2-2-2h-4l-2 2-3-2 2-5Zm2-3h6M8 18h.01M16 18h.01" />

@@ -21,6 +21,17 @@ const groups = [
   { assetClass: "CRYPTO", label: "Cripto" },
 ] as const;
 
+const fixedIncomeSubtypeLabels: Record<string, string> = {
+  CASH_BOX: "Caixinha",
+  CDB: "CDB",
+  CRI_CRA: "CRI / CRA",
+  DEBENTURE: "Debêntures",
+  DIRECT_TREASURY: "Tesouro Direto",
+  LCA: "LCA",
+  LCI: "LCI",
+  OTHER: "Outros",
+};
+
 function formatCurrency(value: number, assetClass: string) {
   const isUsdAsset = assetClass === "US_ETF";
   const formatted = new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
@@ -43,6 +54,13 @@ export function PortfolioView({
 }) {
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isNegotiationOpen, setNegotiationOpen] = useState(false);
+  const [negotiationFormKey, setNegotiationFormKey] = useState(0);
+  const [collapsedFixedIncomeGroups, setCollapsedFixedIncomeGroups] = useState<
+    string[]
+  >([]);
+  const [collapsedPortfolioGroups, setCollapsedPortfolioGroups] = useState<
+    string[]
+  >([]);
   const [assetClasses, setAssetClasses] = useState<string[]>([]);
   const [institutionFilters, setInstitutionFilters] = useState<string[]>([]);
   const availableInstitutions = useMemo(
@@ -102,7 +120,10 @@ export function PortfolioView({
           </button>
           <button
             className="inline-flex items-center gap-2 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822] transition hover:bg-[#20ebb0]"
-            onClick={() => setNegotiationOpen(true)}
+            onClick={() => {
+              setNegotiationFormKey((current) => current + 1);
+              setNegotiationOpen(true);
+            }}
             type="button"
           >
             <Icon className="size-4" name="plus" />
@@ -112,30 +133,114 @@ export function PortfolioView({
       </div>
       <div className="mt-8 space-y-8">
         {activeGroups.map((group) => {
-          const rows = filteredPositions.filter(
+          const groupRows = filteredPositions.filter(
             (position) => position.assetClass === group.assetClass,
           );
-          const total = rows.reduce((sum, row) => sum + row.investedAmount, 0);
+          const rows =
+            group.assetClass === "FIXED_INCOME"
+              ? groupRows.filter((position) => position.currentAmount > 0)
+              : groupRows;
+          const total = rows.reduce(
+            (sum, row) =>
+              sum +
+              (group.assetClass === "FIXED_INCOME"
+                ? row.currentAmount
+                : row.investedAmount),
+            0,
+          );
+          const fixedIncomeGroups =
+            group.assetClass === "FIXED_INCOME"
+              ? [...new Set(rows.map((row) => row.fixedIncomeSubtype ?? "OTHER"))]
+                  .sort((first, second) =>
+                    (fixedIncomeSubtypeLabels[first] ?? first).localeCompare(
+                      fixedIncomeSubtypeLabels[second] ?? second,
+                      "pt-BR",
+                    ),
+                  )
+                  .map((subtype) => ({
+                    label: fixedIncomeSubtypeLabels[subtype] ?? "Outros",
+                    subtype,
+                    rows: rows.filter(
+                      (row) => (row.fixedIncomeSubtype ?? "OTHER") === subtype,
+                    ),
+                  }))
+              : [];
           return (
             <section key={group.assetClass}>
-              <div className="sticky top-16 z-10 flex items-center justify-between gap-4 border-b border-emerald-400/45 bg-[#111319] py-2 text-sm font-bold text-slate-100">
+              <button
+                aria-expanded={!collapsedPortfolioGroups.includes(group.assetClass)}
+                className="sticky top-16 z-10 flex w-full items-center justify-between gap-4 border-b border-emerald-400/45 bg-[#111319] py-2 text-left text-sm font-bold text-slate-100 transition hover:bg-white/[0.025]"
+                onClick={() =>
+                  setCollapsedPortfolioGroups((current) =>
+                    current.includes(group.assetClass)
+                      ? current.filter((item) => item !== group.assetClass)
+                      : [...current, group.assetClass],
+                  )
+                }
+                type="button"
+              >
                 <div className="flex items-center gap-2">
                   <h2>{group.label}</h2>
                   <span className="rounded-md bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
                     {rows.length} {rows.length === 1 ? "ativo" : "ativos"}
                   </span>
                 </div>
-                <span className="whitespace-nowrap">
+                <span className="flex items-center gap-2 whitespace-nowrap">
                   TOTAL: {formatCurrency(total, group.assetClass)}
+                  <Icon
+                    className="size-4 text-slate-400"
+                    name={
+                      collapsedPortfolioGroups.includes(group.assetClass)
+                        ? "chevronDown"
+                        : "chevronUp"
+                    }
+                  />
                 </span>
-              </div>
-              {rows.length ? (
+              </button>
+              {!collapsedPortfolioGroups.includes(group.assetClass) && group.assetClass === "FIXED_INCOME" && rows.length ? (
+                <div className="space-y-6 pt-4">
+                  {fixedIncomeGroups.map((subgroup) => (
+                    <section key={subgroup.label}>
+                      <button
+                        aria-expanded={!collapsedFixedIncomeGroups.includes(subgroup.subtype)}
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-200 transition hover:bg-white/[0.03] hover:text-emerald-200"
+                        onClick={() =>
+                          setCollapsedFixedIncomeGroups((current) =>
+                            current.includes(subgroup.subtype)
+                              ? current.filter((item) => item !== subgroup.subtype)
+                              : [...current, subgroup.subtype],
+                          )
+                        }
+                        type="button"
+                      >
+                        <span className="flex items-center gap-2">
+                          {subgroup.label}
+                          <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-xs font-medium text-slate-400">
+                            {subgroup.rows.length} {subgroup.rows.length === 1 ? "ativo" : "ativos"}
+                          </span>
+                        </span>
+                        <Icon
+                          className="size-4 text-slate-400"
+                          name={
+                            collapsedFixedIncomeGroups.includes(subgroup.subtype)
+                              ? "chevronDown"
+                              : "chevronUp"
+                          }
+                        />
+                      </button>
+                      {!collapsedFixedIncomeGroups.includes(subgroup.subtype) ? (
+                        <PortfolioPositionTable rows={subgroup.rows} />
+                      ) : null}
+                    </section>
+                  ))}
+                </div>
+              ) : !collapsedPortfolioGroups.includes(group.assetClass) && rows.length ? (
                 <PortfolioPositionTable rows={rows} />
-              ) : (
+              ) : !collapsedPortfolioGroups.includes(group.assetClass) ? (
                 <p className="px-3 py-4 text-sm text-slate-500">
                   Nenhum ativo adicionado neste produto.
                 </p>
-              )}
+              ) : null}
             </section>
           );
         })}
@@ -252,6 +357,7 @@ export function PortfolioView({
         assets={assets}
         institutions={institutions}
         isOpen={isNegotiationOpen}
+        key={negotiationFormKey}
         onClose={() => setNegotiationOpen(false)}
         productTypes={activeGroups.map((group) => group.assetClass)}
       />

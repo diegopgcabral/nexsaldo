@@ -46,7 +46,7 @@ export default async function ExpensesPage({
       .eq("user_id", userId)
       .gte("due_date", startsOn)
       .lt("due_date", endsBefore)
-      .order("due_date");
+      .order("created_at", { ascending: false });
     expenses = (data ?? []).map((expense) => ({
       id: expense.id,
       description: expense.description,

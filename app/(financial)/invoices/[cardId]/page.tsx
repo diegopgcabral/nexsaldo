@@ -115,7 +115,7 @@ export default async function CardInvoicePage({
           .eq("user_id", userId)
           .eq("card_id", selectedCard.id)
           .eq("invoice_month", `${month}-01`)
-          .order("purchased_on", { ascending: false }),
+          .order("created_at", { ascending: false }),
         supabase
           .from("credit_card_invoice_closures")
           .select("card_id")

@@ -108,7 +108,6 @@ function PurchaseForm({
     PurchaseActionState,
     FormData
   >(savePurchase, {});
-  const router = useRouter();
   const { notify } = useToast();
   const { total, allocated, difference } = calculateSplitBalance(
     amount,
@@ -118,10 +117,9 @@ function PurchaseForm({
   useEffect(() => {
     if (state.success) {
       notify("success", purchase ? "Compra atualizada." : "Compra cadastrada.");
-      router.refresh();
       onClose();
     }
-  }, [state.success, purchase, notify, router, onClose]);
+  }, [state.success, purchase, notify, onClose]);
 
   function updateSplit(index: number, changes: Partial<PurchaseSplit>) {
     setSplits((current) =>
@@ -834,7 +832,7 @@ export function InvoiceManager({
                           </p>
                         </button>
                         <div className="flex items-center gap-2">
-                          <strong className="mr-2 text-white">
+                          <strong className="mr-1 inline-flex w-24 justify-center whitespace-nowrap rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold tabular-nums text-emerald-200">
                             {formatCents(centsOrZero(purchase.amount))}
                           </strong>
                           {!isClosed ? (

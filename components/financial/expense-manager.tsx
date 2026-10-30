@@ -131,7 +131,6 @@ function ExpenseForm({
         "success",
         expense ? "Despesa atualizada." : "Despesa cadastrada.",
       );
-      router.refresh();
       onClose();
     }
   }, [expense, notify, onClose, router, state.error, state.success]);
@@ -379,7 +378,7 @@ export function ExpenseManager({
   const [filter, setFilter] = useState<"ALL" | ExpenseListItem["status"]>(
     "ALL",
   );
-  const [sortKey, setSortKey] = useState<ExpenseSortKey>("dueDate");
+  const [sortKey, setSortKey] = useState<ExpenseSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const visible = useMemo(() => {
     const matchingExpenses = expenses.filter(
@@ -389,6 +388,8 @@ export function ExpenseManager({
           .toLowerCase()
           .includes(query.toLowerCase()),
     );
+
+    if (!sortKey) return matchingExpenses;
 
     return matchingExpenses.sort((left, right) => {
       const value =
@@ -426,9 +427,6 @@ export function ExpenseManager({
     setDrawer(false);
     setEditing(undefined);
   };
-  const paidPercent = totals.plannedCents
-    ? Number((totals.paidCents * 100n) / totals.plannedCents)
-    : 0;
   const categoryTotals = calculateExpenseCategoryTotals(expenses, [
     ...new Set(expenses.map((expense) => expense.category)),
   ]);
@@ -455,23 +453,20 @@ export function ExpenseManager({
           Nova despesa
         </button>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <Metric
           label="Total previsto"
           value={totals.plannedCents}
-          note={`${expenses.filter((item) => item.status !== "CANCELLED").length} compromissos mapeados`}
           color="text-white"
         />
         <Metric
           label="Total pago"
           value={totals.paidCents}
-          note={`${paidPercent}% liquidado`}
           color="text-emerald-300"
         />
         <Metric
           label="Em aberto"
           value={totals.openCents}
-          note={`${expenses.filter((item) => item.status === "PENDING").length} despesas pendentes`}
           color="text-sky-200"
         />
       </div>
@@ -768,21 +763,18 @@ function DeleteExpenseButton({
 function Metric({
   label,
   value,
-  note,
   color,
 }: {
   label: string;
   value: bigint;
-  note: string;
   color: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#191c21] p-6 shadow-lg shadow-black/20">
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className={`mt-2 text-3xl font-bold tracking-tight ${color}`}>
+    <div className="rounded-2xl bg-[#191c21] px-5 py-4 shadow-lg shadow-black/20">
+      <p className="text-xs font-medium text-slate-400">{label}</p>
+      <p className={`mt-1.5 text-2xl font-bold tracking-tight ${color}`}>
         {formatCents(value)}
       </p>
-      <p className="mt-3 text-xs text-slate-400">{note}</p>
     </div>
   );
 }

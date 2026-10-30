@@ -52,6 +52,11 @@ export type UpdateInvestmentAssetState = {
   success?: string;
 };
 
+export type UpdateFixedIncomeTransactionState = {
+  error?: string;
+  success?: string;
+};
+
 export type InvestmentQuoteState = {
   attemptedAt?: number;
   error?: string;
@@ -146,6 +151,70 @@ export async function updateInvestmentAssetName(
   revalidatePath("/investments/portfolio");
   revalidatePath(`/investments/portfolio/${assetId}`);
   return { success: "Nome atualizado." };
+}
+
+export async function updateFixedIncomeTransactionAmount(
+  transactionId: string,
+  _previousState: UpdateFixedIncomeTransactionState,
+  formData: FormData,
+): Promise<UpdateFixedIncomeTransactionState> {
+  const amount = z.coerce.number().min(0).safeParse(
+    normalizeCurrencyInput(String(formData.get("currentAmount") ?? "")),
+  );
+  if (!amount.success)
+    return { error: "Informe um saldo total atualizado válido." };
+
+  const auth = await session();
+  if (!auth) return { error: "Faça login novamente para continuar." };
+
+  const { data: transaction, error: transactionError } = await auth.supabase
+    .from("investment_transactions")
+    .select("asset_id, quantity")
+    .eq("id", transactionId)
+    .eq("user_id", auth.userId)
+    .maybeSingle();
+  if (transactionError || !transaction)
+    return { error: "Negociação de renda fixa não encontrada." };
+
+  const { data: asset, error: assetError } = await auth.supabase
+    .from("investment_assets")
+    .select("id, fixed_income_subtype")
+    .eq("id", transaction.asset_id)
+    .eq("user_id", auth.userId)
+    .eq("asset_class", "FIXED_INCOME")
+    .maybeSingle();
+  if (assetError || !asset) return { error: "Ativo de renda fixa não encontrado." };
+
+  if (asset.fixed_income_subtype === "DIRECT_TREASURY") {
+    const { error } = await auth.supabase
+      .from("investment_positions")
+      .update({
+        as_of_date: new Date().toISOString().slice(0, 10),
+        current_amount: amount.data,
+      })
+      .eq("asset_id", asset.id)
+      .eq("user_id", auth.userId);
+    if (error) return { error: "Não foi possível atualizar o saldo da negociação." };
+    revalidatePath("/investments/portfolio");
+    revalidatePath(`/investments/portfolio/${asset.id}`);
+    return { success: "Saldo da negociação atualizado." };
+  }
+
+  const { error } = await auth.supabase
+    .from("investment_transactions")
+    .update({
+      total_amount: amount.data,
+      unit_price: amount.data / Number(transaction.quantity),
+    })
+    .eq("id", transactionId)
+    .eq("user_id", auth.userId);
+  if (error) return { error: "Não foi possível atualizar o saldo da negociação." };
+  if (!(await refreshInvestmentPosition(auth.supabase, auth.userId, asset.id)))
+    return { error: "O saldo foi salvo, mas não foi possível atualizar a posição." };
+
+  revalidatePath("/investments/portfolio");
+  revalidatePath(`/investments/portfolio/${asset.id}`);
+  return { success: "Saldo da negociação atualizado." };
 }
 
 export async function refreshInvestmentQuote(
@@ -565,13 +634,15 @@ export async function createManualInvestmentTransaction(
       assetClass: z.enum(classes),
       fixedIncomeSubtype: z.enum(fixedIncomeSubtypes).optional(),
       institutionId: z.string().uuid(),
+      investedAmount: z.coerce.number().positive().optional(),
+      maturityDate: z.union([z.iso.date(), z.literal("")]).optional(),
       name: z.string().trim().max(160),
-      quantity: z.coerce.number().positive(),
-      ticker: z.string().trim().min(1).max(30),
+      quantity: z.coerce.number().positive().optional(),
+      ticker: z.string().trim().max(30),
       totalAmount: z.coerce.number().positive(),
       transactionDate: z.iso.date(),
       transactionType: z.enum(["BUY", "SELL"]),
-      unitPrice: z.coerce.number().positive(),
+      unitPrice: z.coerce.number().positive().optional(),
     })
     .superRefine((value, context) => {
       if (value.assetClass === "FIXED_INCOME" && !value.fixedIncomeSubtype) {
@@ -581,22 +652,47 @@ export async function createManualInvestmentTransaction(
           path: ["fixedIncomeSubtype"],
         });
       }
+      const requiresTicker = value.assetClass !== "FIXED_INCOME";
+      if (requiresTicker && !value.ticker) {
+        context.addIssue({ code: "custom", message: "Selecione o ticker ou código do ativo.", path: ["ticker"] });
+      }
+      if (value.assetClass === "FIXED_INCOME" && !value.name) {
+        context.addIssue({ code: "custom", message: "Informe o nome do título.", path: ["name"] });
+      }
+      if ((requiresTicker || value.fixedIncomeSubtype === "DIRECT_TREASURY") && !value.quantity) {
+        context.addIssue({ code: "custom", message: "Informe a quantidade.", path: ["quantity"] });
+      }
+      if (value.fixedIncomeSubtype === "DIRECT_TREASURY" && !value.investedAmount) {
+        context.addIssue({ code: "custom", message: "Informe o valor aplicado.", path: ["investedAmount"] });
+      }
+      if (value.fixedIncomeSubtype === "DIRECT_TREASURY" && !value.maturityDate) {
+        context.addIssue({ code: "custom", message: "Informe a data de vencimento.", path: ["maturityDate"] });
+      }
+      if (value.assetClass !== "FIXED_INCOME" && !value.unitPrice) {
+        context.addIssue({ code: "custom", message: "Informe o preço unitário.", path: ["unitPrice"] });
+      }
     })
     .safeParse({
       assetClass: formData.get("assetClass"),
       fixedIncomeSubtype: formData.get("fixedIncomeSubtype") || undefined,
       institutionId: formData.get("institutionId"),
+      investedAmount: formData.get("investedAmount")
+        ? normalizeCurrencyInput(String(formData.get("investedAmount")))
+        : undefined,
+      maturityDate: String(formData.get("maturityDate") ?? ""),
       name: formData.get("name"),
-      quantity: normalizeCurrencyInput(String(formData.get("quantity") ?? "")),
-      ticker: formData.get("ticker"),
+      quantity: formData.get("quantity")
+        ? normalizeCurrencyInput(String(formData.get("quantity")))
+        : undefined,
+      ticker: String(formData.get("ticker") ?? ""),
       totalAmount: normalizeCurrencyInput(
         String(formData.get("totalAmount") ?? ""),
       ),
       transactionDate: formData.get("transactionDate"),
       transactionType: formData.get("transactionType"),
-      unitPrice: normalizeCurrencyInput(
-        String(formData.get("unitPrice") ?? ""),
-      ),
+      unitPrice: formData.get("unitPrice")
+        ? normalizeCurrencyInput(String(formData.get("unitPrice")))
+        : undefined,
     });
   const auth = await session();
   if (!input.success)
@@ -616,7 +712,21 @@ export async function createManualInvestmentTransaction(
   if (institutionError || !institution)
     return { error: "Selecione uma instituição cadastrada." };
 
-  const ticker = input.data.ticker.toUpperCase();
+  const isFixedIncome = input.data.assetClass === "FIXED_INCOME";
+  const isDirectTreasury = input.data.fixedIncomeSubtype === "DIRECT_TREASURY";
+  const ticker = input.data.ticker
+    ? input.data.ticker.toUpperCase()
+    : `manual-${createHash("sha256")
+        .update(`${auth.userId}:${input.data.institutionId}:${input.data.fixedIncomeSubtype}:${input.data.name}`)
+        .digest("hex")
+        .slice(0, 20)}`;
+  const quantity = input.data.quantity ?? 1;
+  const transactionAmount = isDirectTreasury
+    ? input.data.investedAmount!
+    : input.data.totalAmount;
+  const unitPrice = isFixedIncome
+    ? transactionAmount / quantity
+    : input.data.unitPrice!;
   const { data: existingAsset, error: existingAssetError } = await auth.supabase
     .from("investment_assets")
     .select("id")
@@ -665,7 +775,7 @@ export async function createManualInvestmentTransaction(
   );
   if (
     input.data.transactionType === "SELL" &&
-    input.data.quantity > heldQuantity
+    quantity > heldQuantity
   ) {
     return { error: "A quantidade vendida não pode ser maior que a posição atual." };
   }
@@ -679,9 +789,9 @@ export async function createManualInvestmentTransaction(
       transaction_date: input.data.transactionDate,
       transaction_type: input.data.transactionType,
       trade_code: ticker,
-      quantity: input.data.quantity,
-      unit_price: input.data.unitPrice,
-      total_amount: input.data.totalAmount,
+      quantity,
+      unit_price: unitPrice,
+      total_amount: transactionAmount,
       source_hash: createHash("sha256")
         .update(`${auth.userId}:${randomUUID()}`)
         .digest("hex"),
@@ -694,6 +804,19 @@ export async function createManualInvestmentTransaction(
       error:
         "A negociação foi salva, mas não foi possível atualizar a posição.",
     };
+  }
+  if (isDirectTreasury) {
+    const { error: positionError } = await auth.supabase
+      .from("investment_positions")
+      .update({
+        as_of_date: new Date().toISOString().slice(0, 10),
+        current_amount: input.data.totalAmount,
+        maturity_date: input.data.maturityDate,
+      })
+      .eq("asset_id", asset.id)
+      .eq("user_id", auth.userId);
+    if (positionError)
+      return { error: "A negociação foi salva, mas não foi possível atualizar o saldo." };
   }
 
   revalidatePath("/investments");
