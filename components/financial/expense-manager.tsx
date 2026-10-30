@@ -131,7 +131,6 @@ function ExpenseForm({
         "success",
         expense ? "Despesa atualizada." : "Despesa cadastrada.",
       );
-      router.refresh();
       onClose();
     }
   }, [expense, notify, onClose, router, state.error, state.success]);
