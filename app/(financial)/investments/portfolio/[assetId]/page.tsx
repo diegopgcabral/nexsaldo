@@ -137,6 +137,7 @@ export default async function InvestmentAssetPage({
             : "Instituição não informada")
         }
         type={labels[asset.asset_class] ?? "Investimento"}
+        proventsHref={`/investments/provents?assetId=${asset.id}`}
       />
       {asset.asset_class === "FIXED_INCOME" && position?.maturity_date ? (
         <p className="-mt-5 text-sm text-slate-400">
