@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useState, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 
 import { Icon } from "@/components/financial/icons";
 
@@ -84,6 +90,10 @@ export function FloatingCalculator() {
   const [isOpen, setIsOpen] = useState(false);
   const [expression, setExpression] = useState("");
   const [error, setError] = useState(false);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const drag = useRef<{ offsetX: number; offsetY: number } | null>(null);
 
   const display = error ? "Erro" : expression || "0";
   const pressKey = useCallback(
@@ -146,9 +156,51 @@ export function FloatingCalculator() {
     setIsOpen((value) => !value);
   };
 
+  const startDragging = (event: PointerEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("button")) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setPosition({ x: bounds.left, y: bounds.top });
+    drag.current = {
+      offsetX: event.clientX - bounds.left,
+      offsetY: event.clientY - bounds.top,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const moveCalculator = (event: PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    const width = event.currentTarget.offsetWidth;
+    const height = event.currentTarget.offsetHeight;
+    setPosition({
+      x: Math.max(
+        0,
+        Math.min(
+          window.innerWidth - width,
+          event.clientX - drag.current.offsetX,
+        ),
+      ),
+      y: Math.max(
+        0,
+        Math.min(
+          window.innerHeight - height,
+          event.clientY - drag.current.offsetY,
+        ),
+      ),
+    });
+  };
+
   return (
     <div
-      className="fixed right-4 bottom-20 z-40 sm:right-6 md:bottom-6"
+      className={`fixed z-40 ${position ? "" : "right-4 bottom-20 sm:right-6 md:bottom-6"}`}
+      onPointerDown={startDragging}
+      onPointerMove={moveCalculator}
+      onPointerUp={() => {
+        drag.current = null;
+      }}
+      onPointerCancel={() => {
+        drag.current = null;
+      }}
+      style={position ? { left: position.x, top: position.y } : undefined}
       onKeyDown={handleKeyDown}
     >
       {isOpen ? (
@@ -156,7 +208,7 @@ export function FloatingCalculator() {
           aria-label="Calculadora"
           className="mb-3 w-72 rounded-2xl border border-white/10 bg-[#191c21] p-3 shadow-2xl shadow-black/50"
         >
-          <div className="mb-3 flex items-center justify-between px-1">
+          <div className="mb-3 flex cursor-grab touch-none items-center justify-between px-1 active:cursor-grabbing">
             <span className="text-sm font-semibold text-white">
               Calculadora
             </span>
