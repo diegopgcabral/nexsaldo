@@ -153,7 +153,10 @@ export function FloatingCalculator() {
   );
 
   const toggleCalculator = () => {
-    setIsOpen((value) => !value);
+    setIsOpen((value) => {
+      if (value) setPosition(null);
+      return !value;
+    });
   };
 
   const startDragging = (event: PointerEvent<HTMLDivElement>) => {
@@ -217,6 +220,7 @@ export function FloatingCalculator() {
               className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white"
               onClick={() => {
                 setIsOpen(false);
+                setPosition(null);
               }}
               type="button"
             >
