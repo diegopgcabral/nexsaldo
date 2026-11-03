@@ -148,9 +148,17 @@ export function PortfolioView({
                 : row.investedAmount),
             0,
           );
+          const totalLabel =
+            group.assetClass === "FIXED_INCOME"
+              ? "SALDO TOTAL"
+              : "TOTAL INVESTIDO";
           const fixedIncomeGroups =
             group.assetClass === "FIXED_INCOME"
-              ? [...new Set(rows.map((row) => row.fixedIncomeSubtype ?? "OTHER"))]
+              ? [
+                  ...new Set(
+                    rows.map((row) => row.fixedIncomeSubtype ?? "OTHER"),
+                  ),
+                ]
                   .sort((first, second) =>
                     (fixedIncomeSubtypeLabels[first] ?? first).localeCompare(
                       fixedIncomeSubtypeLabels[second] ?? second,
@@ -168,7 +176,9 @@ export function PortfolioView({
           return (
             <section key={group.assetClass}>
               <button
-                aria-expanded={!collapsedPortfolioGroups.includes(group.assetClass)}
+                aria-expanded={
+                  !collapsedPortfolioGroups.includes(group.assetClass)
+                }
                 className="sticky top-16 z-10 flex w-full items-center justify-between gap-4 border-b border-emerald-400/45 bg-[#111319] py-2 text-left text-sm font-bold text-slate-100 transition hover:bg-white/[0.025]"
                 onClick={() =>
                   setCollapsedPortfolioGroups((current) =>
@@ -186,7 +196,7 @@ export function PortfolioView({
                   </span>
                 </div>
                 <span className="flex items-center gap-2 whitespace-nowrap">
-                  TOTAL: {formatCurrency(total, group.assetClass)}
+                  {totalLabel}: {formatCurrency(total, group.assetClass)}
                   <Icon
                     className="size-4 text-slate-400"
                     name={
@@ -197,17 +207,23 @@ export function PortfolioView({
                   />
                 </span>
               </button>
-              {!collapsedPortfolioGroups.includes(group.assetClass) && group.assetClass === "FIXED_INCOME" && rows.length ? (
+              {!collapsedPortfolioGroups.includes(group.assetClass) &&
+              group.assetClass === "FIXED_INCOME" &&
+              rows.length ? (
                 <div className="space-y-6 pt-4">
                   {fixedIncomeGroups.map((subgroup) => (
                     <section key={subgroup.label}>
                       <button
-                        aria-expanded={!collapsedFixedIncomeGroups.includes(subgroup.subtype)}
+                        aria-expanded={
+                          !collapsedFixedIncomeGroups.includes(subgroup.subtype)
+                        }
                         className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-200 transition hover:bg-white/[0.03] hover:text-emerald-200"
                         onClick={() =>
                           setCollapsedFixedIncomeGroups((current) =>
                             current.includes(subgroup.subtype)
-                              ? current.filter((item) => item !== subgroup.subtype)
+                              ? current.filter(
+                                  (item) => item !== subgroup.subtype,
+                                )
                               : [...current, subgroup.subtype],
                           )
                         }
@@ -216,25 +232,31 @@ export function PortfolioView({
                         <span className="flex items-center gap-2">
                           {subgroup.label}
                           <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-xs font-medium text-slate-400">
-                            {subgroup.rows.length} {subgroup.rows.length === 1 ? "ativo" : "ativos"}
+                            {subgroup.rows.length}{" "}
+                            {subgroup.rows.length === 1 ? "ativo" : "ativos"}
                           </span>
                         </span>
                         <Icon
                           className="size-4 text-slate-400"
                           name={
-                            collapsedFixedIncomeGroups.includes(subgroup.subtype)
+                            collapsedFixedIncomeGroups.includes(
+                              subgroup.subtype,
+                            )
                               ? "chevronDown"
                               : "chevronUp"
                           }
                         />
                       </button>
-                      {!collapsedFixedIncomeGroups.includes(subgroup.subtype) ? (
+                      {!collapsedFixedIncomeGroups.includes(
+                        subgroup.subtype,
+                      ) ? (
                         <PortfolioPositionTable rows={subgroup.rows} />
                       ) : null}
                     </section>
                   ))}
                 </div>
-              ) : !collapsedPortfolioGroups.includes(group.assetClass) && rows.length ? (
+              ) : !collapsedPortfolioGroups.includes(group.assetClass) &&
+                rows.length ? (
                 <PortfolioPositionTable rows={rows} />
               ) : !collapsedPortfolioGroups.includes(group.assetClass) ? (
                 <p className="px-3 py-4 text-sm text-slate-500">

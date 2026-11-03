@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 
 import {
   updateInvestmentAssetName,
@@ -16,12 +17,14 @@ export function AssetDetailHeader({
   initialName,
   institution,
   type,
+  proventsHref,
 }: {
   assetId: string;
   code: string;
   initialName: string;
   institution: string;
   type: string;
+  proventsHref?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, pending] = useActionState(
@@ -81,6 +84,7 @@ export function AssetDetailHeader({
           <p className="mt-2 text-sm text-emerald-300">{state.success}</p>
         ) : null}
         <p className="mt-2 text-sm text-slate-400">Custodiado pela {institution}.</p>
+        {proventsHref ? <Link className="mt-4 inline-flex rounded-lg border border-emerald-400/35 px-3 py-2 text-sm font-semibold text-emerald-300 hover:bg-emerald-400/10" href={proventsHref}>Visualizar proventos</Link> : null}
       </div>
     </div>
   );

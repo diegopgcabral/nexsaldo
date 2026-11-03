@@ -93,8 +93,8 @@ export function B3NegotiationImport() {
             Selecionar relatório de negociação
           </span>
           <span className="mx-auto mt-2 block max-w-md text-sm leading-6 text-slate-400">
-            Envie o Excel de Negociação baixado da B3. A primeira importação
-            aceita somente os ativos combinados e o Tesouro Direto.
+            Envie o Excel de Negociação baixado da B3. A importação considera
+            somente os tickers cadastrados em Ações e FIIs.
           </span>
           <input
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

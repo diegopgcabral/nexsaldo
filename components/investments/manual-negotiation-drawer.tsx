@@ -197,10 +197,11 @@ export function ManualNegotiationDrawer({
               <legend className="mb-3 text-sm font-medium text-slate-200">
                 Operação
               </legend>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   ["BUY", "Compra"],
                   ["SELL", "Venda"],
+                  ["BONUS", "Bonificação"],
                 ].map(([value, label]) => (
                   <label
                     className={`cursor-pointer rounded-xl border p-3 text-center text-sm font-medium transition ${transactionType === value ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-200" : "border-white/8 bg-[#191c21] text-slate-400"}`}

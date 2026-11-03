@@ -88,7 +88,10 @@ async function refreshInvestmentPosition(
   for (const transaction of transactions) {
     const quantity = Number(transaction.quantity);
     const amount = Number(transaction.total_amount);
-    if (transaction.transaction_type === "BUY") {
+    if (
+      transaction.transaction_type === "BUY" ||
+      transaction.transaction_type === "BONUS"
+    ) {
       balance.quantity += quantity;
       balance.investedAmount += amount;
     } else if (
@@ -483,7 +486,10 @@ export async function importB3Negotiations(formData: FormData) {
     };
     const quantity = Number(transaction.quantity);
     const amount = Number(transaction.total_amount);
-    if (transaction.transaction_type === "BUY") {
+    if (
+      transaction.transaction_type === "BUY" ||
+      transaction.transaction_type === "BONUS"
+    ) {
       balance.quantity += quantity;
       balance.investedAmount += amount;
     } else if (balance.quantity > 0) {
@@ -641,7 +647,7 @@ export async function createManualInvestmentTransaction(
       ticker: z.string().trim().max(30),
       totalAmount: z.coerce.number().positive(),
       transactionDate: z.iso.date(),
-      transactionType: z.enum(["BUY", "SELL"]),
+      transactionType: z.enum(["BUY", "SELL", "BONUS"]),
       unitPrice: z.coerce.number().positive().optional(),
     })
     .superRefine((value, context) => {
@@ -1072,4 +1078,16 @@ export async function createFixedIncomePosition(formData: FormData) {
     as_of_date: input.data.asOfDate,
   });
   revalidatePath("/investments/portfolio");
+}
+
+export async function createInvestmentProvent(formData: FormData) {
+  const input = z.object({ assetId: z.string().uuid(), receivedOn: z.iso.date(), amount: z.coerce.number().positive(), proventType: z.enum(["DIVIDEND", "JCP", "INCOME"]) }).safeParse({ assetId: formData.get("assetId"), receivedOn: formData.get("receivedOn"), amount: formData.get("amount"), proventType: formData.get("proventType") });
+  const auth = await session();
+  if (!input.success || !auth) return { error: "Dados inválidos." };
+  const { data: asset } = await auth.supabase.from("investment_assets").select("asset_class").eq("id", input.data.assetId).eq("user_id", auth.userId).maybeSingle();
+  if (!asset) return { error: "Ativo não encontrado." };
+  const { error } = await auth.supabase.from("investment_provents").insert({ user_id: auth.userId, asset_id: input.data.assetId, received_on: input.data.receivedOn, amount: input.data.amount, provent_type: input.data.proventType, currency: asset.asset_class === "US_ETF" ? "USD" : "BRL", source_hash: createHash("sha256").update(`${auth.userId}:${randomUUID()}`).digest("hex") });
+  if (error) return { error: "Não foi possível salvar o provento." };
+  revalidatePath("/investments/provents");
+  return { success: "Provento registrado." };
 }
