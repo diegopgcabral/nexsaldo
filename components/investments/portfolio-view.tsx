@@ -32,15 +32,6 @@ const fixedIncomeSubtypeLabels: Record<string, string> = {
   OTHER: "Outros",
 };
 
-function formatCurrency(value: number, assetClass: string) {
-  const isUsdAsset = assetClass === "US_ETF";
-  const formatted = new Intl.NumberFormat(isUsdAsset ? "en-US" : "pt-BR", {
-    currency: isUsdAsset ? "USD" : "BRL",
-    style: "currency",
-  }).format(value);
-  return isUsdAsset ? formatted.replace("$", "US$ ") : formatted;
-}
-
 export function PortfolioView({
   assets,
   institutions,
@@ -140,18 +131,6 @@ export function PortfolioView({
             group.assetClass === "FIXED_INCOME"
               ? groupRows.filter((position) => position.currentAmount > 0)
               : groupRows;
-          const total = rows.reduce(
-            (sum, row) =>
-              sum +
-              (group.assetClass === "FIXED_INCOME"
-                ? row.currentAmount
-                : row.investedAmount),
-            0,
-          );
-          const totalLabel =
-            group.assetClass === "FIXED_INCOME"
-              ? "SALDO TOTAL"
-              : "TOTAL INVESTIDO";
           const fixedIncomeGroups =
             group.assetClass === "FIXED_INCOME"
               ? [
@@ -195,17 +174,14 @@ export function PortfolioView({
                     {rows.length} {rows.length === 1 ? "ativo" : "ativos"}
                   </span>
                 </div>
-                <span className="flex items-center gap-2 whitespace-nowrap">
-                  {totalLabel}: {formatCurrency(total, group.assetClass)}
-                  <Icon
-                    className="size-4 text-slate-400"
-                    name={
-                      collapsedPortfolioGroups.includes(group.assetClass)
-                        ? "chevronDown"
-                        : "chevronUp"
-                    }
-                  />
-                </span>
+                <Icon
+                  className="size-4 shrink-0 text-slate-400"
+                  name={
+                    collapsedPortfolioGroups.includes(group.assetClass)
+                      ? "chevronDown"
+                      : "chevronUp"
+                  }
+                />
               </button>
               {!collapsedPortfolioGroups.includes(group.assetClass) &&
               group.assetClass === "FIXED_INCOME" &&

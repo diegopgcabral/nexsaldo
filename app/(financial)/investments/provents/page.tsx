@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { ProventsFilterButton } from "@/components/investments/provents-filter-button";
 import { ProventsQuoteRefresh } from "@/components/investments/provents-quote-refresh";
+import { AddProventDrawer } from "@/components/investments/add-provent-drawer";
 import { CycleMonthNavigator } from "@/components/financial/cycle-month-navigator";
 import { fetchTwelveDataQuote } from "@/lib/investments/twelve-data";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,7 @@ type Props = {
     to?: string;
     products?: string;
     events?: string;
+    add?: string;
   }>;
 };
 
@@ -70,6 +72,7 @@ export default async function InvestmentProventsPage({ searchParams }: Props) {
     to,
     products,
     events,
+    add,
   } = await searchParams;
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -92,13 +95,19 @@ export default async function InvestmentProventsPage({ searchParams }: Props) {
     query
       .gte("received_on", `${month}-01`)
       .lt("received_on", `${nextMonthReference}-01`);
-  const [{ data: provents }, { data: institutions }] = await Promise.all([
-    query,
-    supabase
-      .from("investment_institutions")
-      .select("id,name")
-      .eq("user_id", userId),
-  ]);
+  const [{ data: provents }, { data: institutions }, { data: assets }] =
+    await Promise.all([
+      query,
+      supabase
+        .from("investment_institutions")
+        .select("id,name")
+        .eq("user_id", userId),
+      supabase
+        .from("investment_assets")
+        .select("id,name,display_name,ticker,asset_class")
+        .eq("user_id", userId)
+        .order("name"),
+    ]);
   const institutionNames = new Map(
     (institutions ?? []).map((item) => [item.id, item.name]),
   );
@@ -160,6 +169,12 @@ export default async function InvestmentProventsPage({ searchParams }: Props) {
       items: items.filter((item) => item.asset.asset_class === assetClass),
     }))
     .filter((group) => group.items.length);
+  const returnParams = new URLSearchParams({ month });
+  if (from) returnParams.set("from", from);
+  if (to) returnParams.set("to", to);
+  if (products) returnParams.set("products", products);
+  if (events) returnParams.set("events", events);
+  const proventsReturnPath = `/investments/provents?${returnParams.toString()}`;
   return (
     <section>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -288,6 +303,17 @@ export default async function InvestmentProventsPage({ searchParams }: Props) {
           Nenhum provento registrado neste período.
         </p>
       ) : null}
+      <AddProventDrawer
+        assets={(assets ?? []).map((asset) => ({
+          assetClass: asset.asset_class,
+          id: asset.id,
+          name: asset.display_name ?? asset.name,
+          ticker: asset.ticker?.startsWith("manual-") ? null : asset.ticker,
+        }))}
+        isOpen={add === "1"}
+        key={add === "1" ? "add-provent-open" : "add-provent-closed"}
+        returnPath={proventsReturnPath}
+      />
     </section>
   );
 }

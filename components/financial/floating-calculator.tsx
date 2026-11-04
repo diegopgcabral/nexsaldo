@@ -42,6 +42,9 @@ const keyboardKeyMap: Record<string, (typeof keys)[number]> = {
   Backspace: "⌫",
 };
 
+const dockedCalculatorClassName =
+  "fixed z-40 right-4 bottom-20 sm:right-6 md:bottom-6";
+
 function calculate(expression: string) {
   const normalized = expression
     .replaceAll("×", "*")
@@ -194,7 +197,7 @@ export function FloatingCalculator() {
 
   return (
     <div
-      className={`fixed z-40 ${position ? "" : "right-4 bottom-20 sm:right-6 md:bottom-6"}`}
+      className={position ? "fixed z-40" : dockedCalculatorClassName}
       onPointerDown={startDragging}
       onPointerMove={moveCalculator}
       onPointerUp={() => {

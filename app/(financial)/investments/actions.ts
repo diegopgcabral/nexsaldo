@@ -47,6 +47,11 @@ export type ManualInvestmentTransactionState = {
   success?: string;
 };
 
+export type InvestmentProventState = {
+  error?: string;
+  success?: string;
+};
+
 export type UpdateInvestmentAssetState = {
   error?: string;
   success?: string;
@@ -139,7 +144,8 @@ export async function updateInvestmentAssetName(
   const input = z
     .object({ displayName: z.string().trim().min(1).max(160) })
     .safeParse({ displayName: formData.get("displayName") });
-  if (!input.success) return { error: "Informe um nome entre 1 e 160 caracteres." };
+  if (!input.success)
+    return { error: "Informe um nome entre 1 e 160 caracteres." };
 
   const auth = await session();
   if (!auth) return { error: "Faça login novamente para continuar." };
@@ -161,9 +167,12 @@ export async function updateFixedIncomeTransactionAmount(
   _previousState: UpdateFixedIncomeTransactionState,
   formData: FormData,
 ): Promise<UpdateFixedIncomeTransactionState> {
-  const amount = z.coerce.number().min(0).safeParse(
-    normalizeCurrencyInput(String(formData.get("currentAmount") ?? "")),
-  );
+  const amount = z.coerce
+    .number()
+    .min(0)
+    .safeParse(
+      normalizeCurrencyInput(String(formData.get("currentAmount") ?? "")),
+    );
   if (!amount.success)
     return { error: "Informe um saldo total atualizado válido." };
 
@@ -186,7 +195,8 @@ export async function updateFixedIncomeTransactionAmount(
     .eq("user_id", auth.userId)
     .eq("asset_class", "FIXED_INCOME")
     .maybeSingle();
-  if (assetError || !asset) return { error: "Ativo de renda fixa não encontrado." };
+  if (assetError || !asset)
+    return { error: "Ativo de renda fixa não encontrado." };
 
   if (asset.fixed_income_subtype === "DIRECT_TREASURY") {
     const { error } = await auth.supabase
@@ -197,7 +207,8 @@ export async function updateFixedIncomeTransactionAmount(
       })
       .eq("asset_id", asset.id)
       .eq("user_id", auth.userId);
-    if (error) return { error: "Não foi possível atualizar o saldo da negociação." };
+    if (error)
+      return { error: "Não foi possível atualizar o saldo da negociação." };
     revalidatePath("/investments/portfolio");
     revalidatePath(`/investments/portfolio/${asset.id}`);
     return { success: "Saldo da negociação atualizado." };
@@ -211,9 +222,12 @@ export async function updateFixedIncomeTransactionAmount(
     })
     .eq("id", transactionId)
     .eq("user_id", auth.userId);
-  if (error) return { error: "Não foi possível atualizar o saldo da negociação." };
+  if (error)
+    return { error: "Não foi possível atualizar o saldo da negociação." };
   if (!(await refreshInvestmentPosition(auth.supabase, auth.userId, asset.id)))
-    return { error: "O saldo foi salvo, mas não foi possível atualizar a posição." };
+    return {
+      error: "O saldo foi salvo, mas não foi possível atualizar a posição.",
+    };
 
   revalidatePath("/investments/portfolio");
   revalidatePath(`/investments/portfolio/${asset.id}`);
@@ -236,7 +250,9 @@ export async function refreshInvestmentQuote(
     .eq("user_id", auth.userId)
     .maybeSingle();
   if (assetError || !asset || !asset.ticker)
-    return { error: "Não foi possível localizar o ativo para atualizar a cotação." };
+    return {
+      error: "Não foi possível localizar o ativo para atualizar a cotação.",
+    };
 
   const provider =
     asset.asset_class === "US_ETF"
@@ -245,7 +261,9 @@ export async function refreshInvestmentQuote(
         ? "BRAPI"
         : null;
   if (!provider)
-    return { error: "A cotação ainda não está disponível para este tipo de ativo." };
+    return {
+      error: "A cotação ainda não está disponível para este tipo de ativo.",
+    };
 
   try {
     const quote =
@@ -280,17 +298,22 @@ export async function refreshInvestmentQuote(
       .from("investment_positions")
       .update({
         as_of_date: quote.quotedAt.slice(0, 10),
-        current_amount: Number((quote.price * Number(position.quantity)).toFixed(8)),
+        current_amount: Number(
+          (quote.price * Number(position.quantity)).toFixed(8),
+        ),
       })
       .eq("asset_id", asset.id)
       .eq("user_id", auth.userId);
     if (positionUpdateError)
-      return { error: "A cotação foi salva, mas a posição não foi atualizada." };
+      return {
+        error: "A cotação foi salva, mas a posição não foi atualizada.",
+      };
   } catch (error) {
     console.error("Investment quote request failed", {
       assetClass: asset.asset_class,
       assetId: asset.id,
-      message: error instanceof Error ? error.message : "Unknown quote provider error",
+      message:
+        error instanceof Error ? error.message : "Unknown quote provider error",
       provider,
     });
     return {
@@ -552,7 +575,12 @@ export async function createInvestmentInstitution(formData: FormData) {
 
 export async function updateInvestmentInstitution(formData: FormData) {
   const id = z.string().uuid().safeParse(formData.get("id"));
-  const name = z.string().trim().min(1).max(100).safeParse(formData.get("name"));
+  const name = z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .safeParse(formData.get("name"));
   const auth = await session();
   if (!id.success || !name.success || !auth)
     return { error: "Não foi possível validar a instituição." };
@@ -617,15 +645,18 @@ export async function createInvestmentAsset(formData: FormData) {
       .update(`${auth.userId}:${input.data.assetClass}:${input.data.name}`)
       .digest("hex")
       .slice(0, 20)}`;
-  await auth.supabase.from("investment_assets").upsert({
-    user_id: auth.userId,
-    name: input.data.name,
-    ticker,
-    asset_class: input.data.assetClass,
-    fixed_income_subtype:
-      input.data.assetClass === "FIXED_INCOME" ? "OTHER" : null,
-    institution_id: input.data.institutionId ?? null,
-  }, { onConflict: "user_id,asset_class,ticker" });
+  await auth.supabase.from("investment_assets").upsert(
+    {
+      user_id: auth.userId,
+      name: input.data.name,
+      ticker,
+      asset_class: input.data.assetClass,
+      fixed_income_subtype:
+        input.data.assetClass === "FIXED_INCOME" ? "OTHER" : null,
+      institution_id: input.data.institutionId ?? null,
+    },
+    { onConflict: "user_id,asset_class,ticker" },
+  );
   revalidatePath("/investments");
   revalidatePath("/investments/products");
   revalidatePath("/investments/portfolio");
@@ -660,22 +691,55 @@ export async function createManualInvestmentTransaction(
       }
       const requiresTicker = value.assetClass !== "FIXED_INCOME";
       if (requiresTicker && !value.ticker) {
-        context.addIssue({ code: "custom", message: "Selecione o ticker ou código do ativo.", path: ["ticker"] });
+        context.addIssue({
+          code: "custom",
+          message: "Selecione o ticker ou código do ativo.",
+          path: ["ticker"],
+        });
       }
       if (value.assetClass === "FIXED_INCOME" && !value.name) {
-        context.addIssue({ code: "custom", message: "Informe o nome do título.", path: ["name"] });
+        context.addIssue({
+          code: "custom",
+          message: "Informe o nome do título.",
+          path: ["name"],
+        });
       }
-      if ((requiresTicker || value.fixedIncomeSubtype === "DIRECT_TREASURY") && !value.quantity) {
-        context.addIssue({ code: "custom", message: "Informe a quantidade.", path: ["quantity"] });
+      if (
+        (requiresTicker || value.fixedIncomeSubtype === "DIRECT_TREASURY") &&
+        !value.quantity
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Informe a quantidade.",
+          path: ["quantity"],
+        });
       }
-      if (value.fixedIncomeSubtype === "DIRECT_TREASURY" && !value.investedAmount) {
-        context.addIssue({ code: "custom", message: "Informe o valor aplicado.", path: ["investedAmount"] });
+      if (
+        value.fixedIncomeSubtype === "DIRECT_TREASURY" &&
+        !value.investedAmount
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Informe o valor aplicado.",
+          path: ["investedAmount"],
+        });
       }
-      if (value.fixedIncomeSubtype === "DIRECT_TREASURY" && !value.maturityDate) {
-        context.addIssue({ code: "custom", message: "Informe a data de vencimento.", path: ["maturityDate"] });
+      if (
+        value.fixedIncomeSubtype === "DIRECT_TREASURY" &&
+        !value.maturityDate
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Informe a data de vencimento.",
+          path: ["maturityDate"],
+        });
       }
       if (value.assetClass !== "FIXED_INCOME" && !value.unitPrice) {
-        context.addIssue({ code: "custom", message: "Informe o preço unitário.", path: ["unitPrice"] });
+        context.addIssue({
+          code: "custom",
+          message: "Informe o preço unitário.",
+          path: ["unitPrice"],
+        });
       }
     })
     .safeParse({
@@ -723,7 +787,9 @@ export async function createManualInvestmentTransaction(
   const ticker = input.data.ticker
     ? input.data.ticker.toUpperCase()
     : `manual-${createHash("sha256")
-        .update(`${auth.userId}:${input.data.institutionId}:${input.data.fixedIncomeSubtype}:${input.data.name}`)
+        .update(
+          `${auth.userId}:${input.data.institutionId}:${input.data.fixedIncomeSubtype}:${input.data.name}`,
+        )
         .digest("hex")
         .slice(0, 20)}`;
   const quantity = input.data.quantity ?? 1;
@@ -763,11 +829,12 @@ export async function createManualInvestmentTransaction(
   if (assetError || !asset)
     return { error: "Não foi possível salvar o ativo da negociação." };
 
-  const { data: existingTransactions, error: historyError } = await auth.supabase
-    .from("investment_transactions")
-    .select("quantity, transaction_type")
-    .eq("user_id", auth.userId)
-    .eq("asset_id", asset.id);
+  const { data: existingTransactions, error: historyError } =
+    await auth.supabase
+      .from("investment_transactions")
+      .select("quantity, transaction_type")
+      .eq("user_id", auth.userId)
+      .eq("asset_id", asset.id);
   if (historyError || !existingTransactions)
     return { error: "Não foi possível conferir a posição atual do ativo." };
 
@@ -779,11 +846,10 @@ export async function createManualInvestmentTransaction(
         : -Number(transaction.quantity)),
     0,
   );
-  if (
-    input.data.transactionType === "SELL" &&
-    quantity > heldQuantity
-  ) {
-    return { error: "A quantidade vendida não pode ser maior que a posição atual." };
+  if (input.data.transactionType === "SELL" && quantity > heldQuantity) {
+    return {
+      error: "A quantidade vendida não pode ser maior que a posição atual.",
+    };
   }
 
   const { error: transactionError } = await auth.supabase
@@ -805,7 +871,9 @@ export async function createManualInvestmentTransaction(
   if (transactionError)
     return { error: "Não foi possível salvar a negociação." };
 
-  if (!(await refreshInvestmentPosition(auth.supabase, auth.userId, asset.id))) {
+  if (
+    !(await refreshInvestmentPosition(auth.supabase, auth.userId, asset.id))
+  ) {
     return {
       error:
         "A negociação foi salva, mas não foi possível atualizar a posição.",
@@ -822,7 +890,10 @@ export async function createManualInvestmentTransaction(
       .eq("asset_id", asset.id)
       .eq("user_id", auth.userId);
     if (positionError)
-      return { error: "A negociação foi salva, mas não foi possível atualizar o saldo." };
+      return {
+        error:
+          "A negociação foi salva, mas não foi possível atualizar o saldo.",
+      };
   }
 
   revalidatePath("/investments");
@@ -883,16 +954,16 @@ export async function createManualInvestment(formData: FormData) {
   const { error: positionError } = await auth.supabase
     .from("investment_positions")
     .upsert(
-    {
-      user_id: auth.userId,
-      asset_id: asset.id,
-      quantity: input.data.quantity,
-      invested_amount: input.data.investedAmount,
-      current_amount: input.data.currentAmount,
-      maturity_date: input.data.maturityDate || null,
-      as_of_date: new Date().toISOString().slice(0, 10),
-    },
-    { onConflict: "user_id,asset_id" },
+      {
+        user_id: auth.userId,
+        asset_id: asset.id,
+        quantity: input.data.quantity,
+        invested_amount: input.data.investedAmount,
+        current_amount: input.data.currentAmount,
+        maturity_date: input.data.maturityDate || null,
+        as_of_date: new Date().toISOString().slice(0, 10),
+      },
+      { onConflict: "user_id,asset_id" },
     );
   if (positionError) return { error: "Não foi possível salvar a posição." };
   revalidatePath("/investments");
@@ -989,17 +1060,16 @@ function revalidateInvestmentProductPaths() {
 export async function addInvestmentProductType(assetClass: string) {
   const parsedClass = z.enum(classes).safeParse(assetClass);
   const auth = await session();
-  if (!parsedClass.success || !auth) return { error: "Tipo de produto inválido." };
-  const { error } = await auth.supabase
-    .from("investment_product_types")
-    .upsert(
-      {
-        user_id: auth.userId,
-        asset_class: parsedClass.data,
-        is_active: true,
-      },
-      { onConflict: "user_id,asset_class" },
-    );
+  if (!parsedClass.success || !auth)
+    return { error: "Tipo de produto inválido." };
+  const { error } = await auth.supabase.from("investment_product_types").upsert(
+    {
+      user_id: auth.userId,
+      asset_class: parsedClass.data,
+      is_active: true,
+    },
+    { onConflict: "user_id,asset_class" },
+  );
   if (error) return { error: "Não foi possível adicionar o tipo de produto." };
   revalidateInvestmentProductPaths();
   return { success: "Tipo de produto adicionado." };
@@ -1008,17 +1078,16 @@ export async function addInvestmentProductType(assetClass: string) {
 export async function removeInvestmentProductType(assetClass: string) {
   const parsedClass = z.enum(classes).safeParse(assetClass);
   const auth = await session();
-  if (!parsedClass.success || !auth) return { error: "Tipo de produto inválido." };
-  const { error } = await auth.supabase
-    .from("investment_product_types")
-    .upsert(
-      {
-        user_id: auth.userId,
-        asset_class: parsedClass.data,
-        is_active: false,
-      },
-      { onConflict: "user_id,asset_class" },
-    );
+  if (!parsedClass.success || !auth)
+    return { error: "Tipo de produto inválido." };
+  const { error } = await auth.supabase.from("investment_product_types").upsert(
+    {
+      user_id: auth.userId,
+      asset_class: parsedClass.data,
+      is_active: false,
+    },
+    { onConflict: "user_id,asset_class" },
+  );
   if (error) return { error: "Não foi possível remover o tipo de produto." };
   revalidateInvestmentProductPaths();
   return { success: "Tipo removido da lista." };
@@ -1080,13 +1149,58 @@ export async function createFixedIncomePosition(formData: FormData) {
   revalidatePath("/investments/portfolio");
 }
 
-export async function createInvestmentProvent(formData: FormData) {
-  const input = z.object({ assetId: z.string().uuid(), receivedOn: z.iso.date(), amount: z.coerce.number().positive(), proventType: z.enum(["DIVIDEND", "JCP", "INCOME"]) }).safeParse({ assetId: formData.get("assetId"), receivedOn: formData.get("receivedOn"), amount: formData.get("amount"), proventType: formData.get("proventType") });
+export async function createInvestmentProvent(
+  _previousState: InvestmentProventState,
+  formData: FormData,
+): Promise<InvestmentProventState> {
+  const input = z
+    .object({
+      assetId: z.string().uuid(),
+      amount: z.coerce.number().positive(),
+      proventType: z.enum(["DIVIDEND", "JCP", "INCOME"]),
+      quantity: z.coerce.number().positive().optional(),
+      receivedOn: z.iso.date(),
+      unitPrice: z.coerce.number().positive().optional(),
+    })
+    .safeParse({
+      assetId: formData.get("assetId"),
+      amount: normalizeCurrencyInput(String(formData.get("amount") ?? "")),
+      proventType: formData.get("proventType"),
+      quantity: formData.get("quantity")
+        ? normalizeCurrencyInput(String(formData.get("quantity")))
+        : undefined,
+      receivedOn: formData.get("receivedOn"),
+      unitPrice: formData.get("unitPrice")
+        ? normalizeCurrencyInput(String(formData.get("unitPrice")))
+        : undefined,
+    });
   const auth = await session();
   if (!input.success || !auth) return { error: "Dados inválidos." };
-  const { data: asset } = await auth.supabase.from("investment_assets").select("asset_class").eq("id", input.data.assetId).eq("user_id", auth.userId).maybeSingle();
+  const { data: asset } = await auth.supabase
+    .from("investment_assets")
+    .select("asset_class")
+    .eq("id", input.data.assetId)
+    .eq("user_id", auth.userId)
+    .maybeSingle();
   if (!asset) return { error: "Ativo não encontrado." };
-  const { error } = await auth.supabase.from("investment_provents").insert({ user_id: auth.userId, asset_id: input.data.assetId, received_on: input.data.receivedOn, amount: input.data.amount, provent_type: input.data.proventType, currency: asset.asset_class === "US_ETF" ? "USD" : "BRL", source_hash: createHash("sha256").update(`${auth.userId}:${randomUUID()}`).digest("hex") });
+  if (!(["STOCK", "FII", "US_ETF"] as const).includes(asset.asset_class))
+    return {
+      error:
+        "Selecione uma ação, FII ou ETF americano para registrar o recebimento.",
+    };
+  const { error } = await auth.supabase.from("investment_provents").insert({
+    user_id: auth.userId,
+    asset_id: input.data.assetId,
+    received_on: input.data.receivedOn,
+    amount: input.data.amount,
+    provent_type: input.data.proventType,
+    quantity: input.data.quantity ?? null,
+    unit_price: input.data.unitPrice ?? null,
+    currency: asset.asset_class === "US_ETF" ? "USD" : "BRL",
+    source_hash: createHash("sha256")
+      .update(`${auth.userId}:${randomUUID()}`)
+      .digest("hex"),
+  });
   if (error) return { error: "Não foi possível salvar o provento." };
   revalidatePath("/investments/provents");
   return { success: "Provento registrado." };
