@@ -409,6 +409,7 @@ export function InvoiceManager({
   categories,
   isClosed,
   notes,
+  recurringExpenses,
 }: {
   cards: CreditCardListItem[];
   selectedCardId: string;
@@ -420,6 +421,11 @@ export function InvoiceManager({
   categories: { name: string; iconKey: string | null }[];
   isClosed: boolean;
   notes: InvoiceCycleNote[];
+  recurringExpenses: Array<{
+    id: string;
+    description: string;
+    iconKey: string | null;
+  }>;
 }) {
   const router = useRouter();
   const { notify } = useToast();
@@ -437,6 +443,7 @@ export function InvoiceManager({
   const [settling, setSettling] = useState<PurchaseSplit | null>(null);
   const [includeExpense, setIncludeExpense] = useState(false);
   const [expenseCategory, setExpenseCategory] = useState("");
+  const [recurringExpenseId, setRecurringExpenseId] = useState("");
   const [busy, startTransition] = useTransition();
   const selectedCard = cards.find((card) => card.id === selectedCardId);
   const people = useMemo(
@@ -536,10 +543,16 @@ export function InvoiceManager({
     split: PurchaseSplit,
     isPaid: boolean,
     category?: string,
+    recurringExpenseId?: string,
   ) {
     if (!split.id) return;
     startTransition(async () => {
-      const result = await setSplitPayment(split.id!, isPaid, category);
+      const result = await setSplitPayment(
+        split.id!,
+        isPaid,
+        category,
+        recurringExpenseId,
+      );
       if (result.error) notify("error", result.error);
       else {
         notify(
@@ -553,6 +566,7 @@ export function InvoiceManager({
       setSettling(null);
       setIncludeExpense(false);
       setExpenseCategory("");
+      setRecurringExpenseId("");
     });
   }
 
@@ -832,7 +846,7 @@ export function InvoiceManager({
                           </p>
                         </button>
                         <div className="flex items-center gap-2">
-                          <strong className="mr-1 inline-flex w-24 justify-center whitespace-nowrap rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold tabular-nums text-emerald-200">
+                          <strong className="mr-1 inline-flex w-24 justify-center rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold whitespace-nowrap text-emerald-200 tabular-nums">
                             {formatCents(centsOrZero(purchase.amount))}
                           </strong>
                           {!isClosed ? (
@@ -897,6 +911,7 @@ export function InvoiceManager({
                                   setSettling(split);
                                   setIncludeExpense(false);
                                   setExpenseCategory("");
+                                  setRecurringExpenseId("");
                                 } else updateSplitPayment(split, !split.paidAt);
                               }}
                               type="button"
@@ -1018,47 +1033,105 @@ export function InvoiceManager({
                     }
                     type="checkbox"
                   />
-                  Criar despesa vinculada à compra
+                  Criar ou vincular uma despesa à compra
                 </label>
                 {includeExpense ? (
-                  <div className="mt-4 space-y-2">
-                    <span
-                      className="block text-sm text-slate-200"
-                      id="payment-category-label"
-                    >
-                      Categoria da despesa
-                    </span>
-                    <DarkSelect
-                      ariaLabelledBy="payment-category-label"
-                      name="payment-category"
-                      onChange={setExpenseCategory}
-                      options={categories.map((category) => ({
-                        value: category.name,
-                        label: category.name,
-                      }))}
-                      renderOptionPrefix={(option) => (
-                        <ExpenseCategoryIcon
-                          compact
-                          iconKey={
-                            categories.find(
-                              (category) => category.name === option.value,
-                            )?.iconKey
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <span
+                        className="block text-sm text-slate-200"
+                        id="recurring-expense-label"
+                      >
+                        Conta recorrente{" "}
+                        <span className="text-slate-500">(opcional)</span>
+                      </span>
+                      <DarkSelect
+                        ariaLabelledBy="recurring-expense-label"
+                        name="recurring-expense"
+                        onChange={setRecurringExpenseId}
+                        options={[
+                          {
+                            value: "",
+                            label: "Criar uma nova despesa",
+                          },
+                          ...recurringExpenses.map((expense) => ({
+                            value: expense.id,
+                            label: expense.description,
+                          })),
+                        ]}
+                        placeholder="Criar uma nova despesa"
+                        renderOptionPrefix={(option) => {
+                          const expense = recurringExpenses.find(
+                            (item) => item.id === option.value,
+                          );
+                          return expense ? (
+                            <ExpenseCategoryIcon
+                              compact
+                              iconKey={expense.iconKey}
+                              name={expense.description}
+                            />
+                          ) : (
+                            <Icon
+                              className="size-4 shrink-0 text-slate-400"
+                              name="plus"
+                            />
+                          );
+                        }}
+                        value={recurringExpenseId}
+                      />
+                      {recurringExpenseId ? (
+                        <p className="text-xs text-emerald-300">
+                          A conta recorrente será atualizada como paga, sem
+                          criar uma nova despesa.
+                        </p>
+                      ) : null}
+                      {!recurringExpenses.length ? (
+                        <p className="text-xs text-slate-500">
+                          Nenhuma conta recorrente pendente disponível.
+                        </p>
+                      ) : null}
+                    </div>
+                    {!recurringExpenseId ? (
+                      <div className="space-y-2">
+                        <span
+                          className="block text-sm text-slate-200"
+                          id="payment-category-label"
+                        >
+                          Categoria da despesa
+                        </span>
+                        <DarkSelect
+                          ariaLabelledBy="payment-category-label"
+                          name="payment-category"
+                          onChange={setExpenseCategory}
+                          options={categories.map((category) => ({
+                            value: category.name,
+                            label: category.name,
+                          }))}
+                          renderOptionPrefix={(option) => (
+                            <ExpenseCategoryIcon
+                              compact
+                              iconKey={
+                                categories.find(
+                                  (category) => category.name === option.value,
+                                )?.iconKey
+                              }
+                              name={option.label}
+                            />
+                          )}
+                          placeholder={
+                            categories.length
+                              ? "Selecione uma categoria"
+                              : "Nenhuma categoria disponível"
                           }
-                          name={option.label}
+                          value={expenseCategory}
                         />
-                      )}
-                      placeholder={
-                        categories.length
-                          ? "Selecione uma categoria"
-                          : "Nenhuma categoria disponível"
-                      }
-                      value={expenseCategory}
-                    />
-                    {!categories.length ? (
-                      <p className="text-xs text-amber-200">
-                        Cadastre uma categoria de despesa antes de criar a
-                        despesa vinculada.
-                      </p>
+                        {!categories.length ? (
+                          <p className="text-xs text-amber-200">
+                            Cadastre uma categoria de despesa antes de criar a
+                            despesa vinculada.
+                          </p>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 ) : null}
@@ -1077,14 +1150,22 @@ export function InvoiceManager({
                 className="rounded-xl bg-[#00e599] px-4 py-2.5 text-sm font-semibold text-[#003822] disabled:opacity-50"
                 disabled={
                   busy ||
-                  (!settling.paidAt && includeExpense && !expenseCategory)
+                  (!settling.paidAt &&
+                    includeExpense &&
+                    !recurringExpenseId &&
+                    !expenseCategory)
                 }
                 onClick={() =>
                   updateSplitPayment(
                     settling,
                     !settling.paidAt,
                     !settling.paidAt && includeExpense
-                      ? expenseCategory
+                      ? recurringExpenseId
+                        ? undefined
+                        : expenseCategory
+                      : undefined,
+                    !settling.paidAt && includeExpense
+                      ? recurringExpenseId || undefined
                       : undefined,
                   )
                 }

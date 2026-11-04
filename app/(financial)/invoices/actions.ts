@@ -267,10 +267,16 @@ export async function setSplitPayment(
   splitId: string,
   isPaid: boolean,
   category?: string,
+  recurringExpenseId?: string,
 ): Promise<PurchaseActionState> {
   const parsedId = z.string().uuid().safeParse(splitId);
+  const parsedRecurringExpenseId = recurringExpenseId
+    ? z.string().uuid().safeParse(recurringExpenseId)
+    : null;
   if (!parsedId.success || typeof isPaid !== "boolean")
     return { error: "Parcela inválida." };
+  if (parsedRecurringExpenseId && !parsedRecurringExpenseId.success)
+    return { error: "Despesa recorrente inválida." };
   if (
     category !== undefined &&
     (typeof category !== "string" ||
@@ -287,6 +293,7 @@ export async function setSplitPayment(
     p_split_id: parsedId.data,
     p_is_paid: isPaid,
     p_category: category?.trim() || null,
+    p_recurring_expense_id: parsedRecurringExpenseId?.data ?? null,
   });
   if (error)
     return { error: "Não foi possível atualizar o pagamento desta parcela." };

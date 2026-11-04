@@ -46,42 +46,62 @@ export default async function CardInvoicePage({
   let participants: ParticipantListItem[] = [];
   let purchases: PurchaseListItem[] = [];
   let categories: { name: string; iconKey: string | null }[] = [];
+  let recurringExpenses: Array<{
+    id: string;
+    description: string;
+    iconKey: string | null;
+  }> = [];
   let notes: InvoiceCycleNote[] = [];
   let isClosed = false;
   let ownerName = "Você";
   let loadError = false;
 
   if (typeof userId === "string") {
-    const [cardResult, participantResult, profileResult, categoryResult] =
-      await Promise.all([
-        supabase
-          .from("credit_cards")
-          .select("id, bank_name, name, due_day")
-          .eq("user_id", userId)
-          .order("due_day", { ascending: true, nullsFirst: false })
-          .order("name", { ascending: true }),
-        supabase
-          .from("credit_card_participants")
-          .select("id, name, is_active")
-          .eq("user_id", userId)
-          .eq("is_owner", false)
-          .order("name"),
-        supabase
-          .from("profiles")
-          .select("credit_card_owner_name, display_name")
-          .eq("id", userId)
-          .maybeSingle(),
-        supabase
-          .from("expense_categories")
-          .select("name, icon_key, is_active")
-          .eq("user_id", userId)
-          .order("name"),
-      ]);
+    const [
+      cardResult,
+      participantResult,
+      profileResult,
+      categoryResult,
+      recurringExpenseResult,
+    ] = await Promise.all([
+      supabase
+        .from("credit_cards")
+        .select("id, bank_name, name, due_day")
+        .eq("user_id", userId)
+        .order("due_day", { ascending: true, nullsFirst: false })
+        .order("name", { ascending: true }),
+      supabase
+        .from("credit_card_participants")
+        .select("id, name, is_active")
+        .eq("user_id", userId)
+        .eq("is_owner", false)
+        .order("name"),
+      supabase
+        .from("profiles")
+        .select("credit_card_owner_name, display_name")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase
+        .from("expense_categories")
+        .select("name, icon_key, is_active")
+        .eq("user_id", userId)
+        .order("name"),
+      supabase
+        .from("expenses")
+        .select("id,description,category,recurrence_group_id")
+        .eq("user_id", userId)
+        .eq("is_recurring", true)
+        .eq("status", "PENDING")
+        .is("credit_card_purchase_id", null)
+        .order("description")
+        .order("due_date"),
+    ]);
     loadError = Boolean(
       cardResult.error ||
       participantResult.error ||
       profileResult.error ||
-      categoryResult.error,
+      categoryResult.error ||
+      recurringExpenseResult.error,
     );
     cards = (cardResult.data ?? []).map((card) => ({
       id: card.id,
@@ -104,6 +124,24 @@ export default async function CardInvoicePage({
         name: category.name,
         iconKey: category.icon_key,
       }));
+    const seenRecurringGroups = new Set<string>();
+    recurringExpenses = (recurringExpenseResult.data ?? []).flatMap(
+      (expense) => {
+        const groupKey = expense.recurrence_group_id ?? expense.id;
+        if (seenRecurringGroups.has(groupKey)) return [];
+        seenRecurringGroups.add(groupKey);
+        return [
+          {
+            id: expense.id,
+            description: expense.description,
+            iconKey:
+              (categoryResult.data ?? []).find(
+                (category) => category.name === expense.category,
+              )?.icon_key ?? null,
+          },
+        ];
+      },
+    );
     const selectedCard = cards.find((card) => card.id === cardId);
     if (selectedCard) {
       const [purchaseResult, closureResult, noteResult] = await Promise.all([
@@ -195,6 +233,7 @@ export default async function CardInvoicePage({
       categories={categories}
       isClosed={isClosed}
       notes={notes}
+      recurringExpenses={recurringExpenses}
     />
   );
 }
