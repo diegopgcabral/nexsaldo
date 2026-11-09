@@ -64,7 +64,7 @@ export default async function InvestmentPortfolioPage() {
     const asset = assetsById.get(position.asset_id);
     if (!asset) return [];
     const institutionId =
-      asset.institution_id ?? institutionIdByAssetId.get(asset.id);
+      institutionIdByAssetId.get(asset.id) ?? asset.institution_id;
     return [
       {
         assetId: asset.id,

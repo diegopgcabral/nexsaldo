@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/financial/icons";
@@ -8,6 +10,14 @@ import {
   PortfolioPositionTable,
   type PortfolioPosition,
 } from "@/components/investments/portfolio-position-table";
+
+type PortfolioOverviewPosition = Pick<
+  PortfolioPosition,
+  "assetClass" | "currentAmount" | "institution" | "investedAmount"
+> & {
+  usdCurrentAmount?: number;
+  usdInvestedAmount?: number;
+};
 
 const groups = [
   { assetClass: "STOCK", label: "Ações" },
@@ -31,6 +41,394 @@ const fixedIncomeSubtypeLabels: Record<string, string> = {
   LCI: "LCI",
   OTHER: "Outros",
 };
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  currency: "BRL",
+  style: "currency",
+});
+
+function formatCurrency(value: number) {
+  return currencyFormatter.format(value);
+}
+
+type InstitutionMark = {
+  className: string;
+  image?: string;
+  label: string;
+};
+
+function institutionMark(name: string): InstitutionMark {
+  const normalized = name.toLocaleLowerCase("pt-BR");
+  if (normalized.includes("avenue")) {
+    return {
+      className: "overflow-hidden bg-[#00372d] text-white",
+      image: "/brand/institutions/avenue.png",
+      label: "Avenue",
+    };
+  }
+  if (normalized.includes("nubank") || normalized.includes("nu invest")) {
+    return { className: "bg-white text-[#820ad1]", label: "Nu" };
+  }
+  if (normalized.includes("xp")) {
+    return { className: "bg-black text-white", label: "XP" };
+  }
+  if (normalized.includes("inter")) {
+    return { className: "bg-[#ff7a00] text-white", label: "in" };
+  }
+  if (normalized.includes("btg")) {
+    return { className: "bg-[#2d65b2] text-white", label: "BTG" };
+  }
+  return {
+    className: "bg-emerald-400/20 text-emerald-200",
+    label: name.trim().slice(0, 2).toLocaleUpperCase("pt-BR"),
+  };
+}
+
+const assetClassLabels: Record<string, string> = {
+  BDR: "BDRs",
+  BRAZILIAN_ETF: "ETFs brasileiros",
+  CASH_BOX: "Caixinhas",
+  CRYPTO: "Cripto",
+  FII: "FIIs",
+  FIXED_INCOME: "Renda fixa",
+  FUND: "Fundos",
+  PENSION: "Previdência",
+  STOCK: "Ações",
+  US_ETF: "ETFs americanos",
+};
+
+function isFixedIncomeClass(assetClass: string) {
+  return assetClass === "FIXED_INCOME" || assetClass === "CASH_BOX";
+}
+
+function donutPoint(angle: number, radius: number) {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    x: 100 + radius * Math.cos(radians),
+    y: 100 - radius * Math.sin(radians),
+  };
+}
+
+function portfolioArc(start: number, end: number) {
+  const outerStart = donutPoint(start, 84);
+  const outerEnd = donutPoint(end, 84);
+  const innerEnd = donutPoint(end, 49);
+  const innerStart = donutPoint(start, 49);
+  const largeArc = start - end > 180 ? 1 : 0;
+
+  return [
+    `M ${outerStart.x.toFixed(3)} ${outerStart.y.toFixed(3)}`,
+    `A 84 84 0 ${largeArc} 1 ${outerEnd.x.toFixed(3)} ${outerEnd.y.toFixed(3)}`,
+    `L ${innerEnd.x.toFixed(3)} ${innerEnd.y.toFixed(3)}`,
+    `A 49 49 0 ${largeArc} 0 ${innerStart.x.toFixed(3)} ${innerStart.y.toFixed(3)}`,
+    "Z",
+  ].join(" ");
+}
+
+export function PortfolioOverviewBoard({
+  institutions,
+  isValuesVisible,
+  positions,
+  usdBrl,
+}: {
+  institutions: string[];
+  isValuesVisible: boolean;
+  positions: PortfolioOverviewPosition[];
+  usdBrl?: number;
+}) {
+  const [selectedInstitution, setSelectedInstitution] = useState<string | null>(
+    null,
+  );
+  const filteredPositions = useMemo(
+    () =>
+      selectedInstitution
+        ? positions.filter(
+            (position) => position.institution === selectedInstitution,
+          )
+        : positions,
+    [positions, selectedInstitution],
+  );
+  const overview = useMemo(() => {
+    const positivePositions = filteredPositions.filter(
+      (position) => position.currentAmount > 0,
+    );
+    const fixedIncome = positivePositions
+      .filter((position) => isFixedIncomeClass(position.assetClass))
+      .reduce((total, position) => total + position.currentAmount, 0);
+    const variableIncome = positivePositions
+      .filter((position) => !isFixedIncomeClass(position.assetClass))
+      .reduce((total, position) => total + position.currentAmount, 0);
+    const investedAmount = positivePositions.reduce(
+      (total, position) => total + position.investedAmount,
+      0,
+    );
+    const currentAmount = fixedIncome + variableIncome;
+    const usdCurrentAmount = filteredPositions.reduce(
+      (total, position) => total + (position.usdCurrentAmount ?? 0),
+      0,
+    );
+    const usdInvestedAmount = filteredPositions.reduce(
+      (total, position) => total + (position.usdInvestedAmount ?? 0),
+      0,
+    );
+    const assetClasses = [...new Set(filteredPositions.map((position) => position.assetClass))]
+      .map((assetClass) => ({
+        label: assetClassLabels[assetClass] ?? assetClass,
+        value: filteredPositions
+          .filter((position) => position.assetClass === assetClass)
+          .reduce((total, position) => total + position.currentAmount, 0),
+      }))
+      .filter((item) => item.value > 0)
+      .sort((first, second) => second.value - first.value);
+
+    return {
+      assetClasses,
+      currentAmount,
+      investedAmount,
+      usdCurrentAmount,
+      usdInvestedAmount,
+      segments: [
+        { color: "#00e599", label: "Renda variável", value: variableIncome },
+        { color: "#6574ff", label: "Renda fixa", value: fixedIncome },
+      ].filter((segment) => segment.value > 0),
+    };
+  }, [filteredPositions]);
+
+  const arcs = overview.segments.reduce<{
+    arcs: Array<(typeof overview.segments)[number] & {
+      end: number;
+      key: string;
+      start: number;
+    }>;
+    angle: number;
+  }>(
+    (result, segment, index) => {
+      const span =
+        overview.currentAmount > 0
+          ? (segment.value / overview.currentAmount) * 180
+          : 0;
+      const gap = overview.segments.length > 1 ? Math.min(2, span / 3) : 0;
+      const start = result.angle - gap / 2;
+      const end = result.angle - span + gap / 2;
+
+      return {
+        angle: result.angle - span,
+        arcs: [
+          ...result.arcs,
+          { ...segment, end, key: `${segment.label}-${index}`, start },
+        ],
+      };
+    },
+    { angle: 180, arcs: [] },
+  ).arcs;
+
+  const performance = overview.currentAmount - overview.investedAmount;
+  const currency = (value: number) =>
+    isValuesVisible ? formatCurrency(value) : "••••••••";
+  const formatPercentage = (value: number) =>
+    isValuesVisible
+      ? `${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% da carteira`
+      : "••••";
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-white/8 bg-[#191c21] shadow-[0_18px_55px_rgba(0,0,0,0.16)]">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/8 px-5 py-4 sm:px-6">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Minha carteira</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Visão consolidada de todos os investimentos cadastrados.
+          </p>
+        </div>
+        <Link
+          className="inline-flex items-center gap-2 text-xs font-bold tracking-[.12em] text-emerald-300 uppercase transition hover:text-emerald-200"
+          href="/investments/portfolio"
+        >
+          Ir para minha carteira <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto px-5 py-3 sm:px-6">
+        <button
+          className={`shrink-0 rounded-xl px-4 py-2 text-xs font-bold transition ${
+            !selectedInstitution
+              ? "bg-emerald-400 text-[#003822]"
+              : "bg-white/7 text-slate-300 hover:bg-white/10"
+          }`}
+          onClick={() => setSelectedInstitution(null)}
+          type="button"
+        >
+          Total investido
+        </button>
+        {institutions.map((institution) => {
+          const mark = institutionMark(institution);
+          return (
+            <button
+              className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                selectedInstitution === institution
+                  ? "bg-emerald-400 text-[#003822]"
+                  : "bg-white/7 text-slate-300 hover:bg-white/10"
+              }`}
+              key={institution}
+              onClick={() => setSelectedInstitution(institution)}
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                className={`flex size-5 items-center justify-center rounded-full text-[8px] font-black tracking-[-0.06em] ${mark.className}`}
+              >
+                {mark.image ? (
+                  <Image
+                    alt=""
+                    className="size-full object-cover"
+                    height={20}
+                    src={mark.image}
+                    width={20}
+                  />
+                ) : (
+                  mark.label
+                )}
+              </span>
+              {institution}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-4 border-t border-white/8 px-5 pb-4 pt-3 sm:px-6 lg:grid-cols-[minmax(240px,0.8fr)_minmax(340px,1.35fr)] lg:items-center">
+        <div className="mx-auto w-full max-w-[320px]">
+          {arcs.length ? (
+            <svg
+              aria-label="Distribuição entre renda variável e renda fixa"
+              className="mx-auto block w-full max-w-[390px] overflow-visible"
+              role="img"
+              viewBox="0 0 200 112"
+            >
+              {arcs.map((arc) => (
+                <path d={portfolioArc(arc.start, arc.end)} fill={arc.color} key={arc.key} />
+              ))}
+            </svg>
+          ) : (
+            <div className="flex h-40 items-center justify-center text-sm text-slate-500">
+              Nenhum saldo em carteira para exibir.
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2 pb-1">
+          {overview.segments.map((segment) => {
+            const allocationPercentage =
+              overview.currentAmount > 0
+                ? (segment.value / overview.currentAmount) * 100
+                : 0;
+            return (
+              <div
+                className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-white/8 py-2"
+                key={segment.label}
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-10 rounded-full"
+                  style={{ backgroundColor: segment.color }}
+                />
+                <span className="text-sm text-slate-300">{segment.label}</span>
+                <span className="text-right">
+                  <strong className="block text-sm font-semibold text-white">
+                    {currency(segment.value)}
+                  </strong>
+                  <small className="text-xs font-medium text-slate-400">
+                    {formatPercentage(allocationPercentage)}
+                  </small>
+                </span>
+              </div>
+            );
+          })}
+          <div className="grid grid-cols-2 gap-3 pt-1 text-sm">
+            <div className="rounded-xl border border-white/7 bg-[#15181d] px-3 py-2">
+              <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
+                Valor aplicado
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-200">
+                {currency(overview.investedAmount)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/7 bg-[#15181d] px-3 py-2">
+              <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
+                Resultado
+              </p>
+              <p
+                className={`mt-1 text-sm font-semibold ${
+                  performance >= 0 ? "text-emerald-300" : "text-rose-300"
+                }`}
+              >
+                {isValuesVisible ? `${performance >= 0 ? "+" : ""}${formatCurrency(performance)}` : "••••••••"}
+              </p>
+            </div>
+          </div>
+          {overview.usdCurrentAmount ? (
+            <div className="rounded-xl border border-sky-300/15 bg-sky-400/[0.04] px-3 py-2.5 text-sm">
+              <p className="font-medium text-sky-200">ETFs americanos</p>
+              <p className="mt-1 text-slate-300">
+                {isValuesVisible ? new Intl.NumberFormat("en-US", {
+                  currency: "USD",
+                  style: "currency",
+                })
+                  .format(overview.usdCurrentAmount)
+                  .replace("$", "US$ ") : "••••••"}
+                {" · "}
+                <span className="font-semibold text-white">
+                  {isValuesVisible && usdBrl
+                    ? formatCurrency(
+                        filteredPositions
+                          .filter((position) => position.assetClass === "US_ETF")
+                          .reduce(
+                            (total, position) => total + position.currentAmount,
+                            0,
+                          ),
+                      )
+                    : isValuesVisible ? "Conversão indisponível" : "••••••"}
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Aplicado: {isValuesVisible ? new Intl.NumberFormat("en-US", {
+                  currency: "USD",
+                  style: "currency",
+                })
+                  .format(overview.usdInvestedAmount)
+                  .replace("$", "US$ ") : "••••••"}
+                {isValuesVisible && usdBrl
+                  ? ` · dólar a ${formatCurrency(usdBrl)}`
+                  : isValuesVisible ? " · conversão do dólar indisponível" : ""}
+              </p>
+            </div>
+          ) : null}
+          {overview.assetClasses.length ? (
+            <div className="rounded-xl border border-white/7 bg-[#15181d] p-2.5">
+              <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
+                Detalhamento do total
+              </p>
+              <div className="mt-2 divide-y divide-white/6">
+                {overview.assetClasses.map((assetClass) => (
+                  <div
+                    className="flex items-center justify-between gap-3 py-1 text-xs text-slate-400"
+                    key={assetClass.label}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span aria-hidden="true" className="size-1.5 rounded-full bg-slate-500" />
+                      {assetClass.label}
+                    </span>
+                    <strong className="whitespace-nowrap font-semibold text-slate-200">
+                      {currency(assetClass.value)}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function PortfolioView({
   assets,
