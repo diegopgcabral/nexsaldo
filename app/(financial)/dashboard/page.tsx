@@ -75,10 +75,9 @@ export default async function DashboardPage({
       ] = await Promise.all([
         supabase
           .from("incomes")
-          .select("id, description, amount, received_on, category, notes")
+          .select("id, description, amount, received_on, cycle_month, category, notes")
           .eq("user_id", userId)
-          .gte("received_on", startsOn)
-          .lt("received_on", endsBefore)
+          .eq("cycle_month", `${month}-01`)
           .order("received_on"),
         supabase
           .from("expenses")
@@ -100,6 +99,7 @@ export default async function DashboardPage({
         description: income.description,
         amount: income.amount,
         receivedOn: income.received_on,
+        cycleMonth: income.cycle_month,
         category: income.category,
         notes: income.notes,
       }));
@@ -296,10 +296,12 @@ function UpcomingExpenses({
         </div>
       </div>
       {dueExpenses.length ? (
-        <div className="category-scroll mt-5 max-h-[22rem] divide-y divide-white/5 overflow-y-auto pr-2">
+        <div className="category-scroll mt-5 max-h-[22rem] divide-y divide-white/5 overflow-y-auto pr-5">
           {dueExpenses.map((expense) => (
-            <div
-              className="flex items-center justify-between gap-4 py-3"
+            <Link
+              aria-label={`Editar ${expense.description}`}
+              className="group flex items-center justify-between gap-4 rounded-xl py-3 transition hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+              href={`/expenses?month=${month}&edit=${expense.id}`}
               key={expense.id}
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -309,7 +311,7 @@ function UpcomingExpenses({
                   name={expense.category}
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">
+                  <p className="truncate text-sm font-semibold text-white group-hover:text-emerald-200">
                     {expense.description}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
@@ -317,13 +319,13 @@ function UpcomingExpenses({
                   </p>
                 </div>
               </div>
-              <div className="shrink-0 text-right">
+              <div className="mr-2 shrink-0 text-right">
                 <p className="font-semibold text-white">
                   {formatCents(numericAmountToCents(expense.referenceAmount))}
                 </p>
                 <span className="text-xs text-amber-300">Pendente</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (

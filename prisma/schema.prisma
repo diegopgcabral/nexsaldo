@@ -35,6 +35,7 @@ model Income {
   description String
   amount      Decimal  @db.Decimal(14, 2)
   receivedOn  DateTime @map("received_on") @db.Date
+  cycleMonth  DateTime @map("cycle_month") @db.Date
   category    String
   notes       String?
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -42,6 +43,7 @@ model Income {
   user        Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, receivedOn(sort: Desc)])
+  @@index([userId, cycleMonth(sort: Desc), receivedOn(sort: Desc)])
   @@map("incomes")
 }
 
@@ -60,10 +62,27 @@ model Expense {
   createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   user                 Profile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentProof         ExpensePaymentProof?
 
   @@index([userId, dueDate(sort: Desc)])
   @@index([userId, status, dueDate(sort: Desc)])
   @@map("expenses")
+}
+
+model ExpensePaymentProof {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expenseId        String   @unique @map("expense_id") @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  storagePath      String   @unique @map("storage_path")
+  originalFileName String   @map("original_file_name")
+  contentType      String   @map("content_type")
+  sizeBytes        Int      @map("size_bytes")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  expense          Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("expense_payment_proofs")
 }
 
 model CreditCard {

@@ -11,6 +11,10 @@ export type ExpenseListItem = {
   status: ExpenseStatus;
   notes: string | null;
   isRecurring: boolean;
+  recurringExpenseId?: string | null;
+  paymentProof?: {
+    originalFileName: string;
+  } | null;
 };
 
 function toCents(value: string | number) {

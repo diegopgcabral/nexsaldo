@@ -3,6 +3,7 @@
 import {
   useActionState,
   useEffect,
+  useId,
   useMemo,
   useState,
   useTransition,
@@ -32,6 +33,7 @@ type Props = {
   categories: string[];
   categoryIcons: Record<string, string | null>;
   expenses: ExpenseListItem[];
+  initialEditingExpense?: ExpenseListItem;
   month: string;
   totals: { plannedCents: bigint; paidCents: bigint; openCents: bigint };
 };
@@ -50,7 +52,7 @@ type ExpenseSortKey = (typeof sortableColumns)[number]["key"];
 type SortDirection = "asc" | "desc";
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(
+  return new Intl.DateTimeFormat("pt-BR").format(
     new Date(`${date}T12:00:00`),
   );
 }
@@ -88,6 +90,8 @@ function ExpenseForm({
   const [categoryOptions, setCategoryOptions] = useState(categories);
   const [categoryError, setCategoryError] = useState<string>();
   const [isRecurring, setIsRecurring] = useState(expense?.isRecurring ?? false);
+  const [selectedPaymentProofName, setSelectedPaymentProofName] = useState<string>();
+  const paymentProofInputId = useId();
   const [creatingCategory, startCreatingCategory] = useTransition();
   const router = useRouter();
   const { notify } = useToast();
@@ -269,7 +273,8 @@ function ExpenseForm({
             Repetir mensalmente
           </span>
           <span className="mt-0.5 block text-xs leading-5 text-slate-400">
-            Ao salvar, a despesa deste ciclo e a do próximo ciclo serão criadas.
+            A conta terá uma ocorrência por mês. Alterações atualizam apenas as
+            próximas ocorrências pendentes.
           </span>
         </span>
       </label>
@@ -307,30 +312,122 @@ function ExpenseForm({
         />
       </label>
       {isRecurring ? (
-      <fieldset>
-        <legend className="income-label mb-2">Status do pagamento</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {statuses.map((item) => (
-            <label
-              className={`cursor-pointer rounded-xl border p-3 text-center text-xs transition ${status === item ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-300" : "border-white/5 bg-[#111319] text-slate-400"}`}
-              key={item}
-            >
-              <input
-                checked={status === item}
-                className="sr-only"
-                name="status"
-                onChange={() => setStatus(item)}
-                type="radio"
-                value={item}
-              />
-              <span>{formatExpenseStatus(item)}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+        <fieldset>
+          <legend className="income-label mb-2">Status do pagamento</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {statuses.map((item) => (
+              <label
+                className={`cursor-pointer rounded-xl border p-3 text-center text-xs transition ${status === item ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-300" : "border-white/5 bg-[#111319] text-slate-400"}`}
+                key={item}
+              >
+                <input
+                  checked={status === item}
+                  className="sr-only"
+                  name="status"
+                  onChange={() => setStatus(item)}
+                  type="radio"
+                  value={item}
+                />
+                <span>{formatExpenseStatus(item)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       ) : (
         <input name="status" type="hidden" value="PAID" />
       )}
+      <div className="space-y-2 rounded-xl border border-white/8 bg-[#111319] p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <span className="income-label block">
+            Comprovante de pagamento{" "}
+            <span className="font-normal text-slate-500">(opcional)</span>
+          </span>
+            <span className="mt-1 block text-xs text-slate-500">
+              PDF, JPG, PNG ou WEBP, com até 5 MB.
+            </span>
+          </div>
+          {status === "PAID" ? (
+            <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+              Pronto para anexar
+            </span>
+          ) : (
+            <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+              Disponível ao pagar
+            </span>
+          )}
+        </div>
+        <div
+          className={`flex flex-wrap items-center gap-3 rounded-xl border border-dashed p-3 ${status === "PAID" ? "border-emerald-400/25 bg-emerald-400/5" : "border-white/8 bg-black/10 opacity-60"}`}
+        >
+          <input
+            accept="application/pdf,image/jpeg,image/png,image/webp"
+            className="sr-only"
+            disabled={status !== "PAID"}
+            id={paymentProofInputId}
+            name="paymentProof"
+            onChange={(event) =>
+              setSelectedPaymentProofName(event.target.files?.[0]?.name)
+            }
+            type="file"
+          />
+          <label
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${status === "PAID" ? "cursor-pointer bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/20" : "cursor-not-allowed bg-white/5 text-slate-500"}`}
+            htmlFor={paymentProofInputId}
+          >
+            <Icon className="size-4" name="receipt" />
+            {selectedPaymentProofName ? "Trocar arquivo" : "Selecionar arquivo"}
+          </label>
+          {selectedPaymentProofName ? (
+            <span className="inline-flex min-w-0 items-center gap-2 rounded-lg bg-[#0b0e13] px-3 py-2 text-sm text-slate-200">
+              <Icon className="size-4 shrink-0 text-emerald-300" name="check" />
+              <span className="max-w-55 truncate">{selectedPaymentProofName}</span>
+            </span>
+          ) : (
+            <span className="text-xs text-slate-500">
+              {status === "PAID"
+                ? "Nenhum arquivo selecionado"
+                : "Marque como paga para anexar"}
+            </span>
+          )}
+        </div>
+        {expense?.paymentProof ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2.5">
+            <div className="flex min-w-0 items-center gap-1">
+              <a
+                aria-label={`Visualizar ${expense.paymentProof.originalFileName}`}
+                className="rounded-lg p-2 text-emerald-300 hover:bg-white/5 hover:text-emerald-200"
+                href={`/api/expenses/${expense.id}/payment-proof`}
+                rel="noreferrer"
+                target="_blank"
+                title="Visualizar comprovante"
+              >
+                <Icon className="size-4" name="eye" />
+              </a>
+              <a
+                className="inline-flex min-w-0 items-center gap-2 text-sm text-emerald-300 hover:text-emerald-200"
+                href={`/api/expenses/${expense.id}/payment-proof?download=1`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <Icon className="size-4 shrink-0" name="download" />
+                <span className="truncate">{expense.paymentProof.originalFileName}</span>
+              </a>
+            </div>
+            <label
+              className={`flex items-center gap-2 text-xs text-slate-400 ${status === "PAID" ? "cursor-pointer" : "cursor-not-allowed opacity-45"}`}
+            >
+              <input
+                className="size-3.5 accent-emerald-400"
+                disabled={status !== "PAID"}
+                name="removePaymentProof"
+                type="checkbox"
+              />
+              Remover
+            </label>
+          </div>
+        ) : null}
+      </div>
       <label className="space-y-1.5">
         <span className="income-label">
           Observações{" "}
@@ -369,11 +466,14 @@ export function ExpenseManager({
   categories,
   categoryIcons,
   expenses,
+  initialEditingExpense,
   month,
   totals,
 }: Props) {
-  const [drawer, setDrawer] = useState(false);
-  const [editing, setEditing] = useState<ExpenseListItem>();
+  const [drawer, setDrawer] = useState(Boolean(initialEditingExpense));
+  const [editing, setEditing] = useState<ExpenseListItem | undefined>(
+    initialEditingExpense,
+  );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"ALL" | ExpenseListItem["status"]>(
     "ALL",
@@ -656,6 +756,30 @@ export function ExpenseManager({
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-1">
+                      {item.paymentProof ? (
+                        <>
+                          <a
+                            aria-label={`Visualizar comprovante de ${item.description}`}
+                            className="rounded-lg p-2 text-emerald-300 hover:bg-[#272a30] hover:text-emerald-200"
+                            href={`/api/expenses/${item.id}/payment-proof`}
+                            rel="noreferrer"
+                            target="_blank"
+                            title="Visualizar comprovante"
+                          >
+                            <Icon className="size-4" name="eye" />
+                          </a>
+                          <a
+                            aria-label={`Baixar comprovante de ${item.description}`}
+                            className="rounded-lg p-2 text-emerald-300 hover:bg-[#272a30] hover:text-emerald-200"
+                            href={`/api/expenses/${item.id}/payment-proof?download=1`}
+                            rel="noreferrer"
+                            target="_blank"
+                            title="Baixar comprovante"
+                          >
+                            <Icon className="size-4" name="download" />
+                          </a>
+                        </>
+                      ) : null}
                       <button
                         aria-label={`Editar ${item.description}`}
                         className="rounded-lg p-2 text-slate-400 hover:bg-[#272a30] hover:text-white"
@@ -742,7 +866,12 @@ function DeleteExpenseButton({
         notify("error", result.error);
         return;
       }
-      notify("success", "Despesa excluída.");
+      notify(
+        "success",
+        expense.recurringExpenseId
+          ? "Conta recorrente cancelada. O histórico foi preservado."
+          : "Despesa excluída.",
+      );
       router.refresh();
     });
   }

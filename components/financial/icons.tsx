@@ -27,6 +27,8 @@ type IconName =
   | "pause"
   | "person"
   | "receipt"
+  | "download"
+  | "eye"
   | "refresh"
   | "search"
   | "settings";
@@ -127,6 +129,13 @@ export function Icon({ name, className = "size-5" }: IconProps) {
       <>
         <path d="M6 3h12v18l-2.5-1.5L12 21l-3.5-1.5L6 21V3Z" />
         <path d="M9 8h6M9 12h6M9 16h4" />
+      </>
+    ),
+    download: <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" />,
+    eye: (
+      <>
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+        <circle cx="12" cy="12" r="2.5" />
       </>
     ),
     refresh: (

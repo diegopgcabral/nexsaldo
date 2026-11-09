@@ -21,8 +21,10 @@ import {
   incomeCategories,
   isIncomeCategory,
 } from "@/lib/financial/income-category";
+import { addMonths, formatCycleReference } from "@/lib/financial/month";
 
 type IncomeManagerProps = {
+  cycleStartDay: number;
   incomes: IncomeListItem[];
   month: string;
   totalCents: bigint;
@@ -50,12 +52,6 @@ function incomeCategoryIcon(category: string) {
     default:
       return "more" as const;
   }
-}
-
-function formatIncomeDate(date: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(
-    new Date(`${date}T12:00:00`),
-  );
 }
 
 function formatCurrencyInput(value: string | number) {
@@ -97,11 +93,13 @@ function CurrencyInput({ defaultValue }: { defaultValue?: string | number }) {
 function IncomeForm({
   income,
   month,
+  cycleStartDay,
   onCancel,
   onSaved,
 }: {
   income?: IncomeListItem;
   month: string;
+  cycleStartDay: number;
   onCancel: () => void;
   onSaved: () => void;
 }) {
@@ -109,6 +107,9 @@ function IncomeForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const [category, setCategory] = useState(() =>
     income && isIncomeCategory(income.category) ? income.category : "Salário",
+  );
+  const [cycleMonth, setCycleMonth] = useState(
+    income?.cycleMonth.slice(0, 7) ?? month,
   );
   const router = useRouter();
   const { notify } = useToast();
@@ -129,7 +130,7 @@ function IncomeForm({
     >
       <input name="month" type="hidden" value={month} />
       {income ? <input name="id" type="hidden" value={income.id} /> : null}
-      <label className="space-y-1.5">
+      <label className="space-y-2.5">
         <span className="flex items-center justify-between gap-3">
           <span className="income-label">Descrição da receita</span>
           <span className="text-xs text-emerald-300">Obrigatório</span>
@@ -143,35 +144,49 @@ function IncomeForm({
           required
         />
       </label>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1.5">
-          <span className="income-label">Valor recebido</span>
+      <div className="max-w-xs space-y-5">
+        <div className="space-y-2.5">
+          <span className="income-label block">Ciclo financeiro</span>
+          <div
+            aria-label="Ciclo financeiro"
+            className="flex items-center rounded-xl border border-white/10 bg-[#111319] p-1"
+          >
+            <button
+              aria-label="Ciclo anterior"
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-white"
+              onClick={() => setCycleMonth((value) => addMonths(value, -1))}
+              type="button"
+            >
+              <Icon className="size-4" name="chevronLeft" />
+            </button>
+            <p className="min-w-0 flex-1 truncate px-2 py-1.5 text-center text-sm font-semibold text-slate-100">
+              {formatCycleReference(cycleMonth, cycleStartDay)}
+            </p>
+            <button
+              aria-label="Próximo ciclo"
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-white"
+              onClick={() => setCycleMonth((value) => addMonths(value, 1))}
+              type="button"
+            >
+              <Icon className="size-4" name="chevronRight" />
+            </button>
+          </div>
+        </div>
+        <input name="cycleMonth" type="hidden" value={cycleMonth} />
+        <label className="space-y-2.5">
+          <span className="income-label block">Valor recebido</span>
           <span className="relative block">
             <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-semibold text-emerald-300">
               R$
             </span>
             <CurrencyInput defaultValue={income?.amount} />
           </span>
-          <span className="block text-xs text-slate-500">
-            Valor total desta entrada
-          </span>
-        </label>
-        <label className="space-y-1.5">
-          <span className="income-label">Data de recebimento</span>
-          <input
-            className="income-input [color-scheme:dark]"
-            defaultValue={income?.receivedOn ?? `${month}-01`}
-            name="receivedOn"
-            type="date"
-            required
-          />
-          <span className="block text-xs text-slate-500">
-            Define o ciclo financeiro da receita
-          </span>
         </label>
       </div>
-      <div className="space-y-1.5">
-        <span className="income-label" id="income-category-label">Categoria</span>
+      <div className="max-w-xs space-y-2.5">
+        <span className="income-label block" id="income-category-label">
+          Categoria
+        </span>
         <DarkSelect
           ariaLabelledBy="income-category-label"
           name="category"
@@ -183,10 +198,9 @@ function IncomeForm({
           renderOptionPrefix={(option) => <Icon className="size-4 shrink-0 text-emerald-300" name={incomeCategoryIcon(option.value)} />}
           value={category}
         />
-        <span className="block text-xs text-slate-500">Categorias fixas para receitas</span>
       </div>
-      <label className="space-y-1.5">
-        <span className="income-label">
+      <label className="space-y-2.5">
+        <span className="income-label block">
           Observações{" "}
           <span className="font-normal text-slate-500">(opcional)</span>
         </span>
@@ -201,7 +215,7 @@ function IncomeForm({
       {state.error ? (
         <p className="text-sm text-red-300">{state.error}</p>
       ) : null}
-      <div className="mt-2 flex justify-end gap-3">
+      <div className="mt-auto flex justify-end gap-3 border-t border-white/5 pt-5">
         <button
           className="rounded-xl bg-[#1d2025] px-5 py-2.5 text-sm font-medium text-slate-100 transition hover:bg-[#36393f]"
           onClick={onCancel}
@@ -226,6 +240,7 @@ function IncomeForm({
 }
 
 export function IncomeManager({
+  cycleStartDay,
   incomes,
   month,
   totalCents,
@@ -357,7 +372,12 @@ export function IncomeManager({
                           <Icon className="size-3" name={incomeCategoryIcon(income.category)} />
                           {income.category}
                         </span>
-                        <span>{formatIncomeDate(income.receivedOn)}</span>
+                        <span>
+                          {formatCycleReference(
+                            income.cycleMonth.slice(0, 7),
+                            cycleStartDay,
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -417,6 +437,7 @@ export function IncomeManager({
               </button>
             </div>
             <IncomeForm
+              cycleStartDay={cycleStartDay}
               income={editingIncome}
               month={month}
               onCancel={closeModal}
