@@ -157,6 +157,7 @@ export async function updateInvestmentAssetName(
     .eq("user_id", auth.userId);
   if (error) return { error: "Não foi possível atualizar o nome do ativo." };
 
+  revalidatePath("/investments");
   revalidatePath("/investments/portfolio");
   revalidatePath(`/investments/portfolio/${assetId}`);
   return { success: "Nome atualizado." };
@@ -323,6 +324,7 @@ export async function refreshInvestmentQuote(
     };
   }
 
+  revalidatePath("/investments");
   revalidatePath("/investments/portfolio");
   revalidatePath(`/investments/portfolio/${assetId.data}`);
   return { success: "Cotação atualizada." };

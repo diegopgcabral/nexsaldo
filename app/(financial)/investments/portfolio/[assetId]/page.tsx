@@ -5,6 +5,7 @@ import { AssetDetailHeader } from "@/components/investments/asset-detail-header"
 import { AssetQuoteRefresh } from "@/components/investments/asset-quote-refresh";
 import { FixedIncomeTransactionAmount } from "@/components/investments/fixed-income-transaction-amount";
 import { investmentAssetName } from "@/lib/investments/asset-catalog";
+import { fetchTwelveDataQuote } from "@/lib/investments/twelve-data";
 import { createClient } from "@/lib/supabase/server";
 
 const labels: Record<string, string> = {
@@ -106,6 +107,16 @@ export default async function InvestmentAssetPage({
   const currentAmount = quotePrice === null ? null : quotePrice * quantity;
   const profit = currentAmount === null ? null : currentAmount - investedAmount;
   const returnPercent = profit === null || !investedAmount ? null : (profit / investedAmount) * 100;
+  let usdBrl: number | null = null;
+  if (asset.asset_class === "US_ETF" && currentAmount !== null) {
+    try {
+      usdBrl = (await fetchTwelveDataQuote("USD/BRL")).price;
+    } catch {
+      /* The ETF value remains available in USD if the FX quote is unavailable. */
+    }
+  }
+  const currentAmountBrl =
+    currentAmount !== null && usdBrl !== null ? currentAmount * usdBrl : null;
   const displayName = investmentAssetName(
     asset.ticker,
     asset.name,
@@ -169,7 +180,7 @@ export default async function InvestmentAssetPage({
       ) : null}
 
       {asset.asset_class !== "FIXED_INCOME" ? (
-        <section className={`grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${supportsQuote ? "xl:grid-cols-8" : "xl:grid-cols-7"}`}>
+        <section className={`grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${asset.asset_class === "US_ETF" ? "xl:grid-cols-9" : supportsQuote ? "xl:grid-cols-8" : "xl:grid-cols-7"}`}>
           {supportsQuote ? (
           <Kpi
             action={<AssetQuoteRefresh assetId={asset.id} />}
@@ -185,6 +196,16 @@ export default async function InvestmentAssetPage({
           />
           <Kpi label="Valor investido" value={formatCurrency(investedAmount, asset.asset_class)} />
           <Kpi label="Valor atual" value={currentAmount === null ? "—" : formatCurrency(currentAmount, asset.asset_class)} />
+          {asset.asset_class === "US_ETF" ? (
+            <Kpi
+              label="Valor atual em reais"
+              value={
+                currentAmountBrl === null
+                  ? "Cotação indisponível"
+                  : formatCurrency(currentAmountBrl, "STOCK")
+              }
+            />
+          ) : null}
           <Kpi
             label="Lucro / prejuízo"
             tone={profit === null ? undefined : profit >= 0 ? "positive" : "negative"}

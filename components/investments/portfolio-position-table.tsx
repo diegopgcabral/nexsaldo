@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { investmentAssetName } from "@/lib/investments/asset-catalog";
 
@@ -78,6 +78,30 @@ export function PortfolioPositionTable({
     direction: "desc",
     key: "quantity",
   });
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollState, setScrollState] = useState({
+    thumbHeight: 100,
+    thumbTop: 0,
+    visible: false,
+  });
+  const updateScrollState = () => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const isScrollable = element.scrollHeight > element.clientHeight;
+    const thumbHeight = isScrollable
+      ? Math.max(16, (element.clientHeight / element.scrollHeight) * 100)
+      : 100;
+    const scrollableHeight = element.scrollHeight - element.clientHeight;
+    const thumbTop = scrollableHeight
+      ? (element.scrollTop / scrollableHeight) * (100 - thumbHeight)
+      : 0;
+    setScrollState({ thumbHeight, thumbTop, visible: isScrollable });
+  };
+  useEffect(() => {
+    updateScrollState();
+    window.addEventListener("resize", updateScrollState);
+    return () => window.removeEventListener("resize", updateScrollState);
+  }, [rows]);
   const sortedRows = useMemo(
     () =>
       [...rows].sort((first, second) => {
@@ -154,18 +178,18 @@ export function PortfolioPositionTable({
                 <col className="w-[16%]" />
                 <col className="w-[16%]" />
                 <col className="w-[16%]" />
-                <col className="w-[8%]" />
+                <col className="w-[120px]" />
               </>
             ) : (
               <>
-                <col className="w-[12%]" />
-                <col className="w-[24%]" />
                 <col className="w-[10%]" />
-                <col className="w-[20%]" />
-                <col className="w-[11%]" />
-                <col className="w-[11%]" />
-                <col className="w-[12%]" />
-                <col className="w-[11%]" />
+                <col className="w-[22%]" />
+                <col className="w-[8%]" />
+                <col className="w-[17%]" />
+                <col className="w-[9%]" />
+                <col className="w-[10%]" />
+                <col className="w-[9%]" />
+                <col className="w-[120px]" />
               </>
             )}
           </colgroup>
@@ -190,12 +214,17 @@ export function PortfolioPositionTable({
                   {header("Valor investido", "investedAmount", "right")}
                 </>
               )}
-              <th aria-label="Detalhes" className="px-3 py-3" />
+              <th aria-label="Detalhes" className="w-[120px] px-3 py-3" />
             </tr>
           </thead>
         </table>
-        <div className="max-h-[29rem] overflow-y-auto">
-          <table className="w-full table-fixed text-left text-sm">
+        <div className="relative">
+          <div
+            className="max-h-[29rem] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onScroll={updateScrollState}
+            ref={scrollRef}
+          >
+            <table className="w-full table-fixed text-left text-sm">
             <colgroup>
               {isFixedIncome ? (
                 <>
@@ -204,18 +233,18 @@ export function PortfolioPositionTable({
                   <col className="w-[16%]" />
                   <col className="w-[16%]" />
                   <col className="w-[16%]" />
-                  <col className="w-[8%]" />
+                  <col className="w-[120px]" />
                 </>
               ) : (
                 <>
-                  <col className="w-[12%]" />
-                  <col className="w-[24%]" />
                   <col className="w-[10%]" />
-                  <col className="w-[20%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[11%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[17%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[120px]" />
                 </>
               )}
             </colgroup>
@@ -256,9 +285,9 @@ export function PortfolioPositionTable({
                       <td className="px-3 py-3 text-right text-slate-200 tabular-nums">{formatCurrency(row.investedAmount, row.assetClass)}</td>
                     </>
                   )}
-                  <td className="px-3 py-3 text-right">
+                  <td className="w-[120px] whitespace-nowrap px-3 py-3 text-right">
                     <Link
-                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-400/45 hover:bg-emerald-400/15"
+                      className="inline-flex w-[88px] items-center justify-center gap-1 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-400/45 hover:bg-emerald-400/15"
                       href={`/investments/portfolio/${row.assetId}`}
                     >
                       Detalhes
@@ -268,7 +297,19 @@ export function PortfolioPositionTable({
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
+          {scrollState.visible ? (
+            <div className="pointer-events-none absolute inset-y-2 right-1 w-1 rounded-full bg-white/8">
+              <span
+                className="absolute inset-x-0 rounded-full bg-slate-500"
+                style={{
+                  height: `${scrollState.thumbHeight}%`,
+                  top: `${scrollState.thumbTop}%`,
+                }}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

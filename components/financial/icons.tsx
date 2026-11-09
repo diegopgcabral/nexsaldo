@@ -29,6 +29,7 @@ type IconName =
   | "receipt"
   | "download"
   | "eye"
+  | "eyeOff"
   | "refresh"
   | "search"
   | "settings";
@@ -136,6 +137,13 @@ export function Icon({ name, className = "size-5" }: IconProps) {
       <>
         <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
         <circle cx="12" cy="12" r="2.5" />
+      </>
+    ),
+    eyeOff: (
+      <>
+        <path d="m3 3 18 18" />
+        <path d="M10.6 6.2A10.4 10.4 0 0 1 12 6c6 0 9.5 6 9.5 6a18 18 0 0 1-3.1 3.8M6.2 6.2A18.2 18.2 0 0 0 2.5 12s3.5 6 9.5 6a10.3 10.3 0 0 0 3.8-.7" />
+        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
       </>
     ),
     refresh: (
