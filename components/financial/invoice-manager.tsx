@@ -284,6 +284,7 @@ function PurchaseForm({
               <DarkSelect
                 ariaLabelledBy={`split-person-${index}`}
                 name={`split-person-${index}`}
+                searchable
                 showPersonIcon
                 onChange={(value) =>
                   updateSplit(index, {

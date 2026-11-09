@@ -5,6 +5,7 @@ export type IncomeListItem = {
   description: string;
   amount: NumericValue;
   receivedOn: string;
+  cycleMonth: string;
   category: string;
   notes: string | null;
 };

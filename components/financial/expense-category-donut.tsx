@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 type Category = { category: string; paidCents: string };
 
@@ -24,6 +24,10 @@ function pointAt(angle: number, radius: number) {
   };
 }
 
+function svgCoordinate(value: number) {
+  return value.toFixed(6);
+}
+
 function donutArc(start: number, end: number) {
   const outerStart = pointAt(start, outerRadius);
   const outerEnd = pointAt(end, outerRadius);
@@ -31,10 +35,10 @@ function donutArc(start: number, end: number) {
   const innerStart = pointAt(start, innerRadius);
   const largeArc = end - start > 180 ? 1 : 0;
   return [
-    `M ${outerStart.x} ${outerStart.y}`,
-    `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,
-    `L ${innerEnd.x} ${innerEnd.y}`,
-    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStart.x} ${innerStart.y}`,
+    `M ${svgCoordinate(outerStart.x)} ${svgCoordinate(outerStart.y)}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${svgCoordinate(outerEnd.x)} ${svgCoordinate(outerEnd.y)}`,
+    `L ${svgCoordinate(innerEnd.x)} ${svgCoordinate(innerEnd.y)}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${svgCoordinate(innerStart.x)} ${svgCoordinate(innerStart.y)}`,
     "Z",
   ].join(" ");
 }
@@ -45,6 +49,11 @@ export function ExpenseCategoryDonut({
   categories: Category[];
 }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const totalCents = categories.reduce(
     (total, category) => total + BigInt(category.paidCents),
     0n,
@@ -75,6 +84,15 @@ export function ExpenseCategoryDonut({
     ];
   }, []);
   const active = activeIndex === null ? undefined : segments[activeIndex];
+
+  if (!isHydrated) {
+    return (
+      <div
+        aria-label="Carregando gráfico de categorias"
+        className="mt-6 h-78"
+      />
+    );
+  }
 
   return (
     <div className="mt-6">

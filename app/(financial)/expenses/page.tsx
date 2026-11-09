@@ -10,12 +10,14 @@ import {
 } from "@/lib/financial/month";
 import { createClient } from "@/lib/supabase/server";
 
-type ExpensesPageProps = { searchParams: Promise<{ month?: string }> };
+type ExpensesPageProps = {
+  searchParams: Promise<{ month?: string; edit?: string }>;
+};
 
 export default async function ExpensesPage({
   searchParams,
 }: ExpensesPageProps) {
-  const { month: queryMonth } = await searchParams;
+  const { month: queryMonth, edit: editingExpenseId } = await searchParams;
   const requestedMonth = queryMonth ?? null;
   let month = isMonthReference(requestedMonth)
     ? requestedMonth
@@ -41,12 +43,22 @@ export default async function ExpensesPage({
     const { data } = await supabase
       .from("expenses")
       .select(
-        "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes, is_recurring",
+        "id, description, reference_amount, paid_amount, due_date, paid_at, category, status, notes, is_recurring, recurring_expense_id",
       )
       .eq("user_id", userId)
       .gte("due_date", startsOn)
       .lt("due_date", endsBefore)
       .order("created_at", { ascending: false });
+    const expenseIds = (data ?? []).map((expense) => expense.id);
+    const { data: proofs } = expenseIds.length
+      ? await supabase
+          .from("expense_payment_proofs")
+          .select("expense_id, original_file_name")
+          .in("expense_id", expenseIds)
+      : { data: [] };
+    const proofsByExpense = new Map(
+      (proofs ?? []).map((proof) => [proof.expense_id, proof]),
+    );
     expenses = (data ?? []).map((expense) => ({
       id: expense.id,
       description: expense.description,
@@ -58,6 +70,13 @@ export default async function ExpensesPage({
       status: expense.status,
       notes: expense.notes,
       isRecurring: expense.is_recurring,
+      recurringExpenseId: expense.recurring_expense_id,
+      paymentProof: proofsByExpense.has(expense.id)
+        ? {
+            originalFileName:
+              proofsByExpense.get(expense.id)?.original_file_name ?? "",
+          }
+        : null,
     }));
     const { data: categoryRows } = await supabase
       .from("expense_categories")
@@ -82,6 +101,9 @@ export default async function ExpensesPage({
         categories={categories}
         categoryIcons={categoryIcons}
         expenses={expenses}
+        initialEditingExpense={expenses.find(
+          (expense) => expense.id === editingExpenseId,
+        )}
         month={month}
         totals={totals}
       />
