@@ -16,6 +16,8 @@ type DarkSelectProps = {
   showPersonIcon?: boolean;
   searchable?: boolean;
   renderOptionPrefix?: (option: DarkSelectOption) => ReactNode;
+  compact?: boolean;
+  className?: string;
 };
 
 export function DarkSelect({
@@ -28,6 +30,8 @@ export function DarkSelect({
   showPersonIcon = false,
   searchable = false,
   renderOptionPrefix,
+  compact = false,
+  className,
 }: DarkSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -107,14 +111,14 @@ export function DarkSelect({
   }
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className={`relative ${className ?? ""}`} ref={rootRef}>
       <input name={name} type="hidden" value={value} />
       <button
         aria-controls={open ? listId : undefined}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-labelledby={ariaLabelledBy}
-        className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-[#111319] px-4 py-3 text-left text-sm text-white transition outline-none hover:border-white/20 focus-visible:border-emerald-400"
+        className={`flex w-full items-center justify-between rounded-xl border border-white/10 bg-[#111319] text-left text-sm text-white transition outline-none hover:border-white/20 focus-visible:border-emerald-400 ${compact ? "min-h-11 gap-3 px-3 py-2.5" : "px-4 py-3"}`}
         onClick={() => {
           setQuery("");
           setOpen((current) => !current);

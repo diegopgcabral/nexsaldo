@@ -439,6 +439,9 @@ export function InvoiceManager({
   const [invoiceMatchOverrides, setInvoiceMatchOverrides] = useState<
     Record<string, boolean>
   >({});
+  const [splitParticipantFilter, setSplitParticipantFilter] = useState("all");
+  const [splitStatusFilter, setSplitStatusFilter] = useState("unpaid");
+  const [selectedSplitKeys, setSelectedSplitKeys] = useState<string[]>([]);
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [settling, setSettling] = useState<PurchaseSplit | null>(null);
@@ -457,6 +460,24 @@ export function InvoiceManager({
     return invoiceMatchOverrides[purchase.id] ?? purchase.isInvoiceMatched;
   }
   const matchedPurchaseCount = purchases.filter(isPurchaseMatched).length;
+  const selectedSplitSet = new Set(selectedSplitKeys);
+  const selectedTotalsByPerson = new Map<string, bigint>();
+  for (const purchase of purchases) {
+    for (const split of purchase.splits) {
+      if (split.paidAt) continue;
+      const key = `${purchase.id}:${split.id ?? split.participantId ?? "owner"}`;
+      if (!selectedSplitSet.has(key)) continue;
+      const personId = split.participantId ?? "owner";
+      selectedTotalsByPerson.set(
+        personId,
+        (selectedTotalsByPerson.get(personId) ?? 0n) + centsOrZero(split.amount),
+      );
+    }
+  }
+  const selectedSplitTotal = [...selectedTotalsByPerson.values()].reduce(
+    (total, amount) => total + amount,
+    0n,
+  );
   const totalsByPerson = new Map<string, bigint>();
   const paidByPerson = new Map<string, bigint>();
   for (const [id, byCard] of summary.personCardTotals)
@@ -573,7 +594,7 @@ export function InvoiceManager({
 
   return (
     <div className="space-y-7">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header>
         <div>
           <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-emerald-400 uppercase">
             Cartões de crédito / Faturas
@@ -585,15 +606,37 @@ export function InvoiceManager({
             Compras e rateios deste cartão em {formatMonthReference(month)}.
           </p>
         </div>
+      </header>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Navegação de cartões e faturas" className="flex flex-wrap gap-2 text-sm">
+          <Link
+            className="rounded-lg px-3 py-2 text-slate-400 hover:text-white"
+            href="/cards"
+          >
+            Meus cartões
+          </Link>
+          <Link
+            className="rounded-lg px-3 py-2 text-slate-400 hover:text-white"
+            href="/participants"
+          >
+            Participantes
+          </Link>
+          <Link
+            className="rounded-lg bg-emerald-400/10 px-3 py-2 text-emerald-300"
+            href={`/invoices?month=${month}`}
+          >
+            ← Todas as faturas
+          </Link>
+        </nav>
         {selectedCard ? (
           <div className="flex flex-wrap items-center gap-2">
             {isClosed ? (
               <>
-                <span className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-300">
+                <span className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-300">
                   Fatura fechada
                 </span>
                 <button
-                  className="rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/15"
+                  className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/15"
                   onClick={() => setReopening(true)}
                   type="button"
                 >
@@ -603,14 +646,14 @@ export function InvoiceManager({
             ) : (
               <>
                 <button
-                  className="rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/15"
+                  className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/15"
                   onClick={() => setClosing(true)}
                   type="button"
                 >
                   Fechar fatura
                 </button>
                 <button
-                  className="rounded-xl bg-[#00e599] px-5 py-3 text-sm font-semibold text-[#003822]"
+                  className="rounded-xl bg-[#00e599] px-5 py-2 text-sm font-semibold text-[#003822]"
                   onClick={() => {
                     setEditing(null);
                     setModalOpen(true);
@@ -623,26 +666,6 @@ export function InvoiceManager({
             )}
           </div>
         ) : null}
-      </header>
-      <div className="flex flex-wrap gap-2 text-sm">
-        <Link
-          className="rounded-lg px-3 py-2 text-slate-400 hover:text-white"
-          href="/cards"
-        >
-          Meus cartões
-        </Link>
-        <Link
-          className="rounded-lg px-3 py-2 text-slate-400 hover:text-white"
-          href="/participants"
-        >
-          Participantes
-        </Link>
-        <Link
-          className="rounded-lg bg-emerald-400/10 px-3 py-2 text-emerald-300"
-          href={`/invoices?month=${month}`}
-        >
-          ← Todas as faturas
-        </Link>
       </div>
       {loadError ? (
         <p
@@ -791,6 +814,103 @@ export function InvoiceManager({
                 {matchedPurchaseCount}/{purchases.length} conferidas
               </span>
             </div>
+            <div className="mb-4 rounded-xl border border-white/7 bg-[#111319] p-3">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-white">
+                  Montar total da fatura
+                </h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Filtre as parcelas. As selecionadas ficam verdes e entram no total.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+              <div className="w-full max-w-[22rem]">
+                <span className="mb-1.5 block text-xs font-medium text-slate-400" id="invoice-participant-filter-label">
+                Participante
+                </span>
+                <DarkSelect
+                  ariaLabelledBy="invoice-participant-filter-label"
+                  className="w-full"
+                  compact
+                  name="invoice-participant-filter"
+                  onChange={setSplitParticipantFilter}
+                  options={[
+                    { value: "all", label: "Todos" },
+                    { value: "owner", label: `${ownerName} (titular)` },
+                    ...participants.map((person) => ({
+                      value: person.id,
+                      label: person.name,
+                    })),
+                  ]}
+                  placeholder="Selecione um participante"
+                  searchable
+                  showPersonIcon
+                  value={splitParticipantFilter}
+                />
+              </div>
+              <div className="w-44">
+                <span className="mb-1.5 block text-xs font-medium text-slate-400" id="invoice-status-filter-label">
+                  Situação
+                </span>
+                <DarkSelect
+                  ariaLabelledBy="invoice-status-filter-label"
+                  className="w-full"
+                  compact
+                  name="invoice-status-filter"
+                  onChange={setSplitStatusFilter}
+                  options={[
+                    { value: "unpaid", label: "A pagar" },
+                    { value: "paid", label: "Pagas" },
+                    { value: "all", label: "Todas" },
+                  ]}
+                  placeholder="Situação"
+                  renderOptionPrefix={(option) => (
+                    <Icon
+                      className="size-4 shrink-0 text-emerald-300"
+                      name={option.value === "all" ? "filter" : "check"}
+                    />
+                  )}
+                  value={splitStatusFilter}
+                />
+              </div>
+              <div className="ml-auto flex flex-wrap items-center gap-2 pb-1">
+                <button
+                  className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-semibold text-[#06251a] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={splitStatusFilter === "paid"}
+                  onClick={() => {
+                    const matchingKeys = purchases.flatMap((purchase) =>
+                      purchase.splits.flatMap((split) => {
+                        if (split.paidAt) return [];
+                        const personId = split.participantId ?? "owner";
+                        if (
+                          splitParticipantFilter !== "all" &&
+                          splitParticipantFilter !== personId
+                        ) return [];
+                        return [`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`];
+                      }),
+                    );
+                    setSelectedSplitKeys((current) => [
+                      ...new Set([...current, ...matchingKeys]),
+                    ]);
+                  }}
+                  type="button"
+                >
+                  Selecionar parcelas
+                </button>
+                <button
+                  className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"
+                  onClick={() => {
+                    setSelectedSplitKeys([]);
+                    setSplitParticipantFilter("all");
+                    setSplitStatusFilter("unpaid");
+                  }}
+                  type="button"
+                >
+                  Limpar filtros e seleção
+                </button>
+              </div>
+              </div>
+            </div>
             {purchases.length ? (
               <div className="space-y-2">
                 {purchases.map((purchase) => {
@@ -890,20 +1010,38 @@ export function InvoiceManager({
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
                         {purchase.splits.map((split) => (
                           <div
-                            className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-2"
+                            className={`flex min-w-0 items-center justify-between gap-3 rounded-xl border px-3 py-2 transition ${split.paidAt ? "border-white/5 bg-white/[0.025] opacity-60" : selectedSplitSet.has(`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`) ? "border-emerald-400/35 bg-emerald-400/[0.07]" : "border-white/5 bg-white/5"}`}
                             key={split.id ?? split.participantId ?? "owner"}
                           >
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-medium text-slate-200">
-                                {split.participantId === null
-                                  ? ownerName
-                                  : (people.get(split.participantId) ??
-                                    "Participante arquivado")}
-                              </p>
-                              <p className="mt-0.5 text-xs text-slate-400">
-                                {formatCents(centsOrZero(split.amount))}
-                              </p>
-                            </div>
+                            <button
+                              aria-pressed={selectedSplitSet.has(`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`)}
+                              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left disabled:cursor-default"
+                              disabled={Boolean(split.paidAt)}
+                              onClick={() => {
+                                const key = `${purchase.id}:${split.id ?? split.participantId ?? "owner"}`;
+                                setSelectedSplitKeys((current) =>
+                                  selectedSplitSet.has(key)
+                                    ? current.filter((item) => item !== key)
+                                    : [...new Set([...current, key])],
+                                );
+                              }}
+                              type="button"
+                            >
+                              <span className={`flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${selectedSplitSet.has(`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`) ? "border-emerald-300 bg-emerald-400 text-[#003822]" : "border-slate-500 text-transparent"}`}>
+                                ✓
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block truncate text-xs font-medium text-slate-200">
+                                  {split.participantId === null
+                                    ? ownerName
+                                    : (people.get(split.participantId) ??
+                                      "Participante arquivado")}
+                                </span>
+                                <span className="mt-0.5 block text-xs text-slate-400">
+                                  {formatCents(centsOrZero(split.amount))}
+                                </span>
+                              </span>
+                            </button>
                             <button
                               aria-label={`${split.paidAt ? "Desfazer pagamento de" : "Marcar como paga"} ${split.participantId === null ? ownerName : (people.get(split.participantId) ?? "participante")}`}
                               className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${split.paidAt ? "bg-emerald-400/15 text-emerald-300 hover:bg-red-400/15 hover:text-red-200" : "bg-amber-400/10 text-amber-100 hover:bg-emerald-400/15 hover:text-emerald-300"}`}
@@ -1297,6 +1435,41 @@ export function InvoiceManager({
                 {busy ? "Excluindo…" : "Excluir"}
               </button>
             </div>
+          </div>
+        </div>
+      ) : null}
+      {selectedSplitSet.size > 0 ? (
+        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
+          <div className="flex w-full max-w-4xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-400/30 bg-[#191c21]/95 px-5 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur">
+            <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+              {[...selectedTotalsByPerson].map(([personId, amount]) => (
+                <div className="rounded-xl border border-white/8 bg-[#111319] px-3 py-2" key={personId}>
+                  <p className="max-w-40 truncate text-[11px] font-medium text-slate-400">
+                    {personId === "owner" ? ownerName : (people.get(personId) ?? "Participante arquivado")}
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold tabular-nums text-emerald-300">
+                    {formatCents(amount)}
+                  </p>
+                </div>
+              ))}
+              <div className="rounded-xl bg-emerald-400/10 px-3 py-2">
+                <p className="text-[11px] font-medium text-emerald-100/70">Total geral</p>
+                <p className="mt-0.5 text-sm font-bold tabular-nums text-emerald-300">
+                  {formatCents(selectedSplitTotal)}
+                </p>
+              </div>
+            </div>
+            <button
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/8 hover:text-white"
+              onClick={() => {
+                setSelectedSplitKeys([]);
+                setSplitParticipantFilter("all");
+                setSplitStatusFilter("unpaid");
+              }}
+              type="button"
+            >
+              Limpar
+            </button>
           </div>
         </div>
       ) : null}
