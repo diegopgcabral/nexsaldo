@@ -61,6 +61,27 @@ export type B3ImportPreview = {
   sourceRows: number;
 };
 
+export type B3ProventType = "DIVIDEND" | "JCP" | "INCOME";
+
+export type B3Provent = {
+  amount: number;
+  date: string;
+  event: string;
+  institution: string;
+  product: string;
+  proventType: B3ProventType;
+  quantity: number;
+  rowNumber: number;
+  ticker: string;
+  unitPrice: number;
+};
+
+export type B3ProventPreview = {
+  ignoredRows: number;
+  items: B3Provent[];
+  sourceRows: number;
+};
+
 const expectedHeaders = [
   "Data do Negócio",
   "Tipo de Movimentação",
@@ -296,6 +317,94 @@ export function parseB3Negotiations(file: ArrayBuffer): B3ImportPreview {
     ),
     positions: [...positions.values()].sort((a, b) =>
       a.name.localeCompare(b.name),
+    ),
+    sourceRows: rows.length - 1,
+  };
+}
+
+const expectedProventHeaders = [
+  "Produto",
+  "Pagamento",
+  "Tipo de Evento",
+  "Instituição",
+  "Quantidade",
+  "Preço unitário",
+  "Valor líquido",
+];
+
+function parseProventType(value: string): B3ProventType | null {
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+  if (normalized === "DIVIDENDO") return "DIVIDEND";
+  if (normalized === "JUROS SOBRE CAPITAL PROPRIO") return "JCP";
+  if (normalized === "RENDIMENTO") return "INCOME";
+  return null;
+}
+
+export function parseB3Provents(file: ArrayBuffer): B3ProventPreview {
+  const entries = zipEntries(Buffer.from(file));
+  const sharedStrings = entries.get("xl/sharedStrings.xml")?.toString("utf8");
+  const worksheet = entries.get("xl/worksheets/sheet1.xml")?.toString("utf8");
+  if (!sharedStrings || !worksheet)
+    throw new Error("Não encontrei a planilha de proventos no arquivo.");
+
+  const rows = parseWorksheet(worksheet, parseSharedStrings(sharedStrings));
+  if (
+    expectedProventHeaders.some((header, index) => rows[0]?.[index] !== header)
+  ) {
+    throw new Error(
+      "Este arquivo não é o relatório de proventos da B3 esperado.",
+    );
+  }
+
+  let ignoredRows = 0;
+  const items: B3Provent[] = [];
+  rows.slice(1).forEach((row, index) => {
+    const product = row[0]?.trim() ?? "";
+    const ticker = product.split(" - ")[0]?.trim().toUpperCase() ?? "";
+    const date = parseDate(row[1] ?? "");
+    const proventType = parseProventType(row[2] ?? "");
+    const quantity = parseNumber(row[4] ?? "");
+    const unitPrice = parseNumber(row[5] ?? "");
+    const amount = parseNumber(row[6] ?? "");
+    if (
+      !/^[A-Z0-9]{4,30}$/.test(ticker) ||
+      !date ||
+      !proventType ||
+      quantity === null ||
+      quantity <= 0 ||
+      unitPrice === null ||
+      unitPrice <= 0 ||
+      amount === null ||
+      amount <= 0
+    ) {
+      ignoredRows += 1;
+      return;
+    }
+    items.push({
+      amount,
+      date,
+      event: row[2],
+      institution: normalizeInstitution(row[3] ?? ""),
+      product,
+      proventType,
+      quantity,
+      rowNumber: index + 2,
+      ticker,
+      unitPrice,
+    });
+  });
+  if (!items.length)
+    throw new Error("O relatório não contém proventos válidos para importar.");
+  return {
+    ignoredRows,
+    items: items.sort(
+      (first, second) =>
+        second.date.localeCompare(first.date) ||
+        first.rowNumber - second.rowNumber,
     ),
     sourceRows: rows.length - 1,
   };

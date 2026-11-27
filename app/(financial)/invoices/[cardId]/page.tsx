@@ -8,7 +8,7 @@ import type {
 } from "@/lib/financial/credit-card-invoice";
 import type { InvoiceCycleNote } from "@/lib/financial/invoice-note";
 import {
-  getCurrentCycleReference,
+  getCurrentMonthReference,
   isMonthReference,
 } from "@/lib/financial/month";
 import type { ParticipantListItem } from "@/lib/financial/participant";
@@ -28,20 +28,10 @@ export default async function CardInvoicePage({
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims.sub;
-  const { data: cycleProfile } =
-    typeof userId === "string"
-      ? await supabase
-          .from("profiles")
-          .select("financial_cycle_start_day")
-          .eq("id", userId)
-          .maybeSingle()
-      : { data: null };
+  const currentMonth = getCurrentMonthReference();
   const month = isMonthReference(query.month ?? null)
     ? query.month!
-    : getCurrentCycleReference(
-        new Date(),
-        cycleProfile?.financial_cycle_start_day ?? 1,
-      );
+    : currentMonth;
   let cards: CreditCardListItem[] = [];
   let participants: ParticipantListItem[] = [];
   let purchases: PurchaseListItem[] = [];

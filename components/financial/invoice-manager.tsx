@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import {
+  clearInvoiceMatches,
   closeInvoice,
   deletePurchase,
   movePurchaseToNextInvoice,
@@ -436,6 +437,7 @@ export function InvoiceManager({
   const [matchingPurchaseId, setMatchingPurchaseId] = useState<string | null>(
     null,
   );
+  const [clearingMatches, setClearingMatches] = useState(false);
   const [invoiceMatchOverrides, setInvoiceMatchOverrides] = useState<
     Record<string, boolean>
   >({});
@@ -532,6 +534,22 @@ export function InvoiceManager({
         notify("error", result.error);
       } else router.refresh();
       setMatchingPurchaseId(null);
+    });
+  }
+
+  function confirmClearInvoiceMatches() {
+    if (!selectedCard || busy) return;
+    startTransition(async () => {
+      const result = await clearInvoiceMatches(selectedCard.id, month);
+      if (result.error) notify("error", result.error);
+      else {
+        setInvoiceMatchOverrides(
+          Object.fromEntries(purchases.map((purchase) => [purchase.id, false])),
+        );
+        notify("success", "Conferências da fatura removidas.");
+        setClearingMatches(false);
+        router.refresh();
+      }
     });
   }
 
@@ -800,7 +818,7 @@ export function InvoiceManager({
             notes={notes}
           />
           <section className="rounded-2xl border border-white/5 bg-[#1d2026] p-5">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-white">Compras da fatura</h2>
                 {isClosed ? (
@@ -810,9 +828,19 @@ export function InvoiceManager({
                   </p>
                 ) : null}
               </div>
-              <span className="text-xs text-slate-400">
-                {matchedPurchaseCount}/{purchases.length} conferidas
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-400">
+                  {matchedPurchaseCount}/{purchases.length} conferidas
+                </span>
+                <button
+                  className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={isClosed || matchedPurchaseCount === 0 || busy}
+                  onClick={() => setClearingMatches(true)}
+                  type="button"
+                >
+                  Limpar conferidas
+                </button>
+              </div>
             </div>
             <div className="mb-4 rounded-xl border border-white/7 bg-[#111319] p-3">
               <div className="mb-3">
@@ -1470,6 +1498,50 @@ export function InvoiceManager({
             >
               Limpar
             </button>
+          </div>
+        </div>
+      ) : null}
+      {clearingMatches ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div
+            aria-describedby="clear-invoice-matches-description"
+            aria-labelledby="clear-invoice-matches-title"
+            aria-modal="true"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1d2026] p-6"
+            role="dialog"
+          >
+            <h2
+              className="text-xl font-semibold text-white"
+              id="clear-invoice-matches-title"
+            >
+              Limpar conferidas?
+            </h2>
+            <p
+              className="mt-2 text-sm leading-6 text-slate-400"
+              id="clear-invoice-matches-description"
+            >
+              As {matchedPurchaseCount} compras conferidas desta fatura voltarão
+              ao estado não conferido.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                autoFocus
+                className="rounded-xl bg-white/10 px-4 py-2.5 text-sm text-white disabled:opacity-50"
+                disabled={busy}
+                onClick={() => setClearingMatches(false)}
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button
+                className="rounded-xl bg-red-400 px-4 py-2.5 text-sm font-semibold text-[#42151a] disabled:opacity-50"
+                disabled={busy}
+                onClick={confirmClearInvoiceMatches}
+                type="button"
+              >
+                {busy ? "Limpando…" : "Limpar conferidas"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

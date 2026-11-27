@@ -159,9 +159,10 @@ export function InvoiceOverview({
               {cards.map((card) => {
                 const bank = getBankAppearance(card.bankName);
                 const light = bank.tone === "marketYellow";
+                const isClosed = closedCards.has(card.id);
                 return (
                   <Link
-                    aria-label={`Abrir fatura de ${card.name}, ${formatCents(summary.cardTotals.get(card.id) ?? 0n)}`}
+                    aria-label={`Abrir fatura de ${card.name}, ${formatCents(summary.cardTotals.get(card.id) ?? 0n)}, fatura ${isClosed ? "fechada" : "aberta"}`}
                     className={`flex h-36 w-52 shrink-0 flex-col justify-between rounded-xl border bg-gradient-to-br p-3 text-left shadow-lg transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-emerald-400 ${tones[bank.tone] ?? tones.emerald} ${light ? "text-[#161b24]" : "text-white"}`}
                     href={`/invoices/${card.id}?month=${month}`}
                     key={card.id}
@@ -183,12 +184,30 @@ export function InvoiceOverview({
                       <span className="mt-1 block text-lg font-bold">
                         {formatCents(summary.cardTotals.get(card.id) ?? 0n)}
                       </span>
-                      <span
-                        className={`block text-[10px] ${light ? "text-[#161b24]/70" : "text-white/65"}`}
-                      >
-                        {card.dueDay
-                          ? `Vence dia ${card.dueDay}`
-                          : "Vencimento não informado"}
+                      <span className="mt-0.5 flex items-center justify-between gap-2">
+                        <span
+                          className={`truncate text-[10px] ${light ? "text-[#161b24]/70" : "text-white/65"}`}
+                        >
+                          {card.dueDay
+                            ? `Vence dia ${card.dueDay}`
+                            : "Vencimento não informado"}
+                        </span>
+                        <span
+                          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase ${
+                            light
+                              ? isClosed
+                                ? "border-emerald-950/20 bg-emerald-950/15 text-emerald-950"
+                                : "border-[#161b24]/20 bg-[#161b24]/10 text-[#161b24]/70"
+                              : isClosed
+                                ? "border-emerald-300/25 bg-emerald-300/15 text-emerald-200"
+                                : "border-white/15 bg-black/10 text-white/65"
+                          }`}
+                        >
+                          {isClosed ? (
+                            <Icon className="size-2.5" name="check" />
+                          ) : null}
+                          {isClosed ? "Fechada" : "Aberta"}
+                        </span>
                       </span>
                     </span>
                   </Link>

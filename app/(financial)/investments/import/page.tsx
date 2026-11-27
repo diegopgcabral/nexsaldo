@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Icon } from "@/components/financial/icons";
 import { B3NegotiationImport } from "@/components/investments/b3-negotiation-import";
+import { B3ProventImport } from "@/components/investments/b3-provent-import";
 
 type Props = { searchParams: Promise<{ type?: string }> };
 
@@ -26,7 +27,7 @@ export default async function InvestmentImportPage({ searchParams }: Props) {
 
   return (
     <section
-      className={`mx-auto space-y-6 py-4 ${selected?.key === "trades" ? "max-w-[1400px]" : "max-w-2xl"}`}
+      className={`mx-auto space-y-6 py-4 ${selected ? "max-w-[1400px]" : "max-w-2xl"}`}
     >
       <div className="text-center">
         <p className="text-xs font-semibold tracking-[.16em] text-emerald-300 uppercase">
@@ -83,18 +84,7 @@ export default async function InvestmentImportPage({ searchParams }: Props) {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-dashed border-emerald-400/35 bg-[#191c21] p-10 text-center">
-            <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
-              <Icon className="size-6" name={selected.icon} />
-            </span>
-            <h2 className="mt-4 font-semibold text-white">{selected.title}</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
-              {selected.description}
-            </p>
-            <button className="mt-5 rounded-xl bg-[#00e599] px-5 py-2.5 text-sm font-semibold text-[#003822]">
-              Selecionar arquivo Excel
-            </button>
-          </div>
+          <B3ProventImport />
           <Link
             className="mx-auto flex w-fit items-center gap-1 text-sm font-semibold text-emerald-300 hover:text-emerald-200"
             href="/investments/import"

@@ -218,6 +218,34 @@ export async function setPurchaseInvoiceMatch(
   return { success: true };
 }
 
+export async function clearInvoiceMatches(
+  cardId: string,
+  month: string,
+): Promise<PurchaseActionState> {
+  const id = z.string().uuid().safeParse(cardId);
+  if (!id.success || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))
+    return { error: "Fatura inválida." };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims.sub;
+  if (typeof userId !== "string")
+    return { error: "Sua sessão expirou. Entre novamente." };
+  const { error } = await supabase
+    .from("credit_card_purchases")
+    .update({ invoice_matched: false })
+    .eq("card_id", id.data)
+    .eq("invoice_month", `${month}-01`)
+    .eq("user_id", userId)
+    .eq("invoice_matched", true);
+  if (error)
+    return {
+      error: invoiceError(error, "Não foi possível limpar as conferências."),
+    };
+  revalidatePath("/invoices");
+  revalidatePath(`/invoices/${id.data}`);
+  return { success: true };
+}
+
 export async function closeInvoice(
   cardId: string,
   month: string,

@@ -136,7 +136,53 @@ export function ReconciliationManager({
           {people.map((person) => {
             const status = person.open === 0n ? "Pago" : person.received === 0n ? "Pendente" : "Parcial";
             const statusClass = status === "Pago" ? "bg-emerald-400/10 text-emerald-300" : status === "Parcial" ? "bg-amber-400/10 text-amber-200" : "bg-red-400/10 text-red-200";
-            return <article className="rounded-2xl border border-white/5 bg-[#191c21] p-4" key={person.id}><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-white">{person.name}</p><p className="mt-1 text-xs text-slate-500">Total em {cards.length} fatura{cards.length === 1 ? "" : "s"} fechada{cards.length === 1 ? "" : "s"}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}>{status}</span></div><div className="mt-4 flex items-end justify-between gap-3"><div><p className="text-xs text-slate-500">Em aberto</p><p className="mt-1 text-xl font-bold text-white">{formatCents(person.open)}</p>{person.received > 0n ? <p className="mt-1 text-xs text-emerald-300">{formatCents(person.received)} já pago</p> : null}</div>{person.open > 0n ? <button className="rounded-xl bg-emerald-400 px-3 py-2 text-xs font-semibold text-[#003822] disabled:opacity-50" disabled={pending} onClick={() => settle(person.id)} type="button">Registrar pagamento</button> : null}</div></article>;
+            return (
+              <article
+                className="flex flex-col rounded-2xl border border-white/5 bg-[#191c21] p-4"
+                key={person.id}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">{person.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Total em {cards.length} fatura
+                      {cards.length === 1 ? "" : "s"} fechada
+                      {cards.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}
+                  >
+                    {status}
+                  </span>
+                </div>
+                <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+                  <div>
+                    <p className="text-xs text-slate-500">Em aberto</p>
+                    <p className="mt-1 text-xl font-bold text-white">
+                      {formatCents(person.open)}
+                    </p>
+                    <div className="mt-1 min-h-4">
+                      {person.received > 0n ? (
+                        <p className="text-xs text-emerald-300">
+                          {formatCents(person.received)} já pago
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {person.open > 0n ? (
+                    <button
+                      className="rounded-xl bg-emerald-400 px-3 py-2 text-xs font-semibold text-[#003822] disabled:opacity-50"
+                      disabled={pending}
+                      onClick={() => settle(person.id)}
+                      type="button"
+                    >
+                      Registrar pagamento
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            );
           })}
         </div>
       </section>

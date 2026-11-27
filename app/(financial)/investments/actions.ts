@@ -6,7 +6,10 @@ import { z } from "zod";
 
 import {
   parseB3Negotiations,
+  parseB3Provents,
   type B3ImportPreview,
+  type B3Provent,
+  type B3ProventPreview,
 } from "@/lib/investments/b3-movements";
 import { fetchBrapiQuote } from "@/lib/investments/brapi";
 import { normalizeCurrencyInput } from "@/lib/financial/contracts";
@@ -42,6 +45,21 @@ export type B3ImportPreviewState =
   | { error: string; preview: null }
   | { error: null; preview: B3ImportPreview };
 
+export type B3ProventImportItem = B3Provent & {
+  assetId: string | null;
+  assetName: string | null;
+};
+
+export type B3ProventImportPreview = Omit<B3ProventPreview, "items"> & {
+  items: B3ProventImportItem[];
+  missingTickers: string[];
+};
+
+export type B3ProventImportPreviewState =
+  | { error: null; preview: null }
+  | { error: string; preview: null }
+  | { error: null; preview: B3ProventImportPreview };
+
 export type ManualInvestmentTransactionState = {
   error?: string;
   success?: string;
@@ -74,6 +92,46 @@ async function session() {
   return typeof data?.claims.sub === "string"
     ? { supabase, userId: data.claims.sub }
     : null;
+}
+
+async function resolveB3ProventAssets(
+  auth: NonNullable<Awaited<ReturnType<typeof session>>>,
+  preview: B3ProventPreview,
+): Promise<B3ProventImportPreview> {
+  const tickers = [...new Set(preview.items.map((item) => item.ticker))];
+  const { data: assets, error } = await auth.supabase
+    .from("investment_assets")
+    .select("id,name,display_name,ticker")
+    .eq("user_id", auth.userId)
+    .in("ticker", tickers);
+  if (error)
+    throw new Error("Não foi possível localizar os ativos do relatório.");
+
+  const assetsByTicker = new Map(
+    (assets ?? []).map((asset) => [
+      asset.ticker?.toUpperCase(),
+      {
+        id: asset.id,
+        name: asset.display_name ?? asset.name,
+      },
+    ]),
+  );
+  const missingTickers = tickers.filter(
+    (ticker) => !assetsByTicker.has(ticker),
+  );
+
+  return {
+    ...preview,
+    items: preview.items.map((item) => {
+      const asset = assetsByTicker.get(item.ticker);
+      return {
+        ...item,
+        assetId: asset?.id ?? null,
+        assetName: asset?.name ?? null,
+      };
+    }),
+    missingTickers,
+  };
 }
 
 async function refreshInvestmentPosition(
@@ -369,6 +427,126 @@ export async function previewB3Negotiations(
       preview: null,
     };
   }
+}
+
+export async function previewB3Provents(
+  _previousState: B3ProventImportPreviewState,
+  formData: FormData,
+): Promise<B3ProventImportPreviewState> {
+  const auth = await session();
+  if (!auth)
+    return {
+      error: "Faça login novamente para importar o relatório.",
+      preview: null,
+    };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0)
+    return {
+      error: "Selecione o arquivo Excel de Proventos da B3.",
+      preview: null,
+    };
+  if (!file.name.toLowerCase().endsWith(".xlsx"))
+    return {
+      error: "Envie um arquivo Excel no formato .xlsx.",
+      preview: null,
+    };
+  if (file.size > 900_000)
+    return {
+      error: "O arquivo excede o limite atual de importação.",
+      preview: null,
+    };
+
+  try {
+    const parsed = parseB3Provents(await file.arrayBuffer());
+    return {
+      error: null,
+      preview: await resolveB3ProventAssets(auth, parsed),
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível ler o arquivo.",
+      preview: null,
+    };
+  }
+}
+
+export async function importB3Provents(formData: FormData) {
+  const auth = await session();
+  if (!auth)
+    return { error: "Faça login novamente para importar o relatório." };
+
+  const file = formData.get("file");
+  if (
+    !(file instanceof File) ||
+    file.size === 0 ||
+    !file.name.toLowerCase().endsWith(".xlsx") ||
+    file.size > 900_000
+  ) {
+    return {
+      error: "Selecione novamente o arquivo Excel de Proventos da B3.",
+    };
+  }
+
+  let preview: B3ProventImportPreview;
+  try {
+    const parsed = parseB3Provents(await file.arrayBuffer());
+    preview = await resolveB3ProventAssets(auth, parsed);
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível ler o arquivo.",
+    };
+  }
+
+  if (preview.missingTickers.length)
+    return {
+      error: `Cadastre os ativos ${preview.missingTickers.join(", ")} antes de importar.`,
+    };
+
+  const provents = preview.items.map((item) => ({
+    user_id: auth.userId,
+    asset_id: item.assetId!,
+    received_on: item.date,
+    provent_type: item.proventType,
+    amount: item.amount,
+    quantity: item.quantity,
+    unit_price: item.unitPrice,
+    currency: "BRL",
+    source_hash: createHash("sha256")
+      .update(
+        [
+          item.ticker,
+          item.date,
+          item.proventType,
+          item.quantity,
+          item.unitPrice,
+          item.amount,
+          item.institution,
+        ].join(":"),
+      )
+      .digest("hex"),
+  }));
+  const { error } = await auth.supabase
+    .from("investment_provents")
+    .upsert(provents, {
+      ignoreDuplicates: true,
+      onConflict: "user_id,source_hash",
+    });
+  if (error) return { error: "Não foi possível salvar os proventos." };
+
+  const month = preview.items
+    .map((item) => item.date)
+    .sort((first, second) => second.localeCompare(first))[0]
+    .slice(0, 7);
+  revalidatePath("/investments");
+  revalidatePath("/investments/provents");
+  return { imported: provents.length, month };
 }
 
 export async function importB3Negotiations(formData: FormData) {
