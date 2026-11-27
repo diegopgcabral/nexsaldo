@@ -36,7 +36,15 @@ export function FinancialShell({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const month = searchParams.get("month");
-  const suffix = month ? `?month=${month}` : "";
+  const usesFinancialCycle =
+    pathname === "/dashboard" ||
+    pathname === "/income" ||
+    pathname === "/expenses";
+  const withFinancialCycle = (href: string) =>
+    month &&
+    (href === "/dashboard" || href === "/income" || href === "/expenses")
+      ? `${href}?month=${month}`
+      : href;
   const initials = displayName
     .split(" ")
     .filter(Boolean)
@@ -50,7 +58,10 @@ export function FinancialShell({
       <div className="min-h-screen bg-[#111319] text-[#e1e2ea]">
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col justify-between border-r border-white/5 bg-[#0b0e13]/90 p-4 backdrop-blur-xl md:flex">
           <div>
-            <Link className="flex px-1 py-1" href={`/dashboard${suffix}`}>
+            <Link
+              className="flex px-1 py-1"
+              href={withFinancialCycle("/dashboard")}
+            >
               <span
                 className="relative h-10 w-40 overflow-hidden"
                 aria-label="NexSaldo"
@@ -76,7 +87,7 @@ export function FinancialShell({
                         ? "bg-emerald-400 text-[#003822] shadow-[0_0_20px_rgba(0,229,153,0.18)]"
                         : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
                     }`}
-                    href={`${item.href}${suffix}`}
+                    href={withFinancialCycle(item.href)}
                     key={item.href}
                   >
                     <Icon className="size-5" name={item.icon} />
@@ -100,13 +111,13 @@ export function FinancialShell({
                   <div className="mt-1 space-y-1 pl-7">
                     <SubmenuLink
                       active={pathname === "/income"}
-                      href="/income"
+                      href={withFinancialCycle("/income")}
                       icon="income"
                       label="Receitas"
                     />
                     <SubmenuLink
                       active={pathname === "/expenses"}
-                      href="/expenses"
+                      href={withFinancialCycle("/expenses")}
                       icon="expense"
                       label="Despesas"
                     />
@@ -251,7 +262,9 @@ export function FinancialShell({
                 Sua organização financeira pessoal
               </p>
             </div>
-            <MonthSelector cycleStartDay={cycleStartDay} />
+            {usesFinancialCycle ? (
+              <MonthSelector cycleStartDay={cycleStartDay} />
+            ) : null}
           </header>
           <main className="relative min-h-[calc(100vh-4rem)] px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8">
             <div
@@ -310,7 +323,7 @@ export function FinancialShell({
                 className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-lg px-1 py-1 text-[10px] font-medium transition ${
                   isActive ? "text-emerald-400" : "text-slate-500"
                 }`}
-                href={`${item.href}${suffix}`}
+                href={withFinancialCycle(item.href)}
                 key={item.href}
               >
                 <Icon className="size-5" name={item.icon} />

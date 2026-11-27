@@ -373,9 +373,9 @@ function ProventsTable({
       <thead className="border-b border-white/8 bg-[#111319] text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
         <tr>
           {!assetId ? <th className="px-5 py-3">Produto</th> : null}
-          <th className="px-3 py-3">Pagamento</th>
-          <th className="px-3 py-3">Tipo de evento</th>
-          <th className="px-3 py-3">Instituição</th>
+          <th className="px-3 py-3 text-center">Pagamento</th>
+          <th className="px-3 py-3 text-center">Tipo de evento</th>
+          <th className="px-3 py-3 text-center">Instituição</th>
           <th className="px-3 py-3 text-right whitespace-nowrap">Quantidade</th>
           <th className="px-3 py-3 text-right whitespace-nowrap">
             Preço unitário
@@ -405,17 +405,17 @@ function ProventsTable({
                 </span>
               </td>
             ) : null}
-            <td className="px-3 py-3 text-slate-300">
+            <td className="px-3 py-3 text-center text-slate-300">
               {date(item.received_on)}
             </td>
-            <td className="px-3 py-3 text-slate-300">
+            <td className="px-3 py-3 text-center text-slate-300">
               {item.provent_type === "DIVIDEND"
                 ? "Dividendo"
                 : item.provent_type === "JCP"
                   ? "Juros sobre capital próprio"
                   : "Rendimento"}
             </td>
-            <td className="truncate px-3 py-3 text-slate-400">
+            <td className="truncate px-3 py-3 text-center text-slate-400">
               {item.institution}
             </td>
             <td className="px-3 py-3 text-right text-slate-400">
