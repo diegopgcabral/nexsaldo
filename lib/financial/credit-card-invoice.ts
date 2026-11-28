@@ -33,6 +33,23 @@ export function invoiceAmountToCents(value: string) {
     : 0n;
 }
 
+export function filterPurchaseSplits(
+  purchase: PurchaseListItem,
+  participantFilter: string,
+  statusFilter: string,
+) {
+  return purchase.splits.filter((split) => {
+    const personId = split.participantId ?? "owner";
+    const matchesParticipant =
+      participantFilter === "all" || participantFilter === personId;
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "paid" ? Boolean(split.paidAt) : !split.paidAt);
+
+    return matchesParticipant && matchesStatus;
+  });
+}
+
 export function summarizeInvoice(purchases: PurchaseListItem[]) {
   const cardTotals = new Map<string, bigint>();
   const personCardTotals = new Map<string, Map<string, bigint>>();

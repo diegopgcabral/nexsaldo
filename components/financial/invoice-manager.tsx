@@ -33,6 +33,7 @@ import type {
 } from "@/lib/financial/credit-card-invoice";
 import {
   calculateSplitBalance,
+  filterPurchaseSplits,
   invoiceAmountToCents,
   summarizeInvoice,
 } from "@/lib/financial/credit-card-invoice";
@@ -462,6 +463,16 @@ export function InvoiceManager({
     return invoiceMatchOverrides[purchase.id] ?? purchase.isInvoiceMatched;
   }
   const matchedPurchaseCount = purchases.filter(isPurchaseMatched).length;
+  const filteredPurchaseRows = purchases
+    .map((purchase) => ({
+      purchase,
+      splits: filterPurchaseSplits(
+        purchase,
+        splitParticipantFilter,
+        splitStatusFilter,
+      ),
+    }))
+    .filter((row) => row.splits.length > 0);
   const selectedSplitSet = new Set(selectedSplitKeys);
   const selectedTotalsByPerson = new Map<string, bigint>();
   for (const purchase of purchases) {
@@ -472,7 +483,8 @@ export function InvoiceManager({
       const personId = split.participantId ?? "owner";
       selectedTotalsByPerson.set(
         personId,
-        (selectedTotalsByPerson.get(personId) ?? 0n) + centsOrZero(split.amount),
+        (selectedTotalsByPerson.get(personId) ?? 0n) +
+          centsOrZero(split.amount),
       );
     }
   }
@@ -626,7 +638,10 @@ export function InvoiceManager({
         </div>
       </header>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Navegação de cartões e faturas" className="flex flex-wrap gap-2 text-sm">
+        <nav
+          aria-label="Navegação de cartões e faturas"
+          className="flex flex-wrap gap-2 text-sm"
+        >
           <Link
             className="rounded-lg px-3 py-2 text-slate-400 hover:text-white"
             href="/cards"
@@ -848,100 +863,108 @@ export function InvoiceManager({
                   Montar total da fatura
                 </h3>
                 <p className="mt-1 text-xs text-slate-400">
-                  Filtre as parcelas. As selecionadas ficam verdes e entram no total.
+                  Filtre as parcelas. As selecionadas ficam verdes e entram no
+                  total.
                 </p>
               </div>
               <div className="flex flex-wrap items-end gap-3">
-              <div className="w-full max-w-[22rem]">
-                <span className="mb-1.5 block text-xs font-medium text-slate-400" id="invoice-participant-filter-label">
-                Participante
-                </span>
-                <DarkSelect
-                  ariaLabelledBy="invoice-participant-filter-label"
-                  className="w-full"
-                  compact
-                  name="invoice-participant-filter"
-                  onChange={setSplitParticipantFilter}
-                  options={[
-                    { value: "all", label: "Todos" },
-                    { value: "owner", label: `${ownerName} (titular)` },
-                    ...participants.map((person) => ({
-                      value: person.id,
-                      label: person.name,
-                    })),
-                  ]}
-                  placeholder="Selecione um participante"
-                  searchable
-                  showPersonIcon
-                  value={splitParticipantFilter}
-                />
-              </div>
-              <div className="w-44">
-                <span className="mb-1.5 block text-xs font-medium text-slate-400" id="invoice-status-filter-label">
-                  Situação
-                </span>
-                <DarkSelect
-                  ariaLabelledBy="invoice-status-filter-label"
-                  className="w-full"
-                  compact
-                  name="invoice-status-filter"
-                  onChange={setSplitStatusFilter}
-                  options={[
-                    { value: "unpaid", label: "A pagar" },
-                    { value: "paid", label: "Pagas" },
-                    { value: "all", label: "Todas" },
-                  ]}
-                  placeholder="Situação"
-                  renderOptionPrefix={(option) => (
-                    <Icon
-                      className="size-4 shrink-0 text-emerald-300"
-                      name={option.value === "all" ? "filter" : "check"}
-                    />
-                  )}
-                  value={splitStatusFilter}
-                />
-              </div>
-              <div className="ml-auto flex flex-wrap items-center gap-2 pb-1">
-                <button
-                  className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-semibold text-[#06251a] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={splitStatusFilter === "paid"}
-                  onClick={() => {
-                    const matchingKeys = purchases.flatMap((purchase) =>
-                      purchase.splits.flatMap((split) => {
-                        if (split.paidAt) return [];
-                        const personId = split.participantId ?? "owner";
-                        if (
-                          splitParticipantFilter !== "all" &&
-                          splitParticipantFilter !== personId
-                        ) return [];
-                        return [`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`];
-                      }),
-                    );
-                    setSelectedSplitKeys((current) => [
-                      ...new Set([...current, ...matchingKeys]),
-                    ]);
-                  }}
-                  type="button"
-                >
-                  Selecionar parcelas
-                </button>
-                <button
-                  className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"
-                  onClick={() => {
-                    setSelectedSplitKeys([]);
-                    setSplitParticipantFilter("all");
-                    setSplitStatusFilter("unpaid");
-                  }}
-                  type="button"
-                >
-                  Limpar filtros e seleção
-                </button>
-              </div>
+                <div className="w-full max-w-[22rem]">
+                  <span
+                    className="mb-1.5 block text-xs font-medium text-slate-400"
+                    id="invoice-participant-filter-label"
+                  >
+                    Participante
+                  </span>
+                  <DarkSelect
+                    ariaLabelledBy="invoice-participant-filter-label"
+                    className="w-full"
+                    compact
+                    name="invoice-participant-filter"
+                    onChange={setSplitParticipantFilter}
+                    options={[
+                      { value: "all", label: "Todos" },
+                      { value: "owner", label: `${ownerName} (titular)` },
+                      ...participants.map((person) => ({
+                        value: person.id,
+                        label: person.name,
+                      })),
+                    ]}
+                    placeholder="Selecione um participante"
+                    searchable
+                    showPersonIcon
+                    value={splitParticipantFilter}
+                  />
+                </div>
+                <div className="w-44">
+                  <span
+                    className="mb-1.5 block text-xs font-medium text-slate-400"
+                    id="invoice-status-filter-label"
+                  >
+                    Situação
+                  </span>
+                  <DarkSelect
+                    ariaLabelledBy="invoice-status-filter-label"
+                    className="w-full"
+                    compact
+                    name="invoice-status-filter"
+                    onChange={setSplitStatusFilter}
+                    options={[
+                      { value: "unpaid", label: "A pagar" },
+                      { value: "paid", label: "Pagas" },
+                      { value: "all", label: "Todas" },
+                    ]}
+                    placeholder="Situação"
+                    renderOptionPrefix={(option) => (
+                      <Icon
+                        className="size-4 shrink-0 text-emerald-300"
+                        name={option.value === "all" ? "filter" : "check"}
+                      />
+                    )}
+                    value={splitStatusFilter}
+                  />
+                </div>
+                <div className="ml-auto flex flex-wrap items-center gap-2 pb-1">
+                  <button
+                    className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-semibold text-[#06251a] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={splitStatusFilter === "paid"}
+                    onClick={() => {
+                      const matchingKeys = purchases.flatMap((purchase) =>
+                        filterPurchaseSplits(
+                          purchase,
+                          splitParticipantFilter,
+                          splitStatusFilter,
+                        ).flatMap((split) => {
+                          if (split.paidAt) return [];
+                          return [
+                            `${purchase.id}:${split.id ?? split.participantId ?? "owner"}`,
+                          ];
+                        }),
+                      );
+                      setSelectedSplitKeys((current) => [
+                        ...new Set([...current, ...matchingKeys]),
+                      ]);
+                    }}
+                    type="button"
+                  >
+                    Selecionar parcelas
+                  </button>
+                  <button
+                    className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"
+                    onClick={() => {
+                      setSelectedSplitKeys([]);
+                      setSplitParticipantFilter("all");
+                      setSplitStatusFilter("unpaid");
+                    }}
+                    type="button"
+                  >
+                    Limpar filtros e seleção
+                  </button>
+                </div>
               </div>
             </div>
-            {purchases.length ? (
+            {filteredPurchaseRows.length ? (
               <div className="space-y-2">
-                {purchases.map((purchase) => {
+                {filteredPurchaseRows.map(({ purchase, splits }) => {
                   const isMatched = isPurchaseMatched(purchase);
                   return (
                     <div
@@ -987,11 +1010,8 @@ export function InvoiceManager({
                             ) : null}
                           </p>
                           <p className="mt-1 text-xs text-slate-400">
-                            {formatDate(purchase.purchasedOn)} ·{" "}
-                            {purchase.splits.length}{" "}
-                            {purchase.splits.length === 1
-                              ? "pessoa"
-                              : "pessoas"}
+                            {formatDate(purchase.purchasedOn)} · {splits.length}{" "}
+                            {splits.length === 1 ? "pessoa" : "pessoas"}
                           </p>
                         </button>
                         <div className="flex items-center gap-2">
@@ -1036,13 +1056,15 @@ export function InvoiceManager({
                         </div>
                       </div>
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        {purchase.splits.map((split) => (
+                        {splits.map((split) => (
                           <div
                             className={`flex min-w-0 items-center justify-between gap-3 rounded-xl border px-3 py-2 transition ${split.paidAt ? "border-white/5 bg-white/[0.025] opacity-60" : selectedSplitSet.has(`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`) ? "border-emerald-400/35 bg-emerald-400/[0.07]" : "border-white/5 bg-white/5"}`}
                             key={split.id ?? split.participantId ?? "owner"}
                           >
                             <button
-                              aria-pressed={selectedSplitSet.has(`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`)}
+                              aria-pressed={selectedSplitSet.has(
+                                `${purchase.id}:${split.id ?? split.participantId ?? "owner"}`,
+                              )}
                               className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left disabled:cursor-default"
                               disabled={Boolean(split.paidAt)}
                               onClick={() => {
@@ -1055,7 +1077,9 @@ export function InvoiceManager({
                               }}
                               type="button"
                             >
-                              <span className={`flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${selectedSplitSet.has(`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`) ? "border-emerald-300 bg-emerald-400 text-[#003822]" : "border-slate-500 text-transparent"}`}>
+                              <span
+                                className={`flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${selectedSplitSet.has(`${purchase.id}:${split.id ?? split.participantId ?? "owner"}`) ? "border-emerald-300 bg-emerald-400 text-[#003822]" : "border-slate-500 text-transparent"}`}
+                              >
                                 ✓
                               </span>
                               <span className="min-w-0">
@@ -1099,9 +1123,11 @@ export function InvoiceManager({
             ) : (
               <div className="rounded-xl border border-dashed border-white/10 p-10 text-center">
                 <p className="text-sm text-slate-400">
-                  Nenhuma compra nesta fatura.
+                  {purchases.length
+                    ? "Nenhuma compra corresponde aos filtros selecionados."
+                    : "Nenhuma compra nesta fatura."}
                 </p>
-                {!isClosed ? (
+                {!purchases.length && !isClosed ? (
                   <button
                     className="mt-4 rounded-xl bg-white/10 px-4 py-2.5 text-sm text-white"
                     onClick={() => {
@@ -1471,18 +1497,25 @@ export function InvoiceManager({
           <div className="flex w-full max-w-4xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-400/30 bg-[#191c21]/95 px-5 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur">
             <div className="flex min-w-0 flex-1 flex-wrap gap-2">
               {[...selectedTotalsByPerson].map(([personId, amount]) => (
-                <div className="rounded-xl border border-white/8 bg-[#111319] px-3 py-2" key={personId}>
+                <div
+                  className="rounded-xl border border-white/8 bg-[#111319] px-3 py-2"
+                  key={personId}
+                >
                   <p className="max-w-40 truncate text-[11px] font-medium text-slate-400">
-                    {personId === "owner" ? ownerName : (people.get(personId) ?? "Participante arquivado")}
+                    {personId === "owner"
+                      ? ownerName
+                      : (people.get(personId) ?? "Participante arquivado")}
                   </p>
-                  <p className="mt-0.5 text-sm font-bold tabular-nums text-emerald-300">
+                  <p className="mt-0.5 text-sm font-bold text-emerald-300 tabular-nums">
                     {formatCents(amount)}
                   </p>
                 </div>
               ))}
               <div className="rounded-xl bg-emerald-400/10 px-3 py-2">
-                <p className="text-[11px] font-medium text-emerald-100/70">Total geral</p>
-                <p className="mt-0.5 text-sm font-bold tabular-nums text-emerald-300">
+                <p className="text-[11px] font-medium text-emerald-100/70">
+                  Total geral
+                </p>
+                <p className="mt-0.5 text-sm font-bold text-emerald-300 tabular-nums">
                   {formatCents(selectedSplitTotal)}
                 </p>
               </div>

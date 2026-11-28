@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   calculateSplitBalance,
+  filterPurchaseSplits,
   parsePurchaseInput,
   summarizeInvoice,
 } from "../../lib/financial/credit-card-invoice";
@@ -155,4 +156,52 @@ test("summarizes each participant by card and for the month", () => {
     allocated: 30000n,
     difference: 0n,
   });
+});
+
+test("filters visible invoice splits by participant and payment status", () => {
+  const participantId = "33333333-3333-4333-8333-333333333333";
+  const invoicePurchase = {
+    id: owner,
+    cardId,
+    description: "Compra compartilhada",
+    amount: "300.00",
+    purchasedOn: "2026-10-14",
+    invoiceMonth: "2026-10",
+    installmentNumber: 1,
+    installmentCount: 1,
+    isRecurring: false,
+    isInvoiceMatched: false,
+    splits: [
+      {
+        id: "44444444-4444-4444-8444-444444444444",
+        participantId: null,
+        amount: "100.00",
+        paidAt: "2026-10-15T12:00:00.000Z",
+      },
+      {
+        id: "55555555-5555-4555-8555-555555555555",
+        participantId: participantId,
+        amount: "200.00",
+        paidAt: null,
+      },
+    ],
+  };
+
+  assert.deepEqual(
+    filterPurchaseSplits(invoicePurchase, "owner", "unpaid"),
+    [],
+  );
+  assert.deepEqual(
+    filterPurchaseSplits(invoicePurchase, "owner", "paid").map(
+      (split) => split.id,
+    ),
+    ["44444444-4444-4444-8444-444444444444"],
+  );
+  assert.deepEqual(
+    filterPurchaseSplits(invoicePurchase, participantId, "unpaid").map(
+      (split) => split.id,
+    ),
+    ["55555555-5555-4555-8555-555555555555"],
+  );
+  assert.equal(filterPurchaseSplits(invoicePurchase, "all", "all").length, 2);
 });
